@@ -1,0 +1,13 @@
+movement_id,warehouse,item_group,item_name,unit_cost,quantity,movement_date
+M001,North,Server,Rack Server,125000,2,2026-08-01
+M002,North,Network,Core Switch,68000,1,2026-08-01
+M003,South,Storage,NVMe Array,92000,1,2026-08-02
+M004,South,Server,Edge Server,76000,3,2026-08-02
+M005,Central,Network,Access Point,8500,10,2026-08-03
+M006,Central,Storage,Backup Disk,4200,20,2026-08-03
+M007,North,Server,Compute Node,88000,2,2026-08-04
+M008,South,Network,Firewall,54000,1,2026-08-04
+M009,Central,Storage,Tape Library,110000,1,2026-08-05
+M010,North,Network,Router,36000,2,2026-08-05
+M011,South,Server,GPU Server,240000,1,2026-08-06
+M012,Central,Storage,Object Gateway,67000,2,2026-08-06

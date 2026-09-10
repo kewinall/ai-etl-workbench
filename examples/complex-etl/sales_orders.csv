@@ -1,0 +1,13 @@
+order_id,category,product,unit_price,quantity,order_date
+1001,Hardware,Keyboard,1200,2,2026-08-01
+1002,Software,ETL License,8500,1,2026-08-01
+1003,Hardware,Mouse,650,3,2026-08-02
+1004,Service,Migration Workshop,12000,1,2026-08-02
+1005,Hardware,Monitor,6200,2,2026-08-03
+1006,Cloud,Compute Credits,3000,4,2026-08-03
+1007,Software,Monitoring License,4500,2,2026-08-04
+1008,Service,Data Quality Review,7800,1,2026-08-04
+1009,Cloud,Object Storage,1800,5,2026-08-05
+1010,Hardware,Docking Station,3200,2,2026-08-05
+1011,Software,Backup License,2600,3,2026-08-06
+1012,Service,Support Package,5000,2,2026-08-06

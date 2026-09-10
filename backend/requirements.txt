@@ -1,0 +1,13 @@
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+pydantic==2.11.7
+psycopg[binary]==3.2.9
+pytest==8.4.1
+httpx==0.28.1
+requests==2.32.5
+python-multipart==0.0.20
+vertica-python==1.4.0
+openpyxl==3.1.5
+litellm==1.81.8
+cryptography==45.0.6
+boto3>=1.28.57

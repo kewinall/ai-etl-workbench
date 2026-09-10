@@ -1,0 +1,57 @@
+.source-summary-grid {
+  display: grid;
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.source-summary-card {
+  padding: 16px;
+  border: 1px solid var(--line, #d9e2ec);
+  border-radius: 14px;
+  background: var(--surface-soft, #f8fafc);
+}
+
+.source-summary-card h4 {
+  margin: 14px 0 8px;
+}
+
+.task-setup-grid {
+  margin-bottom: 16px;
+}
+
+.requirement-summary,
+.setup-section {
+  margin: 18px 0;
+  padding: 18px;
+  border: 1px solid var(--line, #d9e2ec);
+  border-radius: 12px;
+  background: var(--surface-soft, #f8fafc);
+}
+
+.requirement-summary small {
+  display: block;
+  margin-bottom: 9px;
+  color: #718496;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.requirement-summary p {
+  margin: 0;
+  color: #172534;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.setup-section h4 {
+  margin-top: 0;
+}
+
+@media (max-width: 700px) {
+  .source-summary-card .config-grid,
+  .task-setup-grid {
+    grid-template-columns: 1fr;
+  }
+}

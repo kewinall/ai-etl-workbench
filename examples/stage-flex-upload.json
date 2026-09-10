@@ -1,0 +1,5 @@
+[
+  {"event_id": 3001, "event_type": "LOGIN", "channel": "web"},
+  {"event_id": 3002, "event_type": "PURCHASE", "channel": "mobile"},
+  {"event_id": 3003, "event_type": "LOGOUT", "channel": "web"}
+]
