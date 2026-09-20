@@ -59,16 +59,9 @@ def requirement_issues(task:dict[str,Any])->list[dict[str,Any]]:
         issues.append({"issue_type":"UNSAFE","field_path":"requirement","message":"需求包含破壞性 SQL；僅平台受控 ai_sample 範例來源表可重建","suggestion":{"allowed_scope":"ai_sample managed tables"}})
     return issues
 
-def litellm_complete(profile:dict[str,Any], role:str, messages:list[dict[str,str]])->tuple[dict[str,Any],dict[str,Any]]:
-    routes=profile.get("model_routes") or {}; model=routes.get(role) or routes.get("etl_specification")
-    if not profile.get("enabled",True):raise ValueError("AI Provider Profile is disabled")
-    try:
-        from litellm import completion
-    except ImportError as exc:
-        raise RuntimeError("LiteLLM 尚未安裝；請執行 setup 以啟用 Bedrock 模型") from exc
-    started=time.monotonic();response=completion(model=model,messages=messages,timeout=profile.get("timeout_seconds",90))
-    content=response.choices[0].message.content or "{}";data=json.loads(content);usage=getattr(response,"usage",None)
-    return data,{"provider":"litellm_bedrock","model":model,"duration_ms":round((time.monotonic()-started)*1000),"input_tokens":getattr(usage,"prompt_tokens",None),"output_tokens":getattr(usage,"completion_tokens",None),"total_tokens":getattr(usage,"total_tokens",None),"usage_type":"EXACT" if usage else "UNAVAILABLE","usage_source":"litellm"}
+def litellm_complete(profile:dict[str,Any], role:str, messages:list[dict[str,str]], secret:str|None=None)->tuple[dict[str,Any],dict[str,Any]]:
+    from .model_gateway import complete_json
+    return complete_json(profile,role,messages,secret=secret)
 
 def encrypt_secret(value:str)->tuple[bytes,bytes]:
     key=os.getenv("PLATFORM_SETTINGS_ENCRYPTION_KEY","").strip()

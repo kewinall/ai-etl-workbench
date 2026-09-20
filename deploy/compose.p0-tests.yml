@@ -1,0 +1,55 @@
+# Isolated control-plane regression. No published ports, production volumes or
+# external network. Synthetic fixtures are never installed in the Pilot DB.
+name: ai-etl-p0-regression
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: workbench
+      POSTGRES_DB: workbench
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - test-database:/var/lib/postgresql/data
+    networks: [test-only]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U workbench -d workbench']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  tests:
+    image: ai-etl-workbench-regression:local
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+      target: runtime
+    entrypoint: [python, -c]
+    command:
+      - >-
+        import os,sys; from pathlib import Path;
+        from app.migrations import migrate;
+        print('Applied migrations:',len(migrate(os.environ['DATABASE_URL'],Path('/app/database/migrations'))));
+        import pytest;
+        sys.exit(pytest.main(['/app/backend/tests','-q','--tb=short','-p','no:cacheprovider']))
+    environment:
+      DATABASE_URL: postgresql://workbench@postgres:5432/workbench
+      DATABASE_HOST: postgres
+      DATABASE_NAME: workbench
+      PYTHONPATH: /app/backend
+      PYTHONDONTWRITEBYTECODE: '1'
+      WORKBENCH_ALLOW_DATABASE_TESTS: '1'
+      WORKBENCH_EXECUTION_ENABLED: 'false'
+      WORKBENCH_SA_DISPATCH_ENABLED: 'false'
+      WORKBENCH_QA_DISPATCH_ENABLED: 'false'
+      PLATFORM_SETTINGS_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    volumes:
+      - ../backend:/app/backend:ro
+      - ../database/migrations:/app/database/migrations:ro
+      - ../config:/app/config:ro
+    networks: [test-only]
+    depends_on:
+      postgres: {condition: service_healthy}
+networks:
+  test-only:
+    internal: true
+volumes:
+  test-database:

@@ -1,0 +1,28 @@
+FROM python:3.12-slim-bookworm AS runtime
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPATH=/app/backend
+WORKDIR /app
+COPY backend/requirements.txt /app/backend/requirements.txt
+RUN pip install --no-cache-dir -r /app/backend/requirements.txt \
+    && groupadd -g 10001 workbench && useradd -u 10001 -g workbench -m workbench
+RUN mkdir -p /app/runtime-temp /app/hop-project /app/outputs \
+    && chown -R 10001:10001 /app/runtime-temp /app/hop-project /app/outputs
+ENTRYPOINT ["python", "-m", "app.bootstrap"]
+
+FROM runtime AS api
+COPY backend/app /app/backend/app
+COPY database/migrations /app/database/migrations
+COPY config /app/config
+USER 10001:10001
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8765"]
+
+FROM apache/hop:2.12.0 AS hop
+FROM local/vertica:25.3.0-rpm AS vertica-driver
+FROM runtime AS worker
+RUN apt-get update && apt-get install -y --no-install-recommends openjdk-17-jre-headless \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=hop --chown=10001:10001 /opt/hop /opt/hop
+COPY --from=vertica-driver --chown=10001:10001 /opt/vertica/java/vertica-jdbc-25.3.0-2.jar /opt/hop/lib/jdbc/vertica-jdbc-25.3.0-2.jar
+COPY --from=api /app /app
+ENV HOP_HOME=/opt/hop HOP_RUN_PATH=/opt/hop/hop-run.sh
+USER 10001:10001
+CMD ["python", "-m", "app.worker"]

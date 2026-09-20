@@ -4,7 +4,6 @@ import csv
 import hashlib
 import json
 import os
-import shutil
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -85,8 +84,11 @@ def save_and_profile(filename: str, content: bytes, retention_days: int = 7, max
 
 
 def cleanup_expired(retention_days: int = 7) -> int:
-    UPLOAD_ROOT.mkdir(parents=True, exist_ok=True); cutoff = datetime.now().timestamp() - retention_days * 86400; removed = 0
-    for folder in UPLOAD_ROOT.iterdir():
-        if folder.is_dir() and folder.stat().st_mtime < cutoff:
-            shutil.rmtree(folder, ignore_errors=True); removed += 1
-    return removed
+    """Automatic deletion is suspended until Task/Run references can be checked.
+
+    Folder age is not evidence that an upload is unused. Both the upload API and
+    legacy Worker call this function, so fail closed here rather than silently
+    deleting revision evidence. Retention metadata is advisory, not a deletion
+    guarantee. A reference-aware cleanup with an explicit preview is still due.
+    """
+    return 0

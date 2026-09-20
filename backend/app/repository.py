@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Any
 import psycopg
 from psycopg.rows import dict_row
+from .project_api import ProjectConflict
+from .settings_contract import validate_setting
 
 STEPS=[('router','Rule Router'),('profiler','Source Profiler'),('sa','Requirement / SA Agent'),('developer','Developer Agent'),('static','Static Validator'),('semantic','Semantic Validator'),('executor','Hop Executor'),('postwrite','Post-write Count')]
 
@@ -25,8 +27,11 @@ class PostgresRepository:
   return """select t.task_id id,t.project_id,t.task_name name,t.task_type type,t.task_category category,t.requirement_text requirement,t.source_type source,t.target_type target,t.status,t.current_step,t.progress,t.rows_written rows,t.model_provider model,t.source_config,t.target_config,t.last_error,t.error_test_config,t.error_test_result,t.created_at,t.updated_at from platform.task t"""
  def _shape(self,r):
   d=dict(r); d['project_id']=str(d['project_id']) if d.get('project_id') else None; d['created_at']=d['created_at'].isoformat() if d.get('created_at') else None; d['updated_at']=d['updated_at'].isoformat() if d.get('updated_at') else None; return d
- def list_tasks(self):
-  with self.conn() as c: rows=c.execute(self._task_sql()+" order by t.created_at desc").fetchall()
+ def list_tasks(self,project_id=None):
+  with self.conn() as c:
+   query=self._task_sql()
+   if project_id:query+=' where t.project_id=%s'
+   rows=c.execute(query+' order by t.created_at desc',(project_id,) if project_id else ()).fetchall()
   return [self._shape(r) for r in rows]
  def get_task(self,task_id):
   with self.conn() as c:
@@ -47,7 +52,7 @@ class PostgresRepository:
   if configured:
    source='MIXED' if len(configured)>1 else str(configured[0].get('type') or source).upper()
    if len(configured)==1 and configured[0].get('has_actual_data',source_config.get('has_actual_data',True)) is not False:
-    source_config={**configured[0],**{k:v for k,v in source_config.items() if k!='sources'}}
+    source_config={**configured[0],**source_config}
     if source=='CSV':source_config['file_path']=source_config.get('path') or source_config.get('file_path')
   target=(data.get('target_type') or 'VERTICA').upper()
   if target not in ('POSTGRESQL','VERTICA'):raise ValueError('Unsupported target database')
@@ -74,7 +79,7 @@ class PostgresRepository:
   if configured:
    source='MIXED' if len(configured)>1 else str(configured[0].get('type') or source).upper()
    if len(configured)==1 and configured[0].get('has_actual_data',source_config.get('has_actual_data',True)) is not False:
-    source_config={**configured[0],**{k:v for k,v in source_config.items() if k!='sources'}}
+    source_config={**configured[0],**source_config}
     if source=='CSV':source_config['file_path']=source_config.get('path') or source_config.get('file_path')
   target=(data.get('target_type') or 'VERTICA').upper()
   if target not in ('POSTGRESQL','VERTICA'):raise ValueError('Unsupported target database')
@@ -160,6 +165,12 @@ class PostgresRepository:
  def update_setting(self,key,value):
   allowed={'feature_flags','upload_policy','validation_policy','storage_policy','vertica_stage_paths','ai_provider_model_strategy','data_connections_targets','execution_tool_paths','data_governance_naming_rules','validation_release_policy','security_secret_vault'}
   if key not in allowed:raise ValueError('Setting is not editable')
+  if key=='data_connections_targets':
+   previous=self.setting(key,{}) or {}
+   if value.get('platform')!=previous.get('platform'):raise ValueError('平台 PostgreSQL 由部署設定管理，不可透過網頁變更')
+   for item in value.values():
+    if isinstance(item,dict) and any(k.lower() in {'password','api_key','token','secret','secret_value','secret_ref'} for k in item):raise ValueError('連線機密必須透過安全密鑰保管庫保存')
+  value=validate_setting(key,value)
   with self.conn() as c:c.execute("insert into platform.system_setting(setting_key,setting_value,updated_at) values(%s,%s,now()) on conflict(setting_key) do update set setting_value=excluded.setting_value,updated_at=now()",(key,json.dumps(value)))
   return self.setting(key)
  def list_projects(self):
@@ -176,7 +187,13 @@ class PostgresRepository:
    c.execute("insert into platform.project_member(project_id,operator_id) values(%s,'00000000-0000-0000-0000-000000000001')",(project_id,))
   return self.get_project(project_id)
  def update_project(self,project_id,data):
-  with self.conn() as c:c.execute("update platform.project set project_name=%s,description=%s,default_ai_profile=%s,default_connection=%s,naming_rules=%s,updated_at=now() where project_id=%s",(data['project_name'],data.get('description',''),data.get('default_ai_profile','nova-default'),data.get('default_connection','vertica-default'),json.dumps(data.get('naming_rules') or {}),project_id))
+  with self.conn() as c:
+   query="update platform.project set project_name=%s,description=%s,default_ai_profile=%s,default_connection=%s,naming_rules=%s,updated_at=now() where project_id=%s"
+   args=[data['project_name'],data.get('description',''),data.get('default_ai_profile','nova-default'),data.get('default_connection','vertica-default'),json.dumps(data.get('naming_rules') or {}),project_id]
+   if data.get('expected_updated_at'):
+    query+=' and updated_at=%s';args.append(data['expected_updated_at'])
+   result=c.execute(query,args)
+   if result.rowcount==0 and data.get('expected_updated_at'):raise ProjectConflict()
   return self.get_project(project_id)
  def save_requirement_issues(self,task_id,issues):
   with self.conn() as c:
@@ -190,10 +207,15 @@ class PostgresRepository:
   with self.conn() as c:c.execute("update platform.requirement_issue set resolved=true where task_id=%s and not resolved",(task_id,))
  def save_naming_contract(self,task_id,contract,confirmed=False):
   with self.conn() as c:
+   # Same first lock as Run/specification review: a new naming revision cannot
+   # race past a review that is validating the previous contract.
+   if not c.execute('select task_id from platform.task where task_id=%s for update',(task_id,)).fetchone():raise ValueError('TASK_NOT_FOUND')
    version=c.execute("select coalesce(max(version),0)+1 version from platform.naming_contract where task_id=%s",(task_id,)).fetchone()['version'];contract_id=uuid.uuid4();status='CONFIRMED' if confirmed else 'DRAFT'
    c.execute("insert into platform.naming_contract(contract_id,task_id,version,status,contract_json,checksum,confirmed_at) values(%s,%s,%s,%s,%s,%s,case when %s then now() else null end)",(contract_id,task_id,version,status,json.dumps(contract),contract['checksum'],confirmed))
    for ordinal,column in enumerate(contract['columns'],1):c.execute("insert into platform.naming_contract_column(contract_id,ordinal,source_name,english_name,vertica_type,confidence,reason) values(%s,%s,%s,%s,%s,%s,%s)",(contract_id,ordinal,column['source_name'],column['english_name'],column['vertica_type'],column['confidence'],column['reason']))
-  return self.naming_contract(task_id)
+   row=c.execute('select contract_id,version,status,contract_json,checksum,created_at,confirmed_at from platform.naming_contract where contract_id=%s',(contract_id,)).fetchone()
+  # Return this transaction's revision, not whichever concurrent writer is latest.
+  return {**dict(row),'contract_id':str(row['contract_id']),'created_at':row['created_at'].isoformat(),'confirmed_at':row['confirmed_at'].isoformat() if row['confirmed_at'] else None}
  def naming_contract(self,task_id):
   with self.conn() as c:r=c.execute("select contract_id,version,status,contract_json,checksum,created_at,confirmed_at from platform.naming_contract where task_id=%s order by version desc limit 1",(task_id,)).fetchone()
   if not r:return None
@@ -211,6 +233,25 @@ class PostgresRepository:
   return self.ai_profile(data['profile_id'])
  def save_secret(self,secret_ref,cipher,nonce):
   with self.conn() as c:c.execute("insert into platform.secret_vault_entry(secret_ref,cipher_text,nonce,updated_at) values(%s,%s,%s,now()) on conflict(secret_ref) do update set cipher_text=excluded.cipher_text,nonce=excluded.nonce,updated_at=now()",(secret_ref,cipher,nonce))
+ def read_secret(self,secret_ref):
+  from .platform_harness import decrypt_secret
+  with self.conn() as c:r=c.execute('select cipher_text,nonce from platform.secret_vault_entry where secret_ref=%s',(secret_ref,)).fetchone()
+  if not r:raise ValueError('AI_SECRET_UNAVAILABLE')
+  try:return decrypt_secret(bytes(r['cipher_text']),bytes(r['nonce']))
+  except Exception:raise ValueError('AI_SECRET_UNAVAILABLE') from None
+ def secret_version(self,secret_ref):
+  with self.conn() as c:r=c.execute('select updated_at from platform.secret_vault_entry where secret_ref=%s',(secret_ref,)).fetchone()
+  return r['updated_at'].isoformat() if r else None
+ def read_secret_at_version(self,secret_ref,expected_version):
+  """Read bytes and version together; never substitute a newer credential."""
+  from .platform_harness import decrypt_secret
+  if not isinstance(expected_version,str) or not expected_version:
+   raise ValueError('CREDENTIAL_VERSION_REQUIRED')
+  with self.conn() as c:
+   row=c.execute('select cipher_text,nonce,updated_at from platform.secret_vault_entry where secret_ref=%s',(secret_ref,)).fetchone()
+  if not row or row['updated_at'].isoformat()!=expected_version:
+   raise ValueError('CREDENTIAL_VERSION_CHANGED')
+  return decrypt_secret(bytes(row['cipher_text']),bytes(row['nonce']))
  def trace(self,task_id):
   with self.conn() as c:
    agents=c.execute("select role,provider,model,prompt_version,context_checksum,status,duration_ms,created_at from platform.agent_invocation where task_id=%s order by created_at",(task_id,)).fetchall();tools=c.execute("select tool_name,input_checksum,status,detail,created_at from platform.tool_invocation where task_id=%s order by created_at",(task_id,)).fetchall()

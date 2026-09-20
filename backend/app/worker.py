@@ -7,6 +7,7 @@ API=os.getenv('WORKER_API','http://127.0.0.1:8765')
 last_cleanup=0.0
 def run_once():
  global last_cleanup
+ if os.getenv('WORKBENCH_EXECUTION_ENABLED','true').lower()!='true':return
  try:
   if time.time()-last_cleanup>=3600:
    settings=requests.get(API+'/api/settings',timeout=5).json();cleanup_expired(int(settings.get('upload_policy',{}).get('retention_days',7)));last_cleanup=time.time()

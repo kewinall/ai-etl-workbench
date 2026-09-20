@@ -6,6 +6,10 @@
 
 ## 歷史操作文件
 
+最新內部 Pilot 調整、API 行為與未完成項目見 [Pilot 實作紀錄](docs/pilot-implementation.md)。
+
+新重構進度見 [實作追蹤](docs/implementation-status.md)，隔離容器環境見 [Compose 開發基準](docs/compose-development.md)。以下內容保留供既有 Windows 環境使用，不代表新的 Compose ETL 執行已完成。
+
 Windows 11 原生 POC：React + Vite、FastAPI、獨立 Python Worker、PostgreSQL-first repository 與 Apache Hop `hop-run.bat` 執行邊界。未提供 PostgreSQL 連線前，預設以 mock fixture 啟動完整 UI。
 
 ## ETL Analyzer（ETL 結構與邏輯分析）

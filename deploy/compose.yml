@@ -1,0 +1,134 @@
+name: ai-etl-workbench
+
+x-api: &api
+  image: ai-etl-workbench-api:dev
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  build:
+    context: ..
+    dockerfile: deploy/Dockerfile.backend
+    target: api
+  environment: &api-environment
+    DATABASE_HOST: postgres
+    DATABASE_USER: workbench
+    DATABASE_NAME: workbench
+    DATABASE_PASSWORD_FILE: /run/workbench-secrets/postgres_password
+    PLATFORM_SETTINGS_ENCRYPTION_KEY_FILE: /run/workbench-secrets/settings_key
+    WORKBENCH_EXECUTION_ENABLED: "${WORKBENCH_EXECUTION_ENABLED:-false}"
+    WORKBENCH_ARTIFACT_ROOT: /app/outputs
+    WORKBENCH_SA_DISPATCH_ENABLED: "${WORKBENCH_SA_DISPATCH_ENABLED:-false}"
+    WORKBENCH_DEVELOPER_DISPATCH_ENABLED: "${WORKBENCH_DEVELOPER_DISPATCH_ENABLED:-false}"
+    WORKBENCH_QA_DISPATCH_ENABLED: "${WORKBENCH_QA_DISPATCH_ENABLED:-false}"
+    WORKER_API: http://api:8765
+  volumes:
+    - secrets:/run/workbench-secrets:ro
+    - uploads:/app/runtime-temp
+    - artifacts:/app/hop-project
+    - outputs:/app/outputs
+
+services:
+  init:
+    <<: *api
+    user: "0:0"
+    command: ["init-secrets"]
+    environment: {}
+    volumes:
+      - secrets:/run/workbench-secrets
+      - uploads:/app/runtime-temp
+      - artifacts:/app/hop-project
+      - outputs:/app/outputs
+    restart: "no"
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: workbench
+      POSTGRES_USER: workbench
+      POSTGRES_PASSWORD_FILE: /run/workbench-secrets/postgres_password
+    volumes:
+      - database:/var/lib/postgresql/data
+      - secrets:/run/workbench-secrets:ro
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U workbench -d workbench"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  migrate:
+    <<: *api
+    command: ["python", "-m", "app.migrations"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+  api:
+    <<: *api
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/api/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    ports:
+      - "127.0.0.1:${WORKBENCH_PORT:-5183}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+  worker:
+    <<: *api
+    image: ai-etl-workbench-worker:dev
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+      target: worker
+    profiles: [execution]
+    depends_on:
+      api:
+        condition: service_healthy
+  sa-worker:
+    <<: *api
+    profiles: [pilot-ai]
+    command: ["python", "-m", "app.sa_worker"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+  pilot-hop-worker:
+    <<: *api
+    image: ai-etl-workbench-worker:dev
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+      target: worker
+    profiles: [pilot-execution]
+    command: ["python", "-m", "app.pilot_hop_worker"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+  control-worker:
+    <<: *api
+    profiles: [pilot-control]
+    command: ["python", "-m", "app.control_worker"]
+    environment:
+      <<: *api-environment
+      WORKBENCH_CONTROL_WORKER_ENABLED: "true"
+      WORKBENCH_EXECUTION_ENABLED: "false"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  database:
+  secrets:
+  uploads:
+  artifacts:
+  outputs:

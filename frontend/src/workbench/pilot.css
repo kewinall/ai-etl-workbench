@@ -1,0 +1,67 @@
+/* Keep icon dimensions independent from the collapsed sidebar's zero font size. */
+.run-versions {padding: 20px; margin-bottom: 20px; min-width: 0;}
+.run-actions {display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0;}
+.run-versions button {padding: 10px 14px; border-radius: 8px; background: #e9f3f8; color: #24566c;}
+.run-versions button:disabled {opacity: .5; cursor: not-allowed;}
+.run-version-list {display: grid; gap: 8px; margin: 12px 0;}
+.run-version-list button {display: flex; flex-wrap: wrap; gap: 12px; text-align: left; border: 1px solid #dce7ee;}
+.run-version-list button[aria-pressed=true] {border-color: #2584bc;}
+.run-version-detail {padding: 16px; border: 1px solid #dce7ee; border-radius: 10px; overflow-wrap: anywhere;}
+.run-version-detail dd {margin: 4px 0 12px; font-family: monospace;}
+.run-version-detail li {margin: 6px 0;}
+.specification-history {margin: 20px 0; padding: 18px; border: 1px solid #cbdce8; border-radius: 12px; background: #f8fbfd; min-width: 0;}
+.specification-history h4 {margin-top: 0;}
+.specification-history h5 {margin: 18px 0 8px; font-size: 1rem;}
+.specification-history label {display: block; margin: 12px 0;}
+.specification-history select {display: block; width: 100%; max-width: 100%; margin-top: 6px;}
+.specification-history button {white-space: normal; margin: 4px 8px 4px 0; max-width: 100%;}
+.specification-history pre {max-height: 380px; overflow: auto; max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere;}
+.specification-history .spec-checksum {overflow-wrap: anywhere;}
+.shell > aside nav button svg {width: 20px; height: 20px; flex: 0 0 20px;}
+.ai-profile-card select {min-width: 0; width: 100%; padding: 10px; border: 1px solid #cedce6; border-radius: 9px; background: #f8fbfd; color: #203d50;}
+.ai-profile-card fieldset {display: grid; gap: 12px; border: 1px solid #dce7ee; border-radius: 10px;}
+.ai-profile-card fieldset > p {margin: 0; color: #526b7c;}
+.ai-profile-card fieldset > label {display: flex; align-items: center; flex-wrap: wrap; gap: 8px;}
+.ai-profile-card fieldset select {width: auto; max-width: 100%;}
+.ai-profile-card button {min-height: 36px; padding: 8px 14px; border-radius: 8px;}
+.ai-profile-card button:disabled {opacity: .5; cursor: not-allowed;}
+.ai-profile-card fieldset button {justify-self: start; background: #e9f3f8; color: #24566c;}
+.connection-grid > .connection-card:only-child {grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px;}
+.connection-grid > .connection-card:only-child h3 {grid-column: 1 / -1;}
+@media (max-width:640px) {
+  .connection-grid > .connection-card:only-child {grid-template-columns: 1fr;}
+}
+.settings-center{display:grid;grid-template-columns:210px minmax(0,1fr);gap:20px;align-items:start}
+.settings-center [hidden]{display:none!important}
+.settings-categories{display:flex;flex-direction:column;gap:8px;position:sticky;top:20px}
+.settings-categories button{text-align:left;white-space:normal;min-height:44px;padding:12px;border:1px solid #dce3ec;border-radius:10px;background:#fff;color:#334155;cursor:pointer}
+.settings-categories button[aria-current="page"]{background:#eaf2ff;border-color:#7aa6ed;color:#16458c;font-weight:700}
+.settings-categories button:focus-visible{outline:3px solid #2563eb;outline-offset:2px}
+.settings-content{min-width:0}
+@media(max-width:800px){.settings-center{grid-template-columns:minmax(0,1fr)}.settings-categories{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
+.worker-status{padding:14px;margin:12px 0;border:1px solid #d5e1ed;border-radius:10px;background:#f5f8fc;min-width:0}
+.worker-status h4{margin:0 0 8px}.worker-status ul{padding-left:20px}.worker-status li{margin:12px 0;overflow-wrap:anywhere}.worker-status small{display:block;color:#536579;margin-top:4px}
+.wb-task-workspace{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.wb-task-workspace [hidden]{display:none!important}
+.wb-task-workspace .wb-task-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 0;background:transparent;border:0;height:auto;position:static}
+.wb-task-heading h2{margin:6px 0}.wb-task-heading p{margin:0;color:#52627a}
+.wb-task-tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid #d4dfeb;padding:0 0 12px;margin-bottom:20px}
+.wb-task-tabs button{border:1px solid #d4dfeb;border-radius:9px;background:#fff;color:#42546e;padding:12px 16px;min-height:44px;white-space:normal}
+.wb-task-tabs button[aria-selected="true"]{background:#174e83;color:#fff;border-color:#174e83}
+.wb-task-workspace button:focus-visible,.wb-task-workspace a:focus-visible{outline:3px solid #568bdf;outline-offset:3px}
+.wb-task-workspace .panel{padding:20px;margin-bottom:18px;min-width:0}
+.wb-task-workspace [role="tabpanel"]{min-width:0}
+.wb-task-workspace pre{max-width:100%;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+.wb-task-workspace select{width:100%;max-width:100%}.wb-task-workspace label{display:block;margin:12px 0}
+.wb-task-workspace .wb-record{padding:14px 0;border-top:1px solid #dce4ed}
+.wb-task-workspace{scroll-margin-top:140px;line-height:1.65}
+.wb-task-workspace button:not([role="tab"]):not(.nodebutton){min-height:40px;padding:9px 14px;background:#edf4fb;border:1px solid #cad9e8;border-radius:8px;color:#224e72;cursor:pointer}
+.wb-task-workspace button:disabled{opacity:.5;cursor:not-allowed!important}
+.wb-task-workspace select,.wb-task-workspace input:not([type="checkbox"]),.wb-task-workspace textarea{font:inherit;border:1px solid #bdccda;border-radius:8px;padding:10px;background:#fbfdff;color:#243d52;max-width:100%}
+.wb-task-workspace .wb-timeline{list-style:none;padding:0 0 0 18px;border-left:2px solid #c8dced}
+.wb-task-workspace .wb-timeline li{padding:10px 12px;margin:10px 0;background:#f4f8fc;border-radius:8px}
+.wb-task-workspace .wb-timeline small{display:block;color:#526579;margin-top:4px}
+.wb-task-workspace .terminal p,.wb-task-workspace .terminal pre,.wb-task-workspace .terminal b{color:#c3d9e4}
+.wb-task-workspace .hpl-canvas{display:flex;flex-wrap:wrap;overflow:visible;gap:12px}
+.wb-task-workspace .hpl-transform{min-width:0;max-width:100%;flex-wrap:wrap}
+@media(max-width:640px){.wb-task-workspace .wb-task-heading{align-items:flex-start;flex-direction:column}.wb-task-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.wb-task-workspace .panel{padding:14px}.wb-task-workspace .nodebutton{width:100%;min-width:0}.wb-task-workspace .nodebutton>div{min-width:0}}

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pipeline>
+  <info><name>metadata_probe</name></info>
+  <order><hop><from>source</from><to>sink</to><enabled>Y</enabled></hop></order>
+  <transform><name>source</name><type>Dummy</type><copies>1</copies><distribute>Y</distribute></transform>
+  <transform><name>sink</name><type>Dummy</type><copies>1</copies><distribute>Y</distribute></transform>
+</pipeline>

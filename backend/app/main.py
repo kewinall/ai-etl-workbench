@@ -10,6 +10,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from .repository import PostgresRepository
+from .project_api import create_project_router
+from .execution_settings import resolve_settings
+from .ai_profile_api import create_ai_profile_router
+from .run_api import create_run_router
+from .specification_api import create_specification_router
+from .oracle_api import create_oracle_router
+from .naming_input import NamingContractInput
+from .runtime_api import create_runtime_router
+from .run_queue import RunQueue
 from .execution import build_hpl,execute_hop,persist_artifact,persist_validation,semantic_validate,static_validate
 from .etl_analyzer import AnalyzerError, analyze_file, discover_files, resolve_source
 from .requirement_engine import canonicalize, copilot_prompt, plan, requirement_gate
@@ -28,10 +37,6 @@ class TaskUpdate(TaskCreate):pass
 class RequirementSupplement(BaseModel):
  values:dict[str,Any]=Field(default_factory=dict)
  note:str=''
-class ProjectPayload(BaseModel):
- project_name:str=Field(min_length=2,max_length=120);description:str='';default_ai_profile:str='nova-default';default_connection:str='vertica-default';naming_rules:dict[str,Any]=Field(default_factory=dict)
-class NamingContractInput(BaseModel):
- columns:list[dict[str,Any]]=Field(default_factory=list)
 class SecretInput(BaseModel):
  secret_value:str=Field(min_length=1,max_length=10000)
 class AnalyzeRequest(BaseModel):
@@ -269,6 +274,17 @@ def run_copilot_sa(task:dict,sample:list[dict],columns:list[str]):
 def health():
  try: ms=repo.migration_status();return {'status':'ok','mode':'postgres','database':'configured','migration':ms,'time':datetime.now(timezone.utc).isoformat()}
  except Exception as e: raise HTTPException(503,str(e))
+@app.get('/api/ready')
+def readiness():
+ try:
+  with repo.conn() as connection:
+   connection.execute('SELECT 1')
+   ready=connection.execute("SELECT to_regclass('platform.task') AS task_table, to_regclass('platform.project') AS project_table").fetchone()
+   if not all(ready.values()):raise RuntimeError('Schema not ready')
+ except Exception:
+  raise HTTPException(status_code=503,detail={'code':'PLATFORM_NOT_READY','message':'平台資料庫或 schema 尚未就緒'}) from None
+ return {'status':'ready','execution_enabled':os.getenv('WORKBENCH_EXECUTION_ENABLED','true').lower()=='true'}
+
 @app.get('/api/dashboard')
 def dashboard():return repo.dashboard()
 @app.get('/api/analyzer/files')
@@ -336,17 +352,19 @@ def analyzer_analyze_batch(data:AnalyzeBatchRequest):
    code='AI_SUMMARY_FAILED' if 'AI' in str(e) or 'model' in str(e).lower() else 'ETL_ANALYSIS_FAILED';repo.add_etl_batch_item(batch_id,relative,'FAILED',error_code=code,error_message=str(e));results.append({'path':relative,'status':'FAILED','error_code':code,'error':str(e)})
  succeeded=sum(x['status']=='SUCCEEDED' for x in results);failed=len(results)-succeeded;repo.complete_etl_batch(batch_id,succeeded,failed)
  return {'batch_id':str(batch_id),'total':len(results),'succeeded':succeeded,'failed':failed,'results':results}
-@app.get('/api/projects')
-def projects():return repo.list_projects()
-@app.post('/api/projects',status_code=201)
-def create_project(data:ProjectPayload):
- try:return repo.create_project(data.model_dump())
- except Exception as exc:raise HTTPException(422,str(exc)) from exc
-@app.put('/api/projects/{project_id}')
-def update_project(project_id:str,data:ProjectPayload):
- if not repo.get_project(project_id):raise HTTPException(404,'Project not found')
- try:return repo.update_project(project_id,data.model_dump())
- except Exception as exc:raise HTTPException(422,str(exc)) from exc
+app.include_router(create_project_router(repo))
+app.include_router(create_run_router(RunQueue(DB)))
+from .developer_api import create_developer_router
+app.include_router(create_developer_router(RunQueue(DB)))
+from .qa_authorization_api import create_qa_authorization_router
+app.include_router(create_qa_authorization_router(RunQueue(DB)))
+from .hop_dispatch_api import create_hop_dispatch_router
+app.include_router(create_hop_dispatch_router(RunQueue(DB)))
+from .formal_release_api import create_formal_release_router
+app.include_router(create_formal_release_router(RunQueue(DB),repo))
+app.include_router(create_specification_router(RunQueue(DB)))
+app.include_router(create_oracle_router(RunQueue(DB)))
+app.include_router(create_runtime_router(RunQueue(DB)))
 @app.post('/api/projects/{project_id}/tasks',status_code=201)
 def create_project_task(project_id:str,data:TaskCreate):
  if not repo.get_project(project_id):raise HTTPException(404,'Project not found')
@@ -382,6 +400,7 @@ def validate_requirements(task_id:str):
 def revise_requirements(task_id:str,data:RequirementSupplement):
  current=repo.get_task(task_id)
  if not current:raise HTTPException(404,'Task not found')
+ if RunQueue(DB).list_runs(task_id):raise HTTPException(409,'此 Task 已使用版本控制，請由執行準備版本的補正表單建立新版，避免覆寫歷史')
  config=dict(current.get('source_config') or {});config['requirement_supplement']={'values':data.values,'note':data.note,'submitted_at':datetime.now(timezone.utc).isoformat()}
  repo.update_source_config(task_id,config);repo.resolve_requirement_issues(task_id);repo.reset_task(task_id)
  return {'status':'CREATED','task_id':task_id,'resume_from':'REQUIREMENT_GATE'}
@@ -393,11 +412,15 @@ def suggest_naming_contract(task_id:str):
   profile=profile_task(task);project=repo.get_project(task['project_id']) or {};contract=naming_suggestions(profile,project.get('naming_rules') or {})
   return {'task_id':task_id,'profile':{'columns':profile['columns'],'issues':profile['issues']},'contract':contract}
  except Exception as exc:raise HTTPException(422,str(exc)) from exc
+@app.get('/api/tasks/{task_id}/naming-contract')
+def get_naming_contract(task_id:str):
+ if not repo.get_task(task_id):raise HTTPException(404,'Task not found')
+ return {'contract':repo.naming_contract(task_id)}
 @app.post('/api/tasks/{task_id}/naming-contract/confirm')
 def confirm_naming_contract(task_id:str,data:NamingContractInput):
  task=repo.get_task(task_id)
  if not task:raise HTTPException(404,'Task not found')
- columns=data.columns
+ columns=[column.model_dump() for column in data.columns]
  if not columns:raise HTTPException(422,'至少需要一個欄位命名')
  names=[str(x.get('english_name') or '') for x in columns]
  if len(names)!=len(set(names)) or any(not re.fullmatch(r'[a-z_][a-z0-9_]*',x) for x in names):raise HTTPException(422,'英文欄位必須為唯一 snake_case identifier')
@@ -405,6 +428,7 @@ def confirm_naming_contract(task_id:str,data:NamingContractInput):
  return repo.confirm_naming_contract(task_id,contract)
 @app.post('/api/tasks/{task_id}/sample-source/rebuild')
 def rebuild_sample_source(task_id:str):
+ if os.getenv('WORKBENCH_EXECUTION_ENABLED','true').lower()!='true':raise HTTPException(503,detail={'code':'EXECUTION_DISABLED','message':'容器執行整合尚未驗收，範例表重建暫停'})
  task=repo.get_task(task_id)
  if not task:raise HTTPException(404,'Task not found')
  source=((task.get('source_config') or {}).get('sources') or [task.get('source_config') or {}])[0]
@@ -414,7 +438,9 @@ def rebuild_sample_source(task_id:str):
  owner=repo.managed_sample_table(task['project_id'],schema,table)
  if owner and owner['project_id']!=task['project_id']:raise HTTPException(403,'此表不屬於目前 Project')
  try:
-  result=rebuild_managed_sample(schema,table,source.get('fields') or [],source.get('sample_rows') or None,allow_replace=bool(owner));result=repo.register_sample_table(task['project_id'],task_id,result)
+  from .target_ownership import target_rebuild_guard
+  with target_rebuild_guard(repo,schema,table):
+   result=rebuild_managed_sample(schema,table,source.get('fields') or [],source.get('sample_rows') or None,allow_replace=bool(owner));result=repo.register_sample_table(task['project_id'],task_id,result)
   config=dict(task['source_config']);config['sources']=[{**source,'schema':schema,'object':table,'has_actual_data':True}];repo.update_source_config(task_id,config)
   return result
  except Exception as exc:raise HTTPException(422,str(exc)) from exc
@@ -502,6 +528,7 @@ def supplement(task_id:str,data:RequirementSupplement):
  return {'status':'CREATED','task_id':task_id,'resume_from':'Requirement Gate','source_profile_reuse':'checksum_or_metadata_match'}
 @app.post('/api/tasks/{task_id}/run')
 def run_task(task_id:str):
+ if os.getenv('WORKBENCH_EXECUTION_ENABLED','true').lower()!='true':raise HTTPException(503,detail={'code':'EXECUTION_DISABLED','message':'容器執行整合尚未驗收，Task 執行暫停'})
  t=repo.get_task(task_id)
  if not t:raise HTTPException(404,'Task not found')
  issues=requirement_issues(t)
@@ -592,7 +619,7 @@ def run_task(task_id:str):
   repo.pause_task(task_id,'MODEL_RETRY_REQUIRED','sa',{'code':'MODEL_PROFILE_UNAVAILABLE','profile_id':profile_id,'action':'檢查平台設定中心的 AI Provider Profile'},'AI Profile 不可用；Task 已停止');return repo.get_task(task_id)
  try:
   columns_for_model=(reader.fieldnames or []) if t['source']=='CSV' else columns
-  model_input={'task_id':task_id,'requirement':t['requirement'],'source_columns':columns_for_model};raw_specification,model_run=litellm_complete(ai_profile,'etl_specification',[{'role':'system','content':'你是企業 ETL Specification Agent。只能回傳有效 JSON，不可執行工具或修改檔案。'},{'role':'user','content':sa_prompt(t,sample,columns_for_model)}])
+  model_input={'task_id':task_id,'requirement':t['requirement'],'source_columns':columns_for_model};raw_specification,model_run=litellm_complete(ai_profile,'etl_specification',[{'role':'system','content':'你是企業 ETL Specification Agent。只能回傳有效 JSON，不可執行工具或修改檔案。'},{'role':'user','content':sa_prompt(t,sample,columns_for_model)}],secret=repo.read_secret(ai_profile['secret_ref']) if ai_profile.get('secret_ref') else None)
   repo.record_harness_invocation(task_id,'ETL_SPECIFICATION','litellm_bedrock',model_run['model'],1,checksum(model_input),model_input,raw_specification,'SUCCEEDED',model_run['duration_ms'])
   profile=profile_task(t) if t['source'] in ('CSV','EXCEL','VERTICA','MIXED') else {'sources':t['source_config'].get('sources') or [],'samples':sample,'columns':columns_for_model,'issues':[]}
   repo.save_source_profile(task_id,profile)
@@ -694,6 +721,11 @@ def database_status():
 def database_test():return database_status()
 @app.get('/api/settings')
 def settings():return {'mode':'postgres','hop_run':os.getenv('HOP_RUN_PATH'),'sample_policy':'FIRST_10_VALID_ROWS','max_rows':10,'temp_cleanup':True,'feature_flags':repo.setting('feature_flags',{'test_mode_enabled':False}),'upload_policy':repo.setting('upload_policy',{'retention_days':7,'max_file_mb':50}),'vertica_stage_paths':repo.setting('vertica_stage_paths',{}),'stored':repo.settings(),'groups':settings_groups(),'ai_profiles':repo.ai_profiles()}
+@app.get('/api/tasks/{task_id}/execution-settings')
+def task_execution_settings(task_id:str):
+ task=repo.get_task(task_id)
+ if not task:raise HTTPException(404,'Task not found')
+ return {**resolve_settings(repo,task),'execution_enabled':os.getenv('WORKBENCH_EXECUTION_ENABLED','true').lower()=='true','runtime_integration':'PENDING','credentials_and_connectivity':'NOT_TESTED'}
 def settings_groups():
  return {'AI 供應商與模型策略':'ai_provider_model_strategy','資料連線與目標':'data_connections_targets','執行環境與工具路徑':'execution_tool_paths','資料治理與命名規則':'data_governance_naming_rules','驗證與交付策略':'validation_release_policy','安全密鑰保管庫':'security_secret_vault'}
 @app.get('/api/settings/groups')
@@ -703,16 +735,7 @@ def update_setting_group(group_key:str,value:dict[str,Any]):
  if group_key not in settings_groups().values():raise HTTPException(404,'Setting group not found')
  try:return {'key':group_key,'value':repo.update_setting(group_key,value)}
  except ValueError as exc:raise HTTPException(422,str(exc)) from exc
-@app.put('/api/settings/ai-profiles/{profile_id}')
-def put_ai_profile(profile_id:str,value:dict[str,Any]):
- try:return repo.upsert_ai_profile({**value,'profile_id':profile_id})
- except Exception as exc:raise HTTPException(422,str(exc)) from exc
-@app.post('/api/settings/ai-profiles/{profile_id}/secret')
-def put_ai_profile_secret(profile_id:str,data:SecretInput):
- if not repo.ai_profile(profile_id):raise HTTPException(404,'AI profile not found')
- try:
-  cipher,nonce=encrypt_secret(data.secret_value);secret_ref=f'ai-profile:{profile_id}';repo.save_secret(secret_ref,cipher,nonce);return repo.upsert_ai_profile({**repo.ai_profile(profile_id),'secret_ref':secret_ref})
- except ValueError as exc:raise HTTPException(422,str(exc)) from exc
+app.include_router(create_ai_profile_router(repo))
 @app.post('/api/settings/connections/{connection_id}/secret')
 def put_connection_secret(connection_id:str,data:SecretInput):
  if not re.fullmatch(r'[A-Za-z0-9_-]{2,80}',connection_id):raise HTTPException(422,'Invalid connection id')
@@ -720,35 +743,18 @@ def put_connection_secret(connection_id:str,data:SecretInput):
   cipher,nonce=encrypt_secret(data.secret_value);repo.save_secret(f'connection:{connection_id}',cipher,nonce)
   return {'connection_id':connection_id,'secret_configured':True}
  except ValueError as exc:raise HTTPException(422,str(exc)) from exc
-@app.post('/api/settings/ai-profiles/{profile_id}/test')
-def test_ai_profile(profile_id:str):
- profile=repo.ai_profile(profile_id)
- if not profile:raise HTTPException(404,'AI profile not found')
- routes=profile.get('model_routes') or {}
- return {'profile_id':profile_id,'status':'CONFIGURED' if profile.get('enabled') and routes else 'ATTENTION','provider_type':profile.get('provider_type'),'models':routes,'secret_configured':bool(profile.get('secret_ref')),'detail':'呼叫測試需在設定 LiteLLM 與 AWS credentials 後執行；此檢查不會洩露機密。'}
 @app.get('/api/tasks/{task_id}/trace')
 def task_trace(task_id:str):
  if not repo.get_task(task_id):raise HTTPException(404,'Task not found')
  return repo.trace(task_id)
 @app.post('/api/tasks/{task_id}/release')
 def build_release(task_id:str):
- task=repo.get_task(task_id)
- if not task:raise HTTPException(404,'Task not found')
- if task['status']!='SUCCEEDED':raise HTTPException(409,'Release requires a successful Task')
- contract=repo.naming_contract(task_id)
- if not contract or contract['status']!='CONFIRMED':raise HTTPException(409,'Release requires a confirmed NamingContract')
- assets=repo.task_history_assets(task_id)
- if not assets['artifacts']:raise HTTPException(409,'Release requires registered Hop artifacts')
- try:
-  sdm=create_sdm(task,contract);repo.save_sdm(task_id,sdm,artifact_sha(sdm));release_path,manifest=create_release(task,contract,assets,sdm);return repo.save_release(task_id,release_path,manifest)
- except Exception as exc:raise HTTPException(422,str(exc)) from exc
+ # Legacy SUCCEEDED and Naming confirmation are not version-bound release approval.
+ # Keep historical files intact; do not publish them as validated Pilot deliverables.
+ raise HTTPException(409,detail={'code':'RELEASE_PIPELINE_NOT_READY','message':'版本綁定的 QA、人工交付核准與 ZIP 完整驗證尚未接通，暫不產生 Release ZIP；既有歷史產物保留。'})
 @app.get('/api/tasks/{task_id}/release/{release_id}/download')
 def download_release(task_id:str,release_id:str):
- release=repo.release(task_id,release_id)
- if not release:raise HTTPException(404,'Release not found')
- path=Path(release['file_path']).resolve();root=(ROOT/'outputs'/'releases').resolve()
- if root not in path.parents or not path.is_file():raise HTTPException(404,'Release file is missing')
- return FileResponse(path,filename=path.name,media_type='application/zip')
+ raise HTTPException(409,detail={'code':'RELEASE_PIPELINE_NOT_READY','message':'既有 Release 尚未通過版本綁定核准與 ZIP 完整驗證，暫停 ZIP 下載；原檔未刪除，Task 歷史產物仍可檢視。'})
 @app.put('/api/settings/{key}')
 def update_setting(key:str,value:dict[str,Any]):
  try:

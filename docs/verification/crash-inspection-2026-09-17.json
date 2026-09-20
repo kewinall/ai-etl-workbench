@@ -1,0 +1,19 @@
+{
+  "observed_at": "2026-09-17T11:31:13.656695+00:00",
+  "task_id": "native-pilot-73bb4b6014b64006aba78ef02aed70a1",
+  "run_id": "1b228586-f647-42ec-8572-ba12b1338d6c",
+  "state": "NEEDS_REVIEW",
+  "outcome": "HOP_RESULT_UNKNOWN",
+  "write_started": true,
+  "lease_present": false,
+  "rows": [
+    [
+      "A",
+      "301.35",
+      "2"
+    ]
+  ],
+  "reservations": 1,
+  "reconciliations": 0,
+  "write_events": 1
+}

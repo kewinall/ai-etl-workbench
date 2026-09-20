@@ -1,0 +1,3 @@
+<pipeline><info><name>reject_missing_plugin</name></info>
+<transform><name>source</name><type>WorkbenchMissingPlugin</type></transform>
+</pipeline>

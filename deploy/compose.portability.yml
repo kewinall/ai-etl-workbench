@@ -1,0 +1,57 @@
+# Explicit, opt-in local disposable destination. No original Vertica mounts/ports.
+services:
+  portability-init:
+    image: ai-etl-workbench-api:dev
+    profiles: [portability]
+    user: "0:0"
+    entrypoint: [python, /init-portability.py]
+    volumes:
+      - ./init-portability.py:/init-portability.py:ro
+      - portability-secrets:/run/portability-secrets
+    network_mode: none
+    restart: "no"
+  portability-vertica:
+    image: local/vertica:25.3.0-rpm
+    profiles: [portability]
+    hostname: portability-vertica
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    entrypoint: [/bin/bash, -c]
+    command:
+      - 'export VERTICA_DB_PASSWORD="$$(cat /run/portability-secrets/password)"; exec /usr/local/bin/docker-entrypoint.sh'
+    environment:
+      VERTICA_DB_NAME: WorkbenchPortable
+    volumes:
+      - portability-secrets:/run/portability-secrets:ro
+      - portability-data:/data
+      - portability-home:/home/dbadmin
+      - portability-config:/opt/vertica/config
+    networks: [portability]
+    depends_on:
+      portability-init:
+        condition: service_completed_successfully
+    restart: "no"
+  pilot-hop-worker:
+    environment:
+      WORKBENCH_PORTABILITY_ENABLED: "true"
+      WORKBENCH_PORTABILITY_HOST: portability-vertica
+      WORKBENCH_PORTABILITY_PORT: "5433"
+      WORKBENCH_PORTABILITY_DATABASE: WorkbenchPortable
+      WORKBENCH_PORTABILITY_USER: dbadmin
+      # Existing disposable local image has no TLS. Internal network, no ports.
+      # Production acceptance requires a separately configured TLS destination.
+      WORKBENCH_PORTABILITY_TLSMODE: disable
+      WORKBENCH_PORTABILITY_PASSWORD_FILE: /run/portability-secrets/password
+    volumes:
+      - portability-secrets:/run/portability-secrets:ro
+    networks: [default, portability]
+volumes:
+  portability-secrets:
+  portability-data:
+  portability-home:
+  portability-config:
+networks:
+  portability:
+    internal: true

@@ -13,6 +13,19 @@ __pycache__/
 !.env.example
 .ssh/
 hop/
+# Native validation source only; keep installed/runtime Hop content excluded.
+!scripts/hop/
+scripts/hop/*
+!scripts/hop/ValidatePipeline.java
+!scripts/hop/ExecuteCompilerProbe.java
+!scripts/hop/InspectCompilerPlugins.java
+!scripts/hop/fixtures/
+scripts/hop/fixtures/*
+!scripts/hop/fixtures/minimal.hpl
+!scripts/hop/fixtures/missing-plugin.hpl
+!scripts/hop/fixtures/invalid-edge.hpl
+!scripts/hop/fixtures/doctype.hpl
+!scripts/hop/fixtures/compiler-input.csv
 hop-project/
 outputs/
 scan/
@@ -26,3 +39,5 @@ scan/
 *.pfx
 /11
 /AND
+frontend/test-results/
+frontend/playwright-report/
