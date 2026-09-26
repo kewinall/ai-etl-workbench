@@ -1,5 +1,6 @@
 """Worker-only byte evidence from the approved input snapshot; never ETL."""
 from .upload_integrity import read_verified_upload
+from .csv_contract import source_csv_contract
 
 
 def source_preflight(snapshot):
@@ -20,7 +21,11 @@ def source_preflight(snapshot):
             item.update(status='UPLOAD_BYTES_VERIFIED', content_checksum=source['checksum'],
                         byte_count=len(content))
             if source['type'] == 'CSV':
-                item['csv'] = validate_csv_content(content, config.get('csv_input_contract_v1'),
+                try:
+                    contract = source_csv_contract(config, f'source.{index}')
+                except ValueError:
+                    raise ValueError('CSV_CONTRACT_INVALID') from None
+                item['csv'] = validate_csv_content(content, contract,
                                                    [field.get('name') for field in source.get('fields', [])])
                 if item['csv']['status'] == 'INVALID':
                     item['status'] = 'CSV_CONTENT_INVALID'

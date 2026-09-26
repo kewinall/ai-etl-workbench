@@ -4,7 +4,7 @@ import json
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 from .control_worker import check_requirements
-from .csv_contract import csv_evidence
+from .csv_contract import csv_evidence, csv_sources_evidence
 
 
 def digest(value):
@@ -49,6 +49,9 @@ def build_sa_context(run):
     csv_input = csv_evidence(snapshot.get('source_config') or {})
     if csv_input:
         evidence.append({'id': 'source.0.csv_input', 'kind': 'CSV_INPUT', 'value': csv_input})
+    multi_csv = csv_sources_evidence(snapshot.get('source_config') or {})
+    if multi_csv is not None:
+        evidence.append({'id': 'sources.csv_inputs', 'kind': 'CSV_INPUTS', 'value': multi_csv})
     for source_index, source in enumerate((snapshot.get('source_config') or {}).get('sources') or []):
         for field_index, field in enumerate(source.get('fields') or []):
             evidence.append({'id': f'source.{source_index}.field.{field_index}', 'kind': 'SOURCE_FIELD',

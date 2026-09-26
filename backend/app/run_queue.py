@@ -116,10 +116,12 @@ class RunQueue:
             self.event(conn, run_id, 'ENQUEUED', 'PREFLIGHT')
             return result
 
-    def revise(self, task_id, parent_id, request_key, input_checksum, requirement_text, target_schema, target_table, requirements_v1=None, source_fields_v1=None, csv_input_contract_v1=None, csv_replacement_v1=None, join_contract_v1=None):
+    def revise(self, task_id, parent_id, request_key, input_checksum, requirement_text, target_schema, target_table, requirements_v1=None, source_fields_v1=None, csv_input_contract_v1=None, csv_replacement_v1=None, join_contract_v1=None, csv_input_contracts_v1=None):
         from .source_replacement import replace_csv_source, verify_csv_replacement
         if csv_replacement_v1 is not None and source_fields_v1 is not None:
             raise ValueError('CONFLICTING_SOURCE_CHANGES')
+        if csv_input_contract_v1 is not None and csv_input_contracts_v1 is not None:
+            raise ValueError('CONFLICTING_CSV_CONTRACT_CHANGES')
         if not re.fullmatch(r'[A-Za-z0-9_-]{8,120}', request_key):
             raise ValueError('INVALID_REQUEST_KEY')
         if not requirement_text.strip() or len(requirement_text) > 20000:
@@ -135,10 +137,11 @@ class RunQueue:
                 raise RunConflict('REVIEW_CHECKSUM_MISMATCH')
             target = {**(parent['input_snapshot'].get('target_config') or {}), 'schema': target_schema, 'table': target_table}
             from .source_revision import revise_source
-            from .csv_contract import revise_csv_contract
+            from .csv_contract import revise_csv_contract, revise_csv_contracts
             source = revise_source(parent['input_snapshot'].get('source_config') or {}, source_fields_v1)
             source = replace_csv_source(source, csv_replacement_v1)
             source = revise_csv_contract(source, csv_input_contract_v1)
+            source = revise_csv_contracts(source, csv_input_contracts_v1)
             if requirements_v1 is not None:
                 from .requirement_contract import RequirementConditionsV1
                 target['requirements_v1'] = RequirementConditionsV1.model_validate(requirements_v1).model_dump()
@@ -163,6 +166,7 @@ class RunQueue:
             source = revise_source(task['source_config'] or {}, source_fields_v1)
             source = replace_csv_source(source, csv_replacement_v1)
             source = revise_csv_contract(source, csv_input_contract_v1)
+            source = revise_csv_contracts(source, csv_input_contracts_v1)
             updated_task = {**task, 'requirement_text': requirement_text, 'target_config': target, 'source_config': source}
             resolved = resolve_settings(LockedSettings(conn), updated_task, overrides)
             if resolved['status'] == 'BLOCKED':

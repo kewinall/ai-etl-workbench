@@ -9,7 +9,8 @@ from .requirement_contract import RequirementConditionsV1
 from .join_contract import JoinContractV1, join_evidence
 from .source_revision import SourceFieldsV1, editable_source
 from .source_replacement import CsvReplacementV1
-from .csv_contract import CsvInputContractV1, editable_csv_source, csv_evidence
+from .csv_contract import (CsvInputContractV1, CsvInputContractsV1, editable_csv_source,
+                          csv_evidence, editable_csv_sources, csv_sources_evidence)
 
 
 class SAAuthorizationIdentity(BaseModel):
@@ -85,6 +86,7 @@ class ReviseRun(BaseModel):
     csv_input_contract_v1: CsvInputContractV1 | None = None
     csv_replacement_v1: CsvReplacementV1 | None = None
     join_contract_v1: JoinContractV1 | None = None
+    csv_input_contracts_v1: CsvInputContractsV1 | None = None
 
 
 def public_run(row):
@@ -107,6 +109,10 @@ def public_run(row):
     result['input_summary']['source_fields_editable'] = editable_source(source)
     result['input_summary']['csv_contract_editable'] = editable_csv_source(source)
     result['input_summary']['csv_input_contract_v1'] = csv_evidence(source)
+    multi_csv = csv_sources_evidence(source)
+    if multi_csv is not None:
+        result['input_summary']['csv_contracts_editable'] = editable_csv_sources(source)
+        result['input_summary']['csv_input_contracts_v1'] = multi_csv
     result['input_summary']['source_fields'] = [{key: field.get(key) for key in ('name', 'type')} for item in source.get('sources', []) for field in item.get('fields', [])]
     result['approval_scope'] = 'INPUT_ONLY_NOT_EXECUTION_OR_RELEASE'
     return result
@@ -211,7 +217,8 @@ def create_run_router(queue):
                                data.source_fields_v1.model_dump() if data.source_fields_v1 else None,
                                data.csv_input_contract_v1.model_dump() if data.csv_input_contract_v1 else None,
                                data.csv_replacement_v1.model_dump(mode='json') if data.csv_replacement_v1 else None,
-                               data.join_contract_v1.model_dump() if data.join_contract_v1 else None))
+                               data.join_contract_v1.model_dump() if data.join_contract_v1 else None,
+                               data.csv_input_contracts_v1.model_dump() if data.csv_input_contracts_v1 else None))
 
     @router.get('/{task_id}/runs/{run_id}/sa-invocation')
     def sa_invocation(task_id: str, run_id: UUID):
