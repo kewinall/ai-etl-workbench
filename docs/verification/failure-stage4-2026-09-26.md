@@ -76,3 +76,23 @@ WSL 曾停止，先確認 Stopped 後恢復既有容器與資料卷；沒有重�
 內部 Run／核准識別碼、指紋留在平台紀錄，不發佈到公開文件。
 下一步從既有修正子 revision 繼續輸入核准→Gate→SA→Developer→規格／Oracle→正常 Hop→QA。
 不要再次呼叫故障工具或重建原案例。第 4 階段仍待修正版成功及 UI 歷史驗收。
+
+## 2026-09-27 修正版真實 Hop 比對通過，QA 證據仍待補齊
+
+- 第一個修正需求誤寫為「依已核准 DDL 建表」，SA 正確要求補正：SA 階段沒有該產物。
+  保留 NEEDS_INPUT，建立新 revision，明定兩欄 VARCHAR(32) NULL 與後續編譯 DDL 的順序。
+- 新 revision 的真實 SA 無 issue；Developer 產生兩欄直接投影 APPEND，無 filter／join／aggregation。
+  規格與事前固定兩筆 Oracle 已依委派權限核准；沒有沿用舊 revision 核准。
+- 正常 Hop Worker 單次建立新受控目標並執行：exit 0、errors 0、三節點證據完整。
+  新 DB 查詢的精確多重集合比對 MATCH：預期 2、實際 2、缺少 0、多出 0；來源綁定通過。
+- 真實 QA 返回 NEEDS_REVIEW，未做 QA／Release 核准，沒有重跑 Hop。
+  單來源 execution_details 尚未帶入已存在於多來源分支的 runtime_options；
+  QA 另要求空字串／保留空白／錯誤及過長值處理、header 對應方式、DDL nullable／無主鍵的證據。
+- 實際網站「執行與 QA」已確認 2／2 比對、來源核對、重新讀取後 NEEDS_REVIEW 與四項問題可見；
+  版本選單仍保留原 FAILED、補正 CANCELLED 與最新 NEEDS_REVIEW。
+  這不等於已完成所有節點／窄版面／交付互動回歸。
+
+下一步：補齊單來源、相同已執行 HPL 的唯讀 QA context，以及有指紋綁定的 DDL／header 證據；
+保留舊 context checksum，新增嚴格的同次執行 enrichment 與負向測試。
+檢查／補充實測證據後再授權 QA 複核，不以修改提示強迫 PASS，不改需求以避開問題，
+不重新執行已成功的目標。第 4 階段仍未完成，第 5–7 階段不受此 checkpoint 宣稱完成。
