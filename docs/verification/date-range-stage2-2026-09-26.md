@@ -36,3 +36,25 @@ DATE／TIMESTAMP 原生 Hop 邊界測試另以禁網容器執行：2 passed，7.
 建立新的隔離日期案例，補正後以同一子 Run 完成真實模型、Hop、Vertica
 逐筆標準答案與 QA 證據鏈；不得重跑已核准的 TASK-20260917-0007。
 完成前階段 2 保持進行中；階段 3–7 尚未完成。
+
+## Pilot 新案例準備
+
+已從 92309fa 重建 API／網站，恢復既有 Pilot PostgreSQL、API、網站及
+Control Worker；未刪除 volume、未啟動模型或 Hop 派送。網站與 ready API
+可讀取，瀏覽器可開啟新 Task 的六頁籤工作區；這不是完整 UI 回歸。
+
+- Project：`e45e0cab-7913-4bc0-8a53-ccb2dabfc8ff`
+- Task：`TASK-20260926-0001`
+- 待輸入核准 Run：`0d958087-b8a3-40e3-9523-49c8f62d8ce7`
+- 原始需求使用「最近客戶」，刻意未指定期間，準備測試 Gate 補正。
+- 來源為六筆合成 CSV；自動 profile 為 category VARCHAR(32)、amount
+  DECIMAL(18,4)、event_date DATE。
+- 來源 SHA-256：`4ae1b9e0a1743856143ae9207b1c919b600a27d37f3e16322f0218ef5eeea9c7`
+- 既有 Copilot Profile 三角色皆解析為 `copilot/gpt-5.4`，沒有切換模型。
+- Copilot CLI 安裝版本 1.0.83；版本查詢不是模型連線驗收。
+
+待使用者確認補正為 2026-09-01（含）至 2026-10-01（不含），空日期排除，
+依 category 彙總 amount 與筆數，APPEND 到新的 `ai_sample.pilot_date_range_20260926`。
+獨立標準答案應為 A=150.2500／2 筆、B=200.0000／1 筆；尚未實際執行，
+不可將預期答案記為實測結果。此表尚未由本次流程建立或寫入。
+待核准不是服務或程式故障，也不代表階段 2 完成。
