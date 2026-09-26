@@ -36,10 +36,8 @@ def condition_issues(snapshot):
         issue('CONFLICT', 'date_scope', '需求含相對時間用語，但選擇全部資料；請修正文字或指定日期範圍')
     sources = (snapshot.get('source_config') or {}).get('sources') or []
     fields = [field.get('name') for source in sources for field in source.get('fields', [])]
-    if len(sources) > 1:
-        issue('UNSUPPORTED', 'join', '多來源 Join 編譯與執行尚未接通；保存結構化條件不代表可執行')
-    # Contract capture is separate from runtime support. Keep the compiler
-    # blocker until multi-source staging, HPL and delivery are all connected.
+    # Gate validates intent; execution capabilities are checked separately by
+    # the runtime authorization path, never granted by CHECKED alone.
     from .join_contract import join_condition_issues
     issues.extend(join_condition_issues(snapshot))
     if values.date_scope == 'ALL' and any((values.date_column, values.start_date, values.end_date_exclusive)):

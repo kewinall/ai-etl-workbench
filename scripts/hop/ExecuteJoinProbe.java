@@ -22,7 +22,7 @@ class ExecuteJoinProbe {
     var document = factory.newDocumentBuilder().parse(Path.of("/candidate/candidate.hpl").toFile());
     var provider = new MemoryMetadataProvider();
     var meta = new PipelineMeta(document.getDocumentElement(), provider);
-    var allowed = java.util.Set.of("CSVInput", "SortRows", "MergeJoin", "FilterRows", "Dummy");
+    var allowed = java.util.Set.of("CSVInput", "SortRows", "MergeJoin", "FilterRows", "SelectValues", "Dummy");
     for (var node : meta.getTransforms())
       if (!allowed.contains(node.getTransformPluginId())) throw new IllegalStateException("Unexpected plugin");
     if (!"Dummy".equals(meta.findTransform("target").getTransformPluginId()))

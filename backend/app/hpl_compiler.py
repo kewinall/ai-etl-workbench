@@ -20,12 +20,16 @@ def compile_hpl(payload, run, naming):
     root = Element('pipeline')
     info = _values(SubElement(root, 'info'), name='etl_' + result['specification_checksum'][:16],
                    description='Specification ' + result['specification_checksum'] + '; Naming ' + spec['naming']['checksum'])
-    parameter = SubElement(SubElement(info, 'parameters'), 'parameter')
-    _values(parameter, name='SOURCE_CSV', default_value=None, description='Runtime-bound validated CSV; no bundled data')
+    parameters = SubElement(info, 'parameters')
+    names = ['SOURCE_CSV'] if spec['version'] == 1 else ['SOURCE_CSV_0', 'SOURCE_CSV_1']
+    for name in names:
+        parameter = SubElement(parameters, 'parameter')
+        _values(parameter, name=name, default_value=None, description='Runtime-bound validated CSV; no bundled data')
     order = SubElement(root, 'order')
     edges = [dict(edge) for edge in plan['edges']]
-    if spec['filters']:
-        edges.append({'from': 'filter', 'to': 'discard'})
+    filter_stages = [stage for stage in plan['stages'] if stage['component'] == 'FilterRows']
+    for stage in filter_stages:
+        edges.append({'from': stage['id'], 'to': stage.get('discard_id', 'discard')})
     for edge in edges:
         _values(SubElement(order, 'hop'), **{'from': edge['from'], 'to': edge['to'], 'enabled': 'Y'})
     for index, stage in enumerate(plan['stages']):
@@ -34,7 +38,7 @@ def compile_hpl(payload, run, naming):
         component = stage['component']
         if component == 'CSVInput':
             contract = stage['contract']
-            _values(node, filename='${SOURCE_CSV}', separator=contract['delimiter'], enclosure='"',
+            _values(node, filename='${' + stage.get('parameter', 'SOURCE_CSV') + '}', separator=contract['delimiter'], enclosure='"',
                     header='Y' if contract['header'] else 'N', encoding={'UTF-8-SIG': 'UTF-8', 'BIG5': 'Big5'}.get(contract['encoding'], contract['encoding']),
                     lazy_conversion='N', parallel='N', newline_possible='Y', buffer_size=50000,
                     include_filename='N', add_filename_result='N')
@@ -48,8 +52,8 @@ def compile_hpl(payload, run, naming):
                 _values(SubElement(fields, 'field'), name=field['stream_name'], type=hop_type, format=mask,
                         length=length, precision=precision, trim_type='none', decimal='.', group='', currency='')
         elif component == 'FilterRows':
-            next_id = next(edge['to'] for edge in plan['edges'] if edge['from'] == 'filter')
-            _values(node, send_true_to=next_id, send_false_to='discard')
+            next_id = next(edge['to'] for edge in plan['edges'] if edge['from'] == stage['id'])
+            _values(node, send_true_to=next_id, send_false_to=stage.get('discard_id', 'discard'))
             condition = _values(SubElement(SubElement(node, 'compare'), 'condition'), negated='N')
             conditions = SubElement(condition, 'conditions')
             for predicate in stage['predicates']:
@@ -69,6 +73,13 @@ def compile_hpl(payload, run, naming):
             fields = SubElement(node, 'fields')
             for name in stage['columns']:
                 _values(SubElement(fields, 'field'), name=name, ascending='Y', case_sensitive='Y', collator_enabled='N', collator_strength=0, presorted='N')
+        elif component == 'MergeJoin':
+            _values(node, join_type='LEFT OUTER' if stage['join_type'] == 'LEFT' else 'INNER')
+            for tag, keys in [('keys_1', stage['left_keys']), ('keys_2', stage['right_keys'])]:
+                holder = SubElement(node, tag)
+                for key in keys:
+                    SubElement(holder, 'key').text = key
+            _values(node, transform1=stage['left_transform'], transform2=stage['right_transform'])
         elif component == 'GroupBy':
             _values(node, all_rows='N', give_back_row='N', ignore_aggregate='N', add_linenr='N', directory='${java.io.tmpdir}', prefix='workbench')
             group = SubElement(node, 'group')
@@ -90,8 +101,8 @@ def compile_hpl(payload, run, naming):
                 _values(SubElement(fields, 'field'), stream_name=name, column_name=name)
         else:
             raise ValueError('Unsupported compiler stage')
-    if spec['filters']:
-        discard = _values(SubElement(root, 'transform'), name='discard', type='Dummy', copies=1, distribute='Y')
+    for stage in filter_stages:
+        discard = _values(SubElement(root, 'transform'), name=stage.get('discard_id', 'discard'), type='Dummy', copies=1, distribute='Y')
         _values(SubElement(discard, 'GUI'), xloc=260, yloc=260, draw='Y')
     indent(root, space='  ')
     xml = tostring(root, encoding='utf-8', xml_declaration=True).decode('utf-8')

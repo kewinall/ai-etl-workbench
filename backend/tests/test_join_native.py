@@ -2,7 +2,7 @@
 import os
 from pathlib import Path
 import subprocess
-from xml.etree.ElementTree import Element, SubElement, tostring
+from xml.etree.ElementTree import Element, SubElement, tostring, fromstring
 import pytest
 
 pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_JOIN_TEST') != '1',
@@ -16,6 +16,26 @@ def values(parent, **items):
 
 
 def probe_xml(kind, exclude_right_null):
+    if exclude_right_null:
+        # Actual platform V2 compiler output; replace only the DB sink with the
+        # collector and bind fixture filenames. Keep every Join/Filter/Sort.
+        from app.hpl_compiler import compile_hpl
+        from test_join_semantics import join_design
+        spec, run, naming = join_design()
+        spec['joins'][0]['join_type'] = kind
+        run['input_snapshot']['target_config']['join_contract_v1']['joins'][0]['join_type'] = kind
+        run['input_snapshot']['source_config']['csv_input_contracts_v1']['sources']['source.1']['delimiter'] = ','
+        result = compile_hpl(spec, run, naming)
+        assert result['status'] == 'VALIDATED_NOT_APPROVED', result
+        root = fromstring(result['hpl'])
+        for index,side in enumerate(('left','right')):
+            root.find(f"./transform[name='source_{index}']/filename").text = f'/candidate/{side}.csv'
+        target = root.find("./transform[name='target']")
+        for child in list(target):
+            if child.tag not in ('name','type','copies','distribute','GUI'):
+                target.remove(child)
+        target.find('type').text = 'Dummy'
+        return tostring(root, encoding='utf-8')
     root = Element('pipeline')
     values(SubElement(root, 'info'), name='synthetic_join_probe')
     edges = [('left', 'left_sort'), ('left_sort', 'join'), ('right_sort', 'join'), ('join', 'target')]

@@ -36,7 +36,7 @@ def test_upsert_requires_unique_existing_keys(keys):
 def test_join_blocks_until_supported():
     value = snapshot(dict(write_mode='APPEND', date_scope='ALL'))
     value['source_config']['sources'] *= 2
-    assert condition_issues(value)[0]['issue_type'] == 'UNSUPPORTED'
+    assert condition_issues(value)[0]['issue_type'] == 'MISSING'
 
 
 def test_contract_forbids_arbitrary_tool_or_sql_fields():

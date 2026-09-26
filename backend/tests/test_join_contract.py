@@ -30,7 +30,7 @@ def test_explicit_join_contract_only_not_runtime_permission(kind):
     value['target_config']['join_contract_v1'] = contract(kind)
     assert join_condition_issues(value) == []
     assert join_evidence(value)['contract_status'] == 'INPUT_ONLY_NOT_EXECUTION'
-    assert any(i['issue_type'] == 'UNSUPPORTED' for i in condition_issues(value))
+    assert condition_issues(value) == []  # Intent validation is not execution consent.
 
 
 @pytest.mark.parametrize('field', ['join_type', 'keys', 'null_key_policy', 'duplicate_key_policy', 'string_comparison'])

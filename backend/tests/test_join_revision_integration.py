@@ -41,13 +41,13 @@ def test_join_revision_is_idempotent_reapproved_and_history_preserved(context):
     assert queue.detail(task_id, child['run_id'])['approval'] is None
     assert run_once(queue)['status'] == 'IDLE'
     queue.review(task_id, child['run_id'], child['input_checksum'], child['settings_snapshot']['checksum'], 'APPROVE')
-    # Deliberately still blocked: a captured contract alone is not a working
-    # multi-source CSV compiler/stager or real INNER/LEFT mismatch acceptance.
-    assert run_once(queue)['status'] == 'NEEDS_INPUT'
+    # Intent is now structurally complete; execution authorization remains a
+    # separate guard and is not granted by the Requirement Gate.
+    assert run_once(queue)['status'] == 'CHECKED'
     current = queue.detail(task_id, child['run_id'])
     assert not any(i['field_path'] == 'join_contract_v1' for i in current['gate_result']['issues'])
     assert not any(i['field_path'].startswith('source_config.csv_input_contract') for i in current['gate_result']['issues'])
-    assert any(i['issue_type'] == 'UNSUPPORTED' for i in current['gate_result']['issues'])
+    assert current['gate_result']['status'] == 'CHECKED'
     assert not current['write_started']
     preserved = queue.detail(task_id, parent['run_id'])
     assert preserved['input_snapshot'] == parent['input_snapshot']

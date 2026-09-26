@@ -13,6 +13,8 @@ def offer(queue, conn, task_id, run_id, specification_id, preparing=False):
     candidate = load_approved_candidate(queue, conn, task_id, run_id, specification_id, preparing=preparing)
     run = candidate['run']
     sources = run['input_snapshot']['source_config'].get('sources') or []
+    if len(sources) > 1:
+        raise ValueError('MULTI_SOURCE_EXECUTION_NOT_READY')
     if len(sources) != 1 or sources[0].get('type') != 'CSV' or not sources[0].get('upload_id'):
         raise ValueError('VERIFIED_UPLOADED_CSV_REQUIRED')
     source_checksum = sources[0].get('checksum')

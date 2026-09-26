@@ -30,10 +30,11 @@
 API 補正並重新核准；SA evidence 僅包含白名單语意欄位。
 
 已接上每來源 CSV 契約、逐檔 preflight、獨立暫存副本與 revision；正式 Hop／交付仍待接通。
-V2 已接程式層 Join 精確語意攔截（含節點及 expected／actual），正向編譯仍阻擋。
-原生 Hop Join 八組語意案例與發佈檢查另行通過（9 passed、33.89s）；
+V2 已接 Join 語意攔截、來源限定命名／型別驗證與正向 Hop DAG 編譯；
+多來源執行仍由 runtime authorization 明確阻擋。
+原生 Hop Join 八組語意案例與發佈檢查另行通過（9 passed、34.64s；四組使用正式 compiler 產物）；
 確認須排除右側 null 鍵，不能直接沿用 MergeJoin 的 null 匹配行為。
-最新控制平面回歸：928 passed、33 skipped、1 warning（20.78s），exit 0。
+最新控制平面回歸：938 passed、33 skipped、1 warning（20.71s），exit 0。
 新增 8 個 opt-in 原生測試在此環境跳過，但已在上述禁止網路的 Hop 環境實際執行。
 此進度**不是多來源執行或 INNER/LEFT 語意攔截驗收**；仍保留 runtime blocker。
 詳見 [Join 階段證據與下一步](verification/join-stage3-2026-09-26.md)。

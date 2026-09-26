@@ -11,7 +11,7 @@ import re
 from typing import Literal
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, field_validator, model_validator
-from .csv_contract import CsvInputContractV1
+from .csv_contract import CsvInputContractV1, validated_csv_contracts
 from .control_worker import check_requirements
 from .platform_harness import checksum as naming_checksum
 from .sa_contract import digest
@@ -181,24 +181,15 @@ Full SQL semantics against business intent still require human review and QA.
     issues = []
     def issue(code, path, message):
         issues.append({'code': code, 'field_path': path, 'message': message})
-    # V2 is inspectable before its execution chain is activated. Never label a
-    # semantically matching Join VALIDATED while its compiler is incomplete.
-    if isinstance(payload, dict) and type(payload.get('version')) is int and payload['version'] == 2:
-        try:
-            spec2 = EtlSpecificationV2.model_validate(payload)
-        except ValueError:
-            return {'status': 'INVALID', 'issues': [{'code': 'SPEC_SCHEMA_INVALID', 'field_path': 'specification',
-                    'message': '雙來源規格格式不合法或包含不支援的欄位'}], 'execution_authorized': False}
-        issues.extend(validate_join_semantics([join.model_dump() for join in spec2.joins], run['input_snapshot']))
-        if str(spec2.run_id) != str(run['run_id']) or spec2.input_checksum != run['input_checksum'] or spec2.settings_checksum != run['settings_snapshot']['checksum']:
-            issue('SPEC_VERSION_MISMATCH', 'run_id', '規格與輸入或設定版本不一致')
-        issue('SPEC_JOIN_COMPILATION_NOT_READY', 'joins', '雙來源規格尚未接通完整編譯及執行鏈，不可保存核准或執行')
-        return {'status': 'INVALID', 'issues': issues, 'execution_authorized': False}
     try:
-        spec = EtlSpecificationV1.model_validate(payload)
+        model = EtlSpecificationV2 if isinstance(payload, dict) and payload.get('version') == 2 else EtlSpecificationV1
+        spec = model.model_validate(payload)
     except ValueError:
         return {'status': 'INVALID', 'issues': [{'code': 'SPEC_SCHEMA_INVALID', 'field_path': 'specification', 'message': '規格格式不合法或包含不支援的 SQL／轉換欄位'}], 'execution_authorized': False}
     snapshot = run['input_snapshot']
+    multi = isinstance(spec, EtlSpecificationV2)
+    if multi:
+        issues.extend(validate_join_semantics([join.model_dump() for join in spec.joins], snapshot))
     if str(spec.run_id) != str(run['run_id']) or spec.input_checksum != run['input_checksum'] or spec.settings_checksum != run['settings_snapshot']['checksum']:
         issue('SPEC_VERSION_MISMATCH', 'run_id', '規格與輸入或設定版本不一致')
     if run.get('matches_current') is not True or (run.get('approval') or {}).get('decision') != 'APPROVE' or run.get('state') != 'NEEDS_REVIEW' or run.get('write_started') is not False:
@@ -213,8 +204,8 @@ Full SQL semantics against business intent still require human review and QA.
         issue('SPEC_WRITE_MODE_UNSUPPORTED', 'write_mode', '新版編譯接點尚未支援覆寫或合併，不會改成新增模式')
     source_config = snapshot.get('source_config') or {}
     sources = source_config.get('sources') or []
-    if len(sources) != 1 or sources[0].get('type') != 'CSV':
-        issue('SPEC_SOURCE_UNSUPPORTED', 'source_ref', '本接點僅支援單一 CSV；Join 不得降級為單來源')
+    if len(sources) != (2 if multi else 1) or any(source.get('type') != 'CSV' for source in sources):
+        issue('SPEC_SOURCE_UNSUPPORTED', 'source_ref', '來源數量或型別不符合規格版本；V1 單 CSV、V2 雙 CSV，不得忽略來源')
     columns = (naming.get('contract_json') or {}).get('columns') or []
     if naming.get('status') != 'CONFIRMED' or naming.get('task_id') != run.get('task_id') or not run.get('task_id'):
         issue('SPEC_NAMING_UNCONFIRMED', 'naming', '命名契約未確認或不屬於此 Task')
@@ -231,8 +222,14 @@ Full SQL semantics against business intent still require human review and QA.
         if not types[name]:
             issue('SPEC_TYPE_UNSUPPORTED', f'naming.columns.{index}', '型別不在新版編譯支援範圍，不能自行降級為字串')
     source_names = []
-    for field in sources[0].get('fields', []) if len(sources) == 1 else []:
-        mapped = by_source.get(field.get('name'))
+    if any(not isinstance(field.get('name'), str) or not field['name'] or '\x00' in field['name']
+           for source in sources for field in source.get('fields', [])):
+        issue('SPEC_SOURCE_FIELDS_INVALID', 'source_ref', '來源欄位名稱缺漏或不合法，不可忽略該欄位')
+    source_fields = [(f'source.{index}.' + field['name'] if multi else field['name'], field)
+                     for index, source in enumerate(sources) for field in source.get('fields', [])
+                     if isinstance(field.get('name'), str)]
+    for source_name, field in source_fields:
+        mapped = by_source.get(source_name)
         if not mapped:
             issue('SPEC_SOURCE_NAMING_MISSING', 'naming.columns', '來源欄位缺少已確認的英文命名')
         else:
@@ -248,9 +245,25 @@ Full SQL semantics against business intent still require human review and QA.
                     issue('SPEC_SOURCE_TYPE_NARROWING', 'naming.columns', '命名契約不能縮減來源宣告的精度或字串長度')
     if not source_names or len(set(source_names)) != len(source_names):
         issue('SPEC_SOURCE_FIELDS_INVALID', 'source_ref', '來源欄位不存在或重複')
+    if multi:
+        join = spec.joins[0]
+        reserved = {'source_0', 'source_1', 'join_right_filter', 'join_discard', 'join_left_sort',
+                    'join_right_sort', 'filter', 'discard', 'sort', 'aggregate', 'projection', 'target'}
+        if join.id in reserved:
+            issue('SPEC_JOIN_NODE_ID_RESERVED', 'joins.0.id', 'Join 節點名稱與程式產生的節點衝突')
+        for index, key in enumerate(join.keys):
+            left = by_source.get(join.left_source + '.' + key.left_column)
+            right = by_source.get(join.right_source + '.' + key.right_column)
+            if left not in source_names or right not in source_names:
+                issue('SPEC_JOIN_KEY_NAMING_MISSING', f'joins.0.keys.{index}', 'Join 鍵缺少來源限定的命名對應')
+            elif not types.get(left) or not types.get(right) or types[left][0] != types[right][0]:
+                issue('SPEC_JOIN_KEY_TYPE_MISMATCH', f'joins.0.keys.{index}', 'Join 鍵型別不相容，不可隱含轉型')
     range_column = None
     if conditions.get('date_scope') == 'RANGE':
         range_column = by_source.get(conditions.get('date_column'))
+        if multi:
+            matching = [name for name, field in source_fields if field['name'] == conditions.get('date_column')]
+            range_column = by_source.get(matching[0]) if len(matching) == 1 else None
         range_type = types.get(range_column)
         if range_column not in source_names or not range_type or range_type[0] not in ('DATE', 'TIMESTAMP'):
             issue('SPEC_DATE_RANGE_COLUMN_TYPE', 'filters', '日期範圍須引用已確認來源 DATE／TIMESTAMP 欄位，不可用字串隱含比較')
@@ -304,7 +317,7 @@ Full SQL semantics against business intent still require human review and QA.
                 valid_type = src_type and out_type and src_type == out_type
             if not valid_type:
                 issue('SPEC_METRIC_TYPE_MISMATCH', path, '聚合輸出型別不相容或存在精度縮減')
-    expected_sources = {field.get('name') for field in sources[0].get('fields', [])} if len(sources) == 1 else set()
+    expected_sources = {name for name, field in source_fields}
     if set(by_source) != expected_sources | expected_metric_names:
         issue('SPEC_NAMING_COVERAGE_MISMATCH', 'naming.columns', '命名契約必須恰好涵蓋來源與聚合輸出，不得夾帶其他欄位')
     if len(set(spec.output_columns)) != len(spec.output_columns) or any(name not in available for name in spec.output_columns):
@@ -312,7 +325,9 @@ Full SQL semantics against business intent still require human review and QA.
     result = {'status': 'INVALID' if issues else 'VALIDATED_NOT_APPROVED', 'issues': issues, 'execution_authorized': False}
     if not issues:
         canonical = spec.model_dump(mode='json')
-        result.update(specification=canonical, specification_checksum=digest(canonical), csv_input_contract=CsvInputContractV1.model_validate(source_config['csv_input_contract_v1']).model_dump(),
+        csv_contract = ({'csv_input_contracts': validated_csv_contracts(source_config)['sources']} if multi else
+                        {'csv_input_contract': CsvInputContractV1.model_validate(source_config['csv_input_contract_v1']).model_dump()})
+        result.update(specification=canonical, specification_checksum=digest(canonical), **csv_contract,
                       output_types={name: by_name[name]['vertica_type'] for name in spec.output_columns})
     return result
 
@@ -324,6 +339,8 @@ def compilation_plan(payload, run, naming):
         return result
     spec = result['specification']
     by_source = {column['source_name']: column for column in naming['contract_json']['columns']}
+    if spec['version'] == 2:
+        return _join_compilation_plan(result, run, by_source)
     fields = [{'source_name': field['name'], 'stream_name': by_source[field['name']]['english_name'], 'data_type': by_source[field['name']]['vertica_type']}
               for field in run['input_snapshot']['source_config']['sources'][0]['fields']]
     stages = [{'id': 'source', 'component': 'CSVInput', 'source_ref': spec['source_ref'], 'contract': result['csv_input_contract'], 'fields': fields}]
@@ -336,4 +353,44 @@ def compilation_plan(payload, run, naming):
                    {'id': 'target', 'component': 'TableOutput', 'schema': spec['target_schema'], 'table': spec['target_table'], 'write_mode': spec['write_mode']}])
     plan = {'version': 1, 'specification_checksum': result['specification_checksum'], 'naming_checksum': spec['naming']['checksum'], 'stages': stages,
             'edges': [{'from': stages[i]['id'], 'to': stages[i+1]['id']} for i in range(len(stages)-1)]}
+    return {**result, 'plan': plan, 'plan_checksum': digest(plan), 'compiler_status': 'PLAN_ONLY_HPL_NOT_GENERATED'}
+
+
+def _join_compilation_plan(result, run, by_source):
+    spec = result['specification']; join = spec['joins'][0]
+    stages = []
+    for index, source in enumerate(run['input_snapshot']['source_config']['sources']):
+        ref = f'source.{index}'
+        fields = [{'source_name': field['name'], 'stream_name': by_source[ref + '.' + field['name']]['english_name'],
+                   'data_type': by_source[ref + '.' + field['name']]['vertica_type']} for field in source['fields']]
+        stages.append({'id': f'source_{index}', 'component': 'CSVInput', 'source_ref': ref,
+                       'parameter': f'SOURCE_CSV_{index}', 'contract': result['csv_input_contracts'][ref], 'fields': fields})
+    left_keys = [by_source[join['left_source'] + '.' + key['left_column']]['english_name'] for key in join['keys']]
+    right_keys = [by_source[join['right_source'] + '.' + key['right_column']]['english_name'] for key in join['keys']]
+    stages.extend([
+        {'id': 'join_right_filter', 'component': 'FilterRows', 'logic': 'ALL', 'null_policy': 'EXCLUDE_UNKNOWN',
+         'predicates': [{'column': key, 'operator': 'IS_NOT_NULL', 'constant': None} for key in right_keys],
+         'on_false': 'DISCARD', 'discard_id': 'join_discard'},
+        {'id': 'join_left_sort', 'component': 'SortRows', 'columns': left_keys, 'case_sensitive': True},
+        {'id': 'join_right_sort', 'component': 'SortRows', 'columns': right_keys, 'case_sensitive': True},
+        {'id': join['id'], 'component': 'MergeJoin', 'join_type': join['join_type'],
+         'left_transform': 'join_left_sort', 'right_transform': 'join_right_sort',
+         'left_keys': left_keys, 'right_keys': right_keys}])
+    edges = [{'from': a, 'to': b} for a,b in [('source_0', 'join_left_sort'), ('source_1', 'join_right_filter'),
+        ('join_right_filter', 'join_right_sort'), ('join_left_sort', join['id']), ('join_right_sort', join['id'])]]
+    tail = []
+    if spec['filters']:
+        tail.append({'id': 'filter', 'component': 'FilterRows', 'logic': 'ALL', 'null_policy': spec['filter_null_policy'],
+                     'predicates': spec['filters'], 'on_false': 'DISCARD'})
+    if spec['aggregation']:
+        tail.extend([{'id': 'sort', 'component': 'SortRows', 'columns': spec['aggregation']['group_by'], 'case_sensitive': True},
+                     {'id': 'aggregate', 'component': 'GroupBy', **spec['aggregation']}])
+    tail.extend([{'id': 'projection', 'component': 'SelectValues', 'columns': spec['output_columns']},
+                 {'id': 'target', 'component': 'TableOutput', 'schema': spec['target_schema'],
+                  'table': spec['target_table'], 'write_mode': spec['write_mode']}])
+    previous = join['id']
+    for stage in tail:
+        edges.append({'from': previous, 'to': stage['id']}); previous = stage['id']
+    plan = {'version': 2, 'specification_checksum': result['specification_checksum'],
+            'naming_checksum': spec['naming']['checksum'], 'stages': stages + tail, 'edges': edges}
     return {**result, 'plan': plan, 'plan_checksum': digest(plan), 'compiler_status': 'PLAN_ONLY_HPL_NOT_GENERATED'}
