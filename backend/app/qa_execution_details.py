@@ -3,6 +3,7 @@ from .csv_content_validation import validate_csv_content
 from .upload_integrity import read_verified_upload
 from .source_binding import execution_sources
 from .csv_contract import source_csv_contract
+from .qa_runtime_options import inspect_options
 
 
 def execution_details(run, compiled, authorization):
@@ -23,6 +24,7 @@ def execution_details(run, compiled, authorization):
                 raise ValueError('QA_EXECUTED_CSV_NO_LONGER_VERIFIABLE')
             contracts[ref], validations[ref] = contract, result
         return dict(csv_input_contracts=contracts, csv_structure_validations=validations, **binding,
+            runtime_options=inspect_options(compiled),
             compiler_plan=compiled['plan'], output_types=compiled['output_types'], hpl_checksum=compiled['hpl_checksum'],
             validation_scope='SAME_EXECUTED_BYTES_RECHECKED_NO_ETL_REPLAY',
             extra_columns_enforcement='WHOLE_BATCH_VALIDATION_BEFORE_HOP')

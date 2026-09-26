@@ -110,10 +110,15 @@ def can_reassess(record,count,context=None):
 
 
 def same_execution_enrichment(previous,current):
-    if not previous or previous.get('version')!=2 or current.get('version')!=3:return False
+    if not previous:return False
     # Removing only the new details must recover the entire old canonical context.
-    semantics=dict(current.get('semantics') or {})
-    if not semantics.pop('execution_details',None):return False
+    from copy import deepcopy
+    semantics=deepcopy(current.get('semantics') or {})
+    if previous.get('version')==2 and current.get('version')==3:
+        if not semantics.pop('execution_details',None):return False
+    elif previous.get('version')==4 and current.get('version')==5:
+        if not (semantics.get('execution_details') or {}).pop('runtime_options',None):return False
+    else:return False
     try:
         canonical=build_qa_context(current['run_id'],current['specification_checksum'],current['evidence'],semantics)
         complete=build_qa_context(current['run_id'],current['specification_checksum'],current['evidence'],current['semantics'])

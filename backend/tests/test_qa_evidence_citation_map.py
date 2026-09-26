@@ -31,7 +31,7 @@ def test_native_payload_explains_alias_without_changing_evidence_or_forcing_pass
 
     result, trace = complete_qa_review(run, profile, context,
         native_completion=completion, before_call=lambda: None)
-    assert len(calls) == 1 and PROMPT_VERSION == 4
+    assert len(calls) == 1 and PROMPT_VERSION == 5
     assert 'without rerunning ETL' in PROMPT
     assert 'never assume that added detail requires PASS' in PROMPT
     assert trace['prompt_checksum'] == digest(PROMPT)

@@ -54,7 +54,7 @@ def test_changed_source_binding_rejected_before_read(monkeypatch, ref):
 def test_v4_context_requires_semantic_evidence_but_never_grants_release(monkeypatch):
     run,compiled,checks,semantics = context_fixture(monkeypatch)
     ctx = build_qa_context(run['run_id'],compiled['specification_checksum'],checks,semantics)
-    assert ctx['version'] == 4
+    assert ctx['version'] == 5
     review = {key:ctx[key] for key in ('run_id','context_checksum','specification_checksum')}
     review.update(version=1,status='PASS',summary='Synthetic review',
         evidence_ids=[*REQUIRED_CHECKS,'semantic_design','node.join_customers'],issues=[])

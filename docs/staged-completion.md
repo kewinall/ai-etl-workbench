@@ -6,7 +6,7 @@
 |---|---|---|
 | 1 | 可重現基準、機密排除、回歸測試與 GitHub 版本 | 基準驗收通過；部署前置條件與限制見下方證據 |
 | 2 | 日期範圍補正、新 revision 與真實執行 | 日期案例驗收通過；同 Run 真實模型、Hop、Vertica、QA、可攜與 Release 已驗證 |
-| 3 | 多來源 Join、INNER/LEFT 語意攔截與節點證據 | 真實 SA/Developer、錯置攔截與 Hop/Vertica 9/9 已通過；QA NEEDS_REVIEW，待補空值／錯誤邊界證據，交付未完成 |
+| 3 | 多來源 Join、INNER/LEFT 語意攔截與節點證據 | 指定案例真實 QA、隔離重播及正式 Release 已通過；零列節點觀測缺口仍待修正，尚未宣稱整階段完成 |
 | 4 | 缺欄位失敗、診斷、人工核准修正及新版本成功 | 未完成 |
 | 5 | 真實成果頁、專案評估、全站互動與窄版回歸 | 未完成 |
 | 6 | 20 案例、人工基準、完整分母及主管報告 | 未完成 |
@@ -24,6 +24,15 @@
 - 模型費用、正式核准與人工工時是實際輸入，缺失時保留阻擋，不以合成值冒充驗收。
 
 ## 第 3 階段目前進度
+
+2026-09-26 21:30 最新：QA context/prompt v5 綁定原 HPL 選項及明確標記的獨立引擎探針，
+同次補證複核 PASS；v4 NEEDS_REVIEW 原樣保留，未重跑原始 Hop。
+SDM、隔離 HWF 重播、正式 Release 及下載 ZIP 的五份產物 checksum 驗證通過。
+Release `674f0d82-895b-4d4e-97d1-1c97b29a012f`，ZIP SHA256
+`d313deaf6f1f3103bc9aecb0e57fa08c3e4e65e2059e18a8a90e6f5404d25a9d`。
+新版定向測試 32 passed；隔離 PostgreSQL 1015 passed／40 skipped／1 warning。
+下一步先修 zero-row 節點的權威執行證據，再推進第 4 階段；第 4–7 階段仍未完成。
+以下為歷史進度，不代表目前交付狀態。
 
 最新真實案例：TASK-20260926-0014，LEFT Join 已一次執行並與事前答案 MATCH 9/9；
 真實 QA 要求補明確空字串／不 trim／超長及解析失敗行為證據，仍為 NEEDS_REVIEW。
