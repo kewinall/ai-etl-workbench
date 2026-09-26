@@ -153,7 +153,7 @@ def test_write_mode_never_downgraded_and_date_range_never_ignored():
     result = validate_specification(spec, run, naming)
     assert {'SPEC_TARGET_MISMATCH', 'SPEC_WRITE_MODE_UNSUPPORTED'} <= codes(result)
     run['input_snapshot']['target_config']['requirements_v1']['date_scope'] = 'RANGE'
-    assert 'SPEC_DATE_RANGE_NOT_COMPILED' in codes(validate_specification(spec, run, naming))
+    assert 'SPEC_DATE_RANGE_FILTER_MISMATCH' in codes(validate_specification(spec, run, naming))
 
 
 def test_bigint_source_cannot_be_narrowed_to_integer_by_naming():

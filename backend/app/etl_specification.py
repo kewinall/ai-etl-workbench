@@ -163,8 +163,6 @@ Full SQL semantics against business intent still require human review and QA.
         issue('SPEC_TARGET_MISMATCH', 'target_table', '目標或寫入模式與已確認輸入不一致')
     if spec.write_mode != 'APPEND':
         issue('SPEC_WRITE_MODE_UNSUPPORTED', 'write_mode', '新版編譯接點尚未支援覆寫或合併，不會改成新增模式')
-    if conditions.get('date_scope') != 'ALL':
-        issue('SPEC_DATE_RANGE_NOT_COMPILED', 'filters', '日期範圍的編譯一致性檢查尚未接通，不能忽略此條件')
     source_config = snapshot.get('source_config') or {}
     sources = source_config.get('sources') or []
     if len(sources) != 1 or sources[0].get('type') != 'CSV':
@@ -202,13 +200,31 @@ Full SQL semantics against business intent still require human review and QA.
                     issue('SPEC_SOURCE_TYPE_NARROWING', 'naming.columns', '命名契約不能縮減來源宣告的精度或字串長度')
     if not source_names or len(set(source_names)) != len(source_names):
         issue('SPEC_SOURCE_FIELDS_INVALID', 'source_ref', '來源欄位不存在或重複')
+    range_column = None
+    if conditions.get('date_scope') == 'RANGE':
+        range_column = by_source.get(conditions.get('date_column'))
+        range_type = types.get(range_column)
+        if range_column not in source_names or not range_type or range_type[0] not in ('DATE', 'TIMESTAMP'):
+            issue('SPEC_DATE_RANGE_COLUMN_TYPE', 'filters', '日期範圍須引用已確認來源 DATE／TIMESTAMP 欄位，不可用字串隱含比較')
+        # Exactly two predicates on this column. Extra predicates could silently
+        # narrow the approved interval; duplicates also require correction.
+        expected = {('GE', 'DATE', conditions.get('start_date')),
+                    ('LT', 'DATE', conditions.get('end_date_exclusive'))}
+        actual = [p for p in spec.filters if p.column == range_column]
+        observed = {(p.operator, p.constant.type, p.constant.value) for p in actual if p.constant}
+        if len(actual) != 2 or observed != expected:
+            issue('SPEC_DATE_RANGE_FILTER_MISMATCH', 'filters', '日期 Filter 必須恰為已確認起日的 >= 與不包含迄日的 <；不得省略、改值或追加同欄位條件')
     for index, predicate in enumerate(spec.filters):
         path = f'filters.{index}'
         kind = types.get(predicate.column)
         if predicate.column not in source_names:
             issue('SPEC_FILTER_COLUMN_UNKNOWN', path, 'Filter 必須引用來源中的已確認欄位')
         elif predicate.constant and kind:
-            if predicate.constant.type != kind[0]:
+            # A RANGE uses date boundaries at midnight in the same local
+            # timestamp domain as CSVInput; no timezone conversion is inferred.
+            range_midnight = (predicate.column == range_column and kind[0] == 'TIMESTAMP'
+                              and predicate.constant.type == 'DATE')
+            if predicate.constant.type != kind[0] and not range_midnight:
                 issue('SPEC_FILTER_TYPE_MISMATCH', path, 'Filter 常數型別與欄位型別不同')
             if kind[0] == 'BOOLEAN' and predicate.operator not in ('EQ', 'NE'):
                 issue('SPEC_BOOLEAN_ORDER_UNSUPPORTED', path, '布林欄位不能使用大小排序比較')

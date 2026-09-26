@@ -108,3 +108,10 @@ image 取得 JDBC。詳見 [建置與實測](worker-jdbc-build.md)。正確檔�
 無網路 Hop adapter 2 passed（6.04s），隔離回歸 848 passed／23 skipped／1 warning。
 後續仍需以提交後的乾淨 checkout 核對完整部署入口；portability 測試資料庫的
 本機 image 前置條件與 OS image 漂移等限制必須保留，不冒稱一鍵部署全部完成。
+
+### 階段 2 日期範圍進度（2026-09-26）
+
+已接通日期 Filter 與已確認期間的一致性檢查，並驗證缺口補正的新 revision
+及重新核准。隔離回歸 863 passed／25 skipped／1 warning；禁網原生 Hop
+日期邊界 2 passed。詳見 [證據與限制](verification/date-range-stage2-2026-09-26.md)。
+尚缺新案例同 Run 真實模型、Vertica 逐筆標準答案與 QA；階段 2 未完成。
