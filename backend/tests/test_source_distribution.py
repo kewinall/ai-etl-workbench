@@ -11,6 +11,7 @@ REQUIRED = [
     'scripts/hop/InspectCompilerPlugins.java',
     'scripts/hop/InspectJoinPlugin.java',
     'scripts/hop/ExecuteJoinProbe.java',
+    'scripts/hop/probe_vertica_width.py',
     'scripts/hop/InspectVerticaMetadata.java',
     'scripts/hop/VerifyMetadataExport.java',
     'scripts/hop/fixtures/minimal.hpl',

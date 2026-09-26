@@ -29,6 +29,10 @@
 真實 QA 要求補明確空字串／不 trim／超長及解析失敗行為證據，仍為 NEEDS_REVIEW。
 不要重跑原始 Hop 或改寫 QA 歷史；後續先補有依據的同次執行複核，再進入可攜與 Release。
 
+已另驗證原生 CSV 空字串／空白／非法整數（3 passed），隔離 Vertica 的 32-byte 成功、
+33-byte ASCII／UTF-8 失敗且未保存（3 案例符合預期）。尚未接入同次 QA 複核。
+另發現 zero-row discard 不出 BASIC 節點摘要而被判 UNKNOWN，須補權威 metrics，不能猜測為零。
+
 最新入口驗證：雙 CSV 正常建立／上傳／來源限定命名已補齊，網站實際 API 互動通過；
 完整隔離回歸 1008 passed／37 skipped，網站新建與規格互動 3 passed（4.7s）。
 尚未呼叫此案例的真實模型或執行 Join 寫入；完整第 3 階段仍未完成。
