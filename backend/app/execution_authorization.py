@@ -1,12 +1,12 @@
 """Explicit one-attempt consent record. No dispatch, writes or implicit consent."""
 from hashlib import sha256
 import json
-import re
 from contextlib import nullcontext
 from uuid import uuid4
 from psycopg.types.json import Jsonb
 from .approved_candidate import load_approved_candidate
 from .oracle_store import approved_oracle_binding
+from .source_binding import execution_sources
 
 
 def offer(queue, conn, task_id, run_id, specification_id, preparing=False):
@@ -15,11 +15,7 @@ def offer(queue, conn, task_id, run_id, specification_id, preparing=False):
     sources = run['input_snapshot']['source_config'].get('sources') or []
     if len(sources) > 1:
         raise ValueError('MULTI_SOURCE_EXECUTION_NOT_READY')
-    if len(sources) != 1 or sources[0].get('type') != 'CSV' or not sources[0].get('upload_id'):
-        raise ValueError('VERIFIED_UPLOADED_CSV_REQUIRED')
-    source_checksum = sources[0].get('checksum')
-    if not isinstance(source_checksum,str) or not re.fullmatch('[a-f0-9]{64}',source_checksum):
-        raise ValueError('SOURCE_BINDING_REQUIRED')
+    source_binding = execution_sources(run['input_snapshot']['source_config'], candidate['compiled']['specification']['version'])
     oracle=approved_oracle_binding(conn,candidate)
     binding = {'policy_version':'hop-single-attempt-v2', 'max_attempts':1, 'automatic_retry':False,
                'run_id':str(run_id), 'specification_id':str(specification_id),
@@ -29,7 +25,7 @@ def offer(queue, conn, task_id, run_id, specification_id, preparing=False):
                'settings_checksum':run['settings_snapshot']['checksum'],
                'hpl_checksum':candidate['compiled']['hpl_checksum'],
                'result_query_checksum':candidate['result_query']['checksum'],
-               'source_checksum':source_checksum,**oracle}
+               **source_binding,**oracle}
     digest = sha256(json.dumps(binding,sort_keys=True,separators=(',',':')).encode()).hexdigest()
     return {'binding':binding, 'binding_checksum':digest, 'execution_authorized':False}
 

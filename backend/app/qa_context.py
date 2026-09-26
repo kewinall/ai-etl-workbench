@@ -62,6 +62,8 @@ def load_qa_context(queue,task_id,run_id,comparison_id,*,connection=None):
         'specification':row['spec_json'],
         'execution_details':execution_details(run,compiled,auth),
         'nodes':[{'id':node.findtext('name'),'component':node.findtext('type')} for node in root.findall('transform')]}
+    if row['spec_json']['version'] == 2:
+        semantics['join_conditions'] = run['input_snapshot']['target_config']['join_contract_v1']
     return {'context':build_qa_context(run_id,row['content_checksum'],checks,semantics),'run':run,
         'comparison_id':str(comparison_id),'comparison_checksum':comparison['checksum'],
         'context_origin':'PERSISTED_EXECUTION_EVIDENCE','qa_approved':False,'release_ready':False}

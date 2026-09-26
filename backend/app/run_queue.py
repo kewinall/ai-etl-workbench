@@ -291,8 +291,8 @@ class RunQueue:
             if run['lease_token'] != token or run['state'] != 'RUNNING' or run['phase'] != 'HOP_PREPARATION' or run['write_started']:
                 raise RunConflict('WRITE_NOT_AUTHORIZED_OR_ALREADY_STARTED')
             current = offer(self,conn,task['task_id'],run_id,receipt['specification_id'],preparing=True)
-            expected = {key:current['binding'][key] for key in ('run_id','specification_id','specification_checksum','input_checksum','settings_checksum','hpl_checksum','source_checksum')}
-            expected['approval_id'] = current['binding']['specification_approval_id']
+            from .source_binding import expected_prepared_binding
+            expected = expected_prepared_binding(current['binding'])
             if (prepared_binding != expected or current['binding_checksum'] != receipt['binding_checksum']
                     or current['binding_checksum'] != receipt['reserved_checksum']):
                 raise RunConflict('EXECUTION_BINDING_CHANGED')

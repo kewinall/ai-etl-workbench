@@ -39,7 +39,9 @@ V2 已接 Join 語意攔截、來源限定命名／型別驗證與正向 Hop DAG
 Developer 現在依來源數選擇 V1／V2 context、proposal schema 與 prompt；V1 歷史格式不變。
 雙來源引用 Join／CSV evidence，仍須通過 deterministic specification validator；模型不授予執行權。
 API 核准預覽、保存 intent、gateway 與 local bridge 使用一致的版本與 checksum。
-最新控制平面回歸：974 passed、35 skipped、1 warning（21.93s），exit 0。
+雙來源版本校驗已接入 reservation／write guard；QA context v4 同時保存兩來源解析證據與 Join intent。
+這些程式路徑已接通並有定向測試，但正式多來源授權仍阻擋，尚非真實派送驗收。
+最新控制平面回歸：993 passed、35 skipped、1 warning（22.07s），exit 0。
 新增 8 個 opt-in 原生測試在此環境跳過，但已在上述禁止網路的 Hop 環境實際執行。
 此進度**不是多來源執行或 INNER/LEFT 語意攔截驗收**；仍保留 runtime blocker。
 詳見 [Join 階段證據與下一步](verification/join-stage3-2026-09-26.md)。

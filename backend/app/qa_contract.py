@@ -2,9 +2,11 @@
 from typing import Literal
 from pydantic import BaseModel,ConfigDict,Field
 from .sa_contract import digest
-from .etl_specification import EtlSpecificationV1
+from .etl_specification import EtlSpecificationV1,EtlSpecificationV2
 from .requirement_contract import RequirementConditionsV1
 from .csv_contract import CsvInputContractV1
+from .join_contract import JoinContractV1
+from .source_binding import source_set_checksum
 
 REQUIRED_CHECKS=('specification','static_validation','hop_execution','result_comparison','result_source')
 
@@ -34,6 +36,29 @@ class QASemanticsV1(BaseModel):
     specification: EtlSpecificationV1
     nodes: list[QANodeV1]=Field(min_length=1,max_length=200)
     execution_details: QAExecutionDetailsV1 | None=None
+
+
+class QAExecutionDetailsV2(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    csv_input_contracts: dict[str,CsvInputContractV1]
+    csv_structure_validations: dict[str,dict]
+    source_checksums: dict[str,str]
+    source_checksum: str=Field(pattern=r'^[a-f0-9]{64}$')
+    compiler_plan: dict
+    output_types: dict[str,str]
+    hpl_checksum: str=Field(pattern=r'^[a-f0-9]{64}$')
+    validation_scope: Literal['SAME_EXECUTED_BYTES_RECHECKED_NO_ETL_REPLAY']
+    extra_columns_enforcement: Literal['WHOLE_BATCH_VALIDATION_BEFORE_HOP']
+
+
+class QASemanticsV2(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    requirement: str=Field(min_length=1,max_length=20000)
+    conditions: RequirementConditionsV1
+    join_conditions: JoinContractV1
+    specification: EtlSpecificationV2
+    nodes: list[QANodeV1]=Field(min_length=1,max_length=200)
+    execution_details: QAExecutionDetailsV2
 
 
 class QACheckV1(BaseModel):
@@ -76,7 +101,10 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
     values.sort(key=lambda value:REQUIRED_CHECKS.index(value['id']))
     context={'version':1,'run_id':identity,'specification_checksum':specification_checksum,'evidence':values}
     if semantics is not None:
-        value=QASemanticsV1.model_validate(semantics).model_dump(mode='json')
+        multi = (semantics.get('specification') or {}).get('version') == 2
+        value=(QASemanticsV2 if multi else QASemanticsV1).model_validate(semantics).model_dump(mode='json')
+        if multi and value['join_conditions']['joins'] != value['specification']['joins']:
+            raise ValueError('QA_JOIN_SEMANTICS_CHANGED')
         # Keep historic v2 JSON/checksums byte-for-byte compatible.
         if value['execution_details'] is None:value.pop('execution_details')
         if value['specification']['run_id']!=identity or digest(value['specification'])!=specification_checksum:
@@ -85,21 +113,31 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
             raise ValueError('QA_SEMANTIC_NODES_DUPLICATED')
         details=value.get('execution_details')
         if details:
-            plan=details['compiler_plan'];csv=details['csv_structure_validation']
+            plan=details['compiler_plan']
+            if multi:
+                refs = {'source.0', 'source.1'}
+                if (set(details['csv_input_contracts']) != refs or set(details['csv_structure_validations']) != refs
+                        or source_set_checksum(details['source_checksums']) != details['source_checksum']):
+                    raise ValueError('QA_EXECUTION_DETAILS_BINDING_CHANGED')
+                csv_items = [(details['csv_structure_validations'][ref], details['source_checksums'][ref],
+                              details['csv_input_contracts'][ref]) for ref in sorted(refs)]
+            else:
+                csv_items = [(details['csv_structure_validation'], details['source_checksum'], details['csv_input_contract'])]
+            csv_invalid = any(csv.get('content_checksum') != checksum
+                or csv.get('contract_checksum') != digest(contract)
+                or csv.get('status') != 'CSV_STRUCTURE_VALIDATED_NOT_EXECUTABLE'
+                or csv.get('complete') is not True or csv.get('issues') for csv,checksum,contract in csv_items)
             static=next(check for check in values if check['id']=='static_validation')
             nodes={node['id']:node['component'] for node in value['nodes']}
             if (plan.get('specification_checksum')!=specification_checksum
                     or plan.get('naming_checksum')!=value['specification']['naming']['checksum']
                     or set(details['output_types'])!=set(value['specification']['output_columns'])
                     or details['hpl_checksum']!=static['checksum']
-                    or csv.get('content_checksum')!=details['source_checksum']
-                    or csv.get('contract_checksum')!=digest(details['csv_input_contract'])
-                    or csv.get('status')!='CSV_STRUCTURE_VALIDATED_NOT_EXECUTABLE'
-                    or csv.get('complete') is not True or csv.get('issues')
+                    or csv_invalid
                     or not plan.get('stages')
                     or any(nodes.get(stage.get('id'))!=stage.get('component') for stage in plan['stages'])):
                 raise ValueError('QA_EXECUTION_DETAILS_BINDING_CHANGED')
-        context.update(version=3 if 'execution_details' in value else 2,semantics=value)
+        context.update(version=4 if multi else (3 if 'execution_details' in value else 2),semantics=value)
     return {**context,'context_checksum':digest(context)}
 
 

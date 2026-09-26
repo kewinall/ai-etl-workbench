@@ -3,6 +3,7 @@ import os
 from uuid import uuid4
 from .execution_authorization import offer
 from .run_queue import RunConflict
+from .source_binding import expected_prepared_binding
 
 
 def reserve(queue, task_id, run_id, specification_id, authorization_id, prepared_binding):
@@ -18,8 +19,7 @@ def reserve(queue, task_id, run_id, specification_id, authorization_id, prepared
         current=offer(queue,conn,task_id,run_id,specification_id)
         if current['binding_checksum'] != consent['binding_checksum']:
             raise RunConflict('EXECUTION_BINDING_CHANGED')
-        expected={key:current['binding'][key] for key in ('run_id','specification_id','specification_checksum','input_checksum','settings_checksum','hpl_checksum','source_checksum')}
-        expected['approval_id']=current['binding']['specification_approval_id']
+        expected=expected_prepared_binding(current['binding'])
         if prepared_binding != expected:
             raise RunConflict('PREPARED_BINDING_CHANGED')
         reservation_id,lease=uuid4(),uuid4()
