@@ -24,13 +24,13 @@ def test_result_requires_saved_log_and_contains_no_raw_output(setup):
     assert result['result']['status']=='COMPLETED'
     assert 'output' not in result and 'directory' not in result
     process.assert_called_once()
-    hop_cli.hop_command.assert_called_once_with(prepared['directory'].as_posix(),credential_launcher=False)
+    hop_cli.hop_command.assert_called_once_with(prepared['directory'].as_posix(),credential_launcher=False,source_count=1)
 
 def test_credential_environment_selects_launcher_without_secret_in_arguments(setup):
     prepared,process,options=setup
     options['environment']={'WORKBENCH_VERTICA_PASSWORD':'synthetic-only'}
     hop_cli.run_hop_cli(prepared,Event(),**options)
-    hop_cli.hop_command.assert_called_once_with(prepared['directory'].as_posix(),credential_launcher=True)
+    hop_cli.hop_command.assert_called_once_with(prepared['directory'].as_posix(),credential_launcher=True,source_count=1)
     assert 'synthetic-only' not in repr(process.call_args.args)
 
 def test_metadata_change_prevents_process_start(setup):

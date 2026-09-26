@@ -26,7 +26,8 @@ def run_hop_cli(prepared,cancelled,*,metadata_checksum,expected_nodes,environmen
         raise ValueError('HOP_METADATA_CHANGED')
     # Validate expected node names before starting a process.
     hop_log_evidence({'started':False,'reason':'CANCELLED','exit_code':None,'output':b''},expected_nodes)
-    process=run_managed(hop_command(prepared['directory'].as_posix(),credential_launcher='WORKBENCH_VERTICA_PASSWORD' in environment),cwd='/opt/hop',
+    process=run_managed(hop_command(prepared['directory'].as_posix(),credential_launcher='WORKBENCH_VERTICA_PASSWORD' in environment,
+                        source_count=2 if 'source_checksums' in prepared['binding'] else 1),cwd='/opt/hop',
                         env=environment,cancelled=cancelled,timeout_seconds=180)
     evidence=hop_log_evidence(process,expected_nodes)
     receipt=log_sink(process['output'])

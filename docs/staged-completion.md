@@ -34,7 +34,9 @@ V2 已接 Join 語意攔截、來源限定命名／型別驗證與正向 Hop DAG
 多來源執行仍由 runtime authorization 明確阻擋。
 原生 Hop Join 八組語意案例與發佈檢查另行通過（9 passed、34.64s；四組使用正式 compiler 產物）；
 確認須排除右側 null 鍵，不能直接沿用 MergeJoin 的 null 匹配行為。
-最新控制平面回歸：938 passed、33 skipped、1 warning（20.71s），exit 0。
+多來源 staging／prepared integrity／Hop CLI 參數已接通；另有 2 個真實 Hop CLI 案例通過，
+但核准載入為測試替身，正式授權及 Vertica 仍待接通。
+最新控制平面回歸：959 passed、35 skipped、1 warning（20.73s），exit 0。
 新增 8 個 opt-in 原生測試在此環境跳過，但已在上述禁止網路的 Hop 環境實際執行。
 此進度**不是多來源執行或 INNER/LEFT 語意攔截驗收**；仍保留 runtime blocker。
 詳見 [Join 階段證據與下一步](verification/join-stage3-2026-09-26.md)。
