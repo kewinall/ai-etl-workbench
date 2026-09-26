@@ -4,6 +4,15 @@
 >
 > 不包含本機 `.env`、SSH 金鑰、資料庫、Hop 安裝包、來源掃描資料與執行產物。複製 repository 不會取得既有專案／Task 歷史；它們仍保存在原本的平台資料庫。請自行安裝 Hop、Java 與必要驅動，並依實際目錄調整 `.env.example` 中的路徑。部分 scripts 尚依賴原開發機的工具路徑，不保證乾淨機器一鍵啟動。
 
+## 目前 Docker Pilot 入口
+
+- [七階段驗收進度與已測結果](docs/staged-completion.md)：尚未全部完成，不以單一成功案例代表整个平台驗收。
+- [Compose 開發基準](docs/compose-development.md)：使用獨立控制資料庫；不要覆寫 Windows 舊資料。
+- [Worker JDBC 建置](docs/worker-jdbc-build.md)：Compose Worker 自帶 Hop/Java；須另外提供指定校驗值的 JDBC 檔案，不再依賴本機 Vertica image 取得驅動。
+- [目前限制](docs/known-limitations.md)：真實模型、資料庫連線及人工核准不能用 mock 取代。
+
+以下是歷史 Windows POC 操作說明，不是 Docker Pilot 驗收結果。
+
 ## 歷史操作文件
 
 最新內部 Pilot 調整、API 行為與未完成項目見 [Pilot 實作紀錄](docs/pilot-implementation.md)。

@@ -88,6 +88,8 @@ services:
       context: ..
       dockerfile: deploy/Dockerfile.backend
       target: worker
+      additional_contexts:
+        vertica-jdbc: ${WORKBENCH_JDBC_DIR:-../runtime-temp/jdbc}
     profiles: [execution]
     depends_on:
       api:
@@ -107,6 +109,8 @@ services:
       context: ..
       dockerfile: deploy/Dockerfile.backend
       target: worker
+      additional_contexts:
+        vertica-jdbc: ${WORKBENCH_JDBC_DIR:-../runtime-temp/jdbc}
     profiles: [pilot-execution]
     command: ["python", "-m", "app.pilot_hop_worker"]
     depends_on:

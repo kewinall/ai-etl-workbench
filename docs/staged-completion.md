@@ -96,3 +96,12 @@ test_source_distribution.py：1 passed（0.08s）。這些證據僅涵蓋 metada
 2026-09-26 鎖定後重新 Docker build 與 `pip check` 成功，獨立
 `ai-etl-locked-regression` 回歸：846 passed、23 skipped、1 warning（20.04s），
 exit 0。兩個新檢查均執行通過；容器正常停止、測試 volume 保留。
+
+### Worker JDBC 解耦
+
+已改為外部檔案 build context 加 SHA-256 驗證；Worker 不再依賴本機 Vertica
+image 取得 JDBC。詳見 [建置與實測](worker-jdbc-build.md)。正確檔案成功、
+錯誤 checksum／缺少目錄／缺少 JAR 皆拒絕；完整 Worker build 成功，
+無網路 Hop adapter 2 passed（6.04s），隔離回歸 848 passed／23 skipped／1 warning。
+後續仍需以提交後的乾淨 checkout 核對完整部署入口；portability 測試資料庫的
+本機 image 前置條件與 OS image 漂移等限制必須保留，不冒稱一鍵部署全部完成。

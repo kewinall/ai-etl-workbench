@@ -46,6 +46,7 @@ services:
       - ../backend:/app/backend:ro
       - ../database/migrations:/app/database/migrations:ro
       - ../config:/app/config:ro
+      - ../deploy:/app/deploy:ro
     networks: [test-only]
     depends_on:
       postgres: {condition: service_healthy}

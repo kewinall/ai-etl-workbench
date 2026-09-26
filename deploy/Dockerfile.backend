@@ -18,12 +18,16 @@ USER 10001:10001
 CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8765"]
 
 FROM apache/hop:2.12.0 AS hop
-FROM local/vertica:25.3.0-rpm AS vertica-driver
+FROM python:3.12-slim-bookworm AS vertica-driver
+# An explicit BuildKit context supplies the licensed client artifact, not a DB image.
+COPY --from=vertica-jdbc /vertica-jdbc.jar /driver/vertica-jdbc.jar
+ARG VERTICA_JDBC_SHA256=849c0dcf76e72e9022cac6bad1f1141dba2b6468369a14f29c873347d465622f
+RUN printf '%s  /driver/vertica-jdbc.jar\n' "$VERTICA_JDBC_SHA256" | sha256sum --check --strict -
 FROM runtime AS worker
 RUN apt-get update && apt-get install -y --no-install-recommends openjdk-17-jre-headless \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=hop --chown=10001:10001 /opt/hop /opt/hop
-COPY --from=vertica-driver --chown=10001:10001 /opt/vertica/java/vertica-jdbc-25.3.0-2.jar /opt/hop/lib/jdbc/vertica-jdbc-25.3.0-2.jar
+COPY --from=vertica-driver --chown=10001:10001 /driver/vertica-jdbc.jar /opt/hop/lib/jdbc/vertica-jdbc.jar
 COPY --from=api /app /app
 ENV HOP_HOME=/opt/hop HOP_RUN_PATH=/opt/hop/hop-run.sh
 USER 10001:10001
