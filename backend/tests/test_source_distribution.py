@@ -9,6 +9,8 @@ REQUIRED = [
     'scripts/hop/ValidatePipeline.java',
     'scripts/hop/ExecuteCompilerProbe.java',
     'scripts/hop/InspectCompilerPlugins.java',
+    'scripts/hop/InspectJoinPlugin.java',
+    'scripts/hop/ExecuteJoinProbe.java',
     'scripts/hop/InspectVerticaMetadata.java',
     'scripts/hop/VerifyMetadataExport.java',
     'scripts/hop/fixtures/minimal.hpl',
