@@ -3,6 +3,8 @@ from hashlib import sha256
 import re
 
 SUMMARY=re.compile(r'^\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} - ([A-Za-z_][A-Za-z0-9_]*)\.0 - Finished processing \(I=(\d+), O=(\d+), R=(\d+), W=(\d+), U=(\d+), E=(\d+)\)\s*$')
+FINAL=re.compile(r'^WORKBENCH_NODE_V1 ([A-Za-z_][A-Za-z0-9_]*) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+)$')
+END=re.compile(r'^WORKBENCH_METRICS_END_V1 (\d+)$')
 
 
 def hop_log_evidence(process,expected_nodes):
@@ -12,14 +14,29 @@ def hop_log_evidence(process,expected_nodes):
     if not expected_nodes or len(set(expected_nodes))!=len(expected_nodes) or any(not isinstance(n,str) or not re.fullmatch('[A-Za-z_][A-Za-z0-9_]*',n) for n in expected_nodes):
         raise ValueError('INVALID_EXPECTED_NODES')
     checksum=sha256(data).hexdigest()
-    nodes={};duplicate=False
+    nodes={};duplicate=False;final={};ends=[];invalid=False;has_metrics=False
     for line in data.decode('utf-8',errors='replace').splitlines():
+        if line.startswith(('WORKBENCH_NODE_V1','WORKBENCH_METRICS_END_V1')):
+            has_metrics=True
+            match=FINAL.fullmatch(line);end=END.fullmatch(line)
+            if match:
+                if match[1] in final or ends:invalid=True
+                final[match[1]]=dict(zip(('input','output','read','written','updated','errors'),map(int,match.groups()[1:])))
+            elif end:ends.append(int(end[1]))
+            else:invalid=True
+            continue
         match=SUMMARY.fullmatch(line)
         if not match:continue
         name=match[1]
         if name in nodes:duplicate=True
         nodes[name]=dict(zip(('input','output','read','written','updated','errors'),map(int,match.groups()[1:])))
     complete=not duplicate and set(nodes)==set(expected_nodes)
+    if has_metrics:
+        complete=(not duplicate and not invalid and ends==[len(expected_nodes)]
+                  and set(final)==set(expected_nodes) and set(nodes)<=set(final)
+                  and all(final[name]==value for name,value in nodes.items()))
+        # Never turn an observed BASIC error into success with contradictory counters.
+        if complete:nodes=final
     errors=sum(n['errors'] for n in nodes.values())
     code=process.get('exit_code')
     valid_code=type(code) is int and 0<=code<=2147483647
