@@ -12,12 +12,10 @@ from .source_binding import execution_sources
 def offer(queue, conn, task_id, run_id, specification_id, preparing=False):
     candidate = load_approved_candidate(queue, conn, task_id, run_id, specification_id, preparing=preparing)
     run = candidate['run']
-    sources = run['input_snapshot']['source_config'].get('sources') or []
-    if len(sources) > 1:
-        raise ValueError('MULTI_SOURCE_EXECUTION_NOT_READY')
     source_binding = execution_sources(run['input_snapshot']['source_config'], candidate['compiled']['specification']['version'])
     oracle=approved_oracle_binding(conn,candidate)
-    binding = {'policy_version':'hop-single-attempt-v2', 'max_attempts':1, 'automatic_retry':False,
+    binding = {'policy_version':'hop-single-attempt-v3' if 'source_checksums' in source_binding else 'hop-single-attempt-v2',
+               'max_attempts':1, 'automatic_retry':False,
                'run_id':str(run_id), 'specification_id':str(specification_id),
                'specification_checksum':candidate['specification_checksum'],
                'specification_approval_id':candidate['approval_id'],

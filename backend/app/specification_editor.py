@@ -1,5 +1,6 @@
 """Safe field-based editor context, not a generated or approved ETL design."""
 import re
+from copy import deepcopy
 from .etl_specification import validate_specification, _type, IDENTIFIER
 
 
@@ -13,6 +14,9 @@ def editor_context(run, naming):
     metrics = []
     fields = (run['input_snapshot'].get('source_config') or {}).get('sources') or []
     originals = [f['name'] for f in fields[0].get('fields', [])] if len(fields) == 1 else []
+    multi = len(fields) == 2
+    if multi:
+        originals = [f'source.{i}.{field["name"]}' for i,item in enumerate(fields) for field in item.get('fields', [])]
     mapping = {c.get('source_name'): c for c in columns}
     for name in originals:
         column = mapping.get(name, {})
@@ -31,6 +35,10 @@ def editor_context(run, naming):
                'source_ref': 'source.0', 'target_schema': target.get('schema'), 'target_table': target.get('table'),
                'write_mode': (target.get('requirements_v1') or {}).get('write_mode'),
                'filter_logic': 'ALL', 'filter_null_policy': 'EXCLUDE_UNKNOWN'}
+    if multi:
+        binding.pop('source_ref')
+        binding.update(version=2,source_refs=['source.0','source.1'],
+                       joins=deepcopy((target.get('join_contract_v1') or {}).get('joins', [])))
     # Probe existing invariant validator; this is not returned as a proposed design.
     # Metric coverage alone is expected to be incomplete until the user specifies it.
     probe = validate_specification({**binding, 'filters': [], 'aggregation': None, 'output_columns': [c['name'] for c in source]}, run, naming)

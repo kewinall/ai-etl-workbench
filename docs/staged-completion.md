@@ -31,7 +31,7 @@ API 補正並重新核准；SA evidence 僅包含白名單语意欄位。
 
 已接上每來源 CSV 契約、逐檔 preflight、獨立暫存副本與 revision；正式 Hop／交付仍待接通。
 V2 已接 Join 語意攔截、來源限定命名／型別驗證與正向 Hop DAG 編譯；
-多來源執行仍由 runtime authorization 明確阻擋。
+多來源執行現在使用完整 source-set 的 v3 授權；仍須通過全部既有核准與執行檢查。
 原生 Hop Join 八組語意案例與發佈檢查另行通過（9 passed、34.64s；四組使用正式 compiler 產物）；
 確認須排除右側 null 鍵，不能直接沿用 MergeJoin 的 null 匹配行為。
 多來源 staging／prepared integrity／Hop CLI 參數已接通；另有 2 個真實 Hop CLI 案例通過，
@@ -40,12 +40,13 @@ Developer 現在依來源數選擇 V1／V2 context、proposal schema 與 prompt�
 雙來源引用 Join／CSV evidence，仍須通過 deterministic specification validator；模型不授予執行權。
 API 核准預覽、保存 intent、gateway 與 local bridge 使用一致的版本與 checksum。
 雙來源版本校驗已接入 reservation／write guard；QA context v4 同時保存兩來源解析證據與 Join intent。
-這些程式路徑已接通並有定向測試，但正式多來源授權仍阻擋，尚非真實派送驗收。
+已通過隔離 PostgreSQL API 保存／核准、實際授權／reservation／write marker 與 oracle 綁定測試；
+測試未呼叫 Hop 或 Vertica，尚非真實派送驗收。
 雙來源 HWF／參數模板、SDM 來源對照及 Join 規則已接通；原生 HWF 成功／缺右檔兩例通過。
 Portability replay 與 proof v2 已接兩份來源，但 replay 的資料庫／引擎整合仍待真實驗收。
-最新控制平面回歸：1002 passed、37 skipped、1 warning（22.17s），exit 0。
+最新控制平面回歸：1004 passed、37 skipped、1 warning（22.58s），exit 0。
 新增 8 個 opt-in 原生測試在此環境跳過，但已在上述禁止網路的 Hop 環境實際執行。
-此進度**不是多來源執行或 INNER/LEFT 語意攔截驗收**；仍保留 runtime blocker。
+此進度**不是多來源同 Run 模型／Hop／Vertica／QA／Release 端到端驗收**。
 詳見 [Join 階段證據與下一步](verification/join-stage3-2026-09-26.md)。
 
 ## 第 1 階段進度

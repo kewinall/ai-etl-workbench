@@ -6,6 +6,7 @@ from contextlib import nullcontext
 from .private_oracle import decrypt_oracle
 from .result_oracle import compare_oracle_document
 from .hop_outcome import validated_hop_outcome
+from .source_binding import execution_sources
 
 
 def required_result_query_checksum(binding):
@@ -36,9 +37,16 @@ def load_execution_oracle(queue,task_id,run_id,*,connection=None):
         if not consent:raise ValueError('EXECUTION_ORACLE_BINDING_REQUIRED')
         binding=consent['binding']
         digest=sha256(json.dumps(binding,sort_keys=True,separators=(',',':')).encode()).hexdigest()
-        if (binding.get('policy_version')!='hop-single-attempt-v2' or digest!=consent['binding_checksum']
+        policy=binding.get('policy_version')
+        if (policy not in ('hop-single-attempt-v2','hop-single-attempt-v3') or digest!=consent['binding_checksum']
                 or digest!=consent['reserved_checksum'] or binding.get('run_id')!=str(run_id)
                 or binding.get('specification_id')!=str(consent['specification_id'])):
+            raise ValueError('EXECUTION_ORACLE_BINDING_CHANGED')
+        if policy == 'hop-single-attempt-v3':
+            expected_sources=execution_sources(run['input_snapshot']['source_config'],2)
+            if any(binding.get(key)!=value for key,value in expected_sources.items()):
+                raise ValueError('EXECUTION_ORACLE_BINDING_CHANGED')
+        elif 'source_checksums' in binding:
             raise ValueError('EXECUTION_ORACLE_BINDING_CHANGED')
         query_checksum = required_result_query_checksum(binding)
         row=conn.execute('''SELECT o.*,a.approval_id,a.document_checksum AS approved_checksum

@@ -2,7 +2,7 @@
 from uuid import UUID
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
-from .etl_specification import EtlSpecificationV1, compilation_plan
+from .etl_specification import EtlSpecificationV1, EtlSpecificationV2, compilation_plan
 from .delivery_compiler import compile_delivery_components
 from . import specification_store
 from .specification_editor import editor_context
@@ -39,15 +39,15 @@ def create_specification_router(queue):
             raise HTTPException(503, detail='規格預覽服務不可用；未保存規格或派發工作') from None
 
     @router.post('/{task_id}/runs/{run_id}/specification/validate')
-    def validate(task_id: str, run_id: UUID, specification: EtlSpecificationV1):
+    def validate(task_id: str, run_id: UUID, specification: EtlSpecificationV1 | EtlSpecificationV2):
         return preview(task_id, run_id, specification, compilation_plan)
 
     @router.post('/{task_id}/runs/{run_id}/specification/compile-preview')
-    def compile_preview(task_id: str, run_id: UUID, specification: EtlSpecificationV1):
+    def compile_preview(task_id: str, run_id: UUID, specification: EtlSpecificationV1 | EtlSpecificationV2):
         return preview(task_id, run_id, specification, compile_delivery_components)
 
     @router.post('/{task_id}/runs/{run_id}/specifications')
-    def save(task_id: str, run_id: UUID, specification: EtlSpecificationV1):
+    def save(task_id: str, run_id: UUID, specification: EtlSpecificationV1 | EtlSpecificationV2):
         return preview(task_id, run_id, specification, compilation_plan, persist=True)
 
     @router.post('/{task_id}/runs/{run_id}/specifications/{specification_id}/approve')

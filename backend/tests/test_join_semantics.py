@@ -74,11 +74,12 @@ def test_exact_join_match_compiles_but_does_not_grant_execution():
     assert 'SOURCE_CSV_0' in compiled['hpl'] and 'SOURCE_CSV_1' in compiled['hpl']
 
 
-def test_runtime_authorization_still_blocks_multisource_before_oracle_or_writes(monkeypatch):
+def test_runtime_authorization_requires_verified_multisource_before_oracle_or_writes(monkeypatch):
     from app import execution_authorization
     _, run, _ = join_design()
-    monkeypatch.setattr(execution_authorization, 'load_approved_candidate', lambda *a,**k: {'run':run})
-    with pytest.raises(ValueError, match='MULTI_SOURCE_EXECUTION_NOT_READY'):
+    monkeypatch.setattr(execution_authorization, 'load_approved_candidate', lambda *a,**k: {
+        'run':run,'compiled':{'specification':{'version':2}}})
+    with pytest.raises(ValueError, match='VERIFIED_UPLOADED_CSV_REQUIRED'):
         execution_authorization.offer(None, None, 'task', 'run', 'spec')
 
 
