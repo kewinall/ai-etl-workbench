@@ -54,3 +54,25 @@ WSL 曾停止，先確認 Stopped 後恢復既有容器與資料卷；沒有重�
 下一步需受控、單次故障測試：僅此新建且平台登錄的空目標，保留原編譯 HPL，
 在明確測試程序中模擬目標欄位不符，驗證 Hop 真實失敗及診斷；不新增一般使用者可任意 ALTER 的 API。
 核對結案後的新 revision 必須改用新目標，原失敗表／日誌與證據保留。
+
+## 2026-09-27 真實故障與核對結案通過，修正版待執行
+
+新增 opt-in `app.pilot_failure_probe`：只接受固定合成 CSV checksum、指定新目標命名範圍、
+兩欄直接投影 APPEND、原始未寫入 Run 及已核准派送 binding。
+正常建立／登錄新表後，再確認同 Project/Task、欄位與空表，僅改名 label 模擬缺欄位；
+原 HPL 不變，單次執行、加密日誌保存、無 DROP／重試／自動修復，最後以新 DB session 核對。
+沒有對一般 API 新增任意 ALTER 能力。
+
+- 防護單元測試：13 passed（0.35s）。
+- 完整隔離 PostgreSQL：1044 passed、46 skipped、1 warning（23.12s）。
+- 實際 Vertica：25.3.0-2；文件參考為 24.4.x ALTER TABLE 欄位改名例（官方 PDF p.1093），
+  最終結果以實測為準，不推定跨版本相同行為。
+- 原生 Hop 真實失敗：exit 1、errors 1、HOP_EXECUTION_FAILED，僅一個 WRITE_STARTED。
+- 診斷 API：COLUMN_NOT_FOUND，引用原加密日誌第 14、21、41 行，不公開原始內容。
+- 新 DB session 查得 0 筆、欄位 record_key/label_missing_fault；表保留，沒有宣稱所有批次原子回滾。
+- 引擎程序結束後，依保存的結構／筆數 evidence checksum 完成核對結案；父 Run 保持 FAILED。
+- 已建立同 Task 的修正子 revision，指定不同的新目標；QUEUED、write_started=false，無舊核准。
+
+內部 Run／核准識別碼、指紋留在平台紀錄，不發佈到公開文件。
+下一步從既有修正子 revision 繼續輸入核准→Gate→SA→Developer→規格／Oracle→正常 Hop→QA。
+不要再次呼叫故障工具或重建原案例。第 4 階段仍待修正版成功及 UI 歷史驗收。
