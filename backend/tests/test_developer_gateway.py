@@ -50,3 +50,32 @@ def test_guard_failure_never_invokes_cli():
     with pytest.raises(DeveloperInvocationError,match='OUTCOME_UNKNOWN'):
         complete_developer(captured,profile,native_completion=call,before_call=Mock(side_effect=ValueError('private')))
     call.assert_not_called()
+
+
+@pytest.mark.parametrize('kind', ['DATE', 'TIMESTAMP'])
+def test_range_handoff_preserves_conditions_and_versioned_prompt(kind):
+    from uuid import uuid4
+    from test_date_range_specification import date_design
+    from app.developer_contract import build_context
+    from app.developer_gateway import PROMPT, PROMPT_VERSION
+    from app.sa_contract import digest
+    spec, run, naming = date_design(kind)
+    run['settings_snapshot']['model_routes'] = {'etl_specification': 'copilot/test-model'}
+    context = build_context(run, naming, {'approval_id': uuid4(), 'binding_checksum': 'c'*64},
+                            {'status': 'READY_FOR_REVIEW'})
+    captured = {'context': context, 'run': run, 'naming': naming}
+    proposal = {'version': 1, 'context_checksum': context['context_checksum'],
+                'summary': 'Synthetic date range design', 'evidence_ids': ['requirement', 'conditions'],
+                'specification': spec}
+    profile = {'enabled': True, 'provider_type': 'LOCAL_COPILOT',
+               'model_routes': {'etl_specification': 'test-model'}}
+    call = Mock(side_effect=native(proposal))
+    result, trace = complete_developer(captured, profile, native_completion=call, before_call=Mock())
+    payload = call.call_args.args[0]
+    conditions = next(e['value'] for e in payload['context']['evidence'] if e['id'] == 'conditions')
+    assert conditions['date_column'] == '日期'
+    assert conditions['start_date'] == '2026-09-01' and conditions['end_date_exclusive'] == '2026-10-01'
+    assert payload['prompt'] == PROMPT and payload['prompt_checksum'] == digest(PROMPT)
+    assert trace['prompt_version'] == PROMPT_VERSION == 2
+    assert 'GE with a DATE constant' in PROMPT and 'LT with a DATE constant' in PROMPT
+    assert result == proposal and call.call_count == 1 and not trace['execution_authorized']

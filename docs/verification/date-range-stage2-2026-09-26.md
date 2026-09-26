@@ -58,3 +58,15 @@ Control Worker；未刪除 volume、未啟動模型或 Hop 派送。網站與 re
 獨立標準答案應為 A=150.2500／2 筆、B=200.0000／1 筆；尚未實際執行，
 不可將預期答案記為實測結果。此表尚未由本次流程建立或寫入。
 待核准不是服務或程式故障，也不代表階段 2 完成。
+
+## Developer 日期交接補強
+
+Developer prompt 升為 v2，明確說明 RANGE 的 GE／LT DATE 常數、命名對應、
+空日期排除及無時區 TIMESTAMP 午夜界線；不再要求模型自行推測編譯器限制。
+context 仍傳遞已確認的 conditions，不變更既有 context/schema 版本。
+歷史呼叫保存原 prompt 與版本，不覆寫既有 Release 紀錄。
+
+- 定向 Developer／本機 Worker 測試：19 passed（0.52 秒）。
+- 完整隔離回歸：865 passed、25 skipped、1 warning（20.76 秒），exit 0。
+- API 映像已重建並更新；未啟用模型或 Hop 派送。
+- 本輪沒有真實模型呼叫；待使用者確認日期案例的狀態不變。
