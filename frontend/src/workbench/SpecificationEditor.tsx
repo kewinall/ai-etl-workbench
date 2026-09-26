@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {JoinSummary} from './JoinSummary';
 import {request, jsonBody} from './api';
 
 export function SpecificationEditor({base, initial, onSaved, onCancel}: {base: string; initial?: any; onSaved: () => Promise<void>; onCancel: () => void}) {
@@ -46,6 +47,7 @@ export function SpecificationEditor({base, initial, onSaved, onCancel}: {base: s
     {!!issues.length && <ul role="alert">{issues.map((issue: any, i: number) => <li key={i}>{issue.message} {issue.field_path}</li>)}</ul>}
     {context && <>
       <p>固定目標：{context.binding.target_schema}.{context.binding.target_table} · {context.binding.write_mode}。變更目標需先補正 Run。</p>
+      {context.binding.version === 2 && <><JoinSummary joins={context.binding.joins}/><p>Join 規則取自已確認需求；需變更時，請先補正 Run 並重新核准。</p></>}
       <p>欄位：{options.map((c: any) => `${c.source_name} → ${c.name} (${c.data_type})`).join('、')}</p>
       <label>篩選方式<select disabled={busy} value={filterMode} onChange={e => {setFilterMode(e.target.value); setConfirmed(false)}}><option value="">請明確選擇</option><option value="ALL">不篩選，保留全部資料</option><option value="FILTER">全部條件皆符合才保留</option></select></label>
       {filterMode === 'FILTER' && <>

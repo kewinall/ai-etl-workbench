@@ -47,6 +47,8 @@ Portability replay 與 proof v2 已接兩份來源，但 replay 的資料庫／�
 最新控制平面回歸：1004 passed、37 skipped、1 warning（22.58s），exit 0。
 新增 8 個 opt-in 原生測試在此環境跳過，但已在上述禁止網路的 Hop 環境實際執行。
 此進度**不是多來源同 Run 模型／Hop／Vertica／QA／Release 端到端驗收**。
+規格／SDM 的 Join 審查 UI 已通過 V1/V2 瀏覽器測試；Pilot API／Worker／web 已重建。
+新建 Task 仍缺雙 CSV 選項及建立政策，須補正常入口與命名流程後才能進入真實案例。
 詳見 [Join 階段證據與下一步](verification/join-stage3-2026-09-26.md)。
 
 ## 第 1 階段進度

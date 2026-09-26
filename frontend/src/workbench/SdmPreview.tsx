@@ -1,5 +1,6 @@
 import {useEffect,useState} from 'react';
 import {request,jsonBody} from './api';
+import {JoinSummary} from './JoinSummary';
 
 export function SdmPreview({url,specificationChecksum}:{url:string;specificationChecksum:string}) {
   const [attempt,setAttempt]=useState(0),[data,setData]=useState<any>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -30,7 +31,8 @@ export function SdmPreview({url,specificationChecksum}:{url:string;specification
     request(url).then(value=>{
       if(value.document?.specification_checksum!==specificationChecksum||value.status!=='SDM_CANDIDATE_NOT_RELEASED')throw new Error('SDM 與目前規格版本不符');
       const document=value.document;
-      if(document.version!==1||document.document_type!=='SDM_CANDIDATE'||value.qa_passed!==false||value.release_ready!==false||document.filter_logic!=='ALL'||document.filter_null_policy!=='EXCLUDE_UNKNOWN'||document.target?.write_mode!=='APPEND'||(document.aggregation&&document.aggregation.null_policy!=='SQL_NULLS'))throw new Error('SDM 政策或文件版本不受支援，請重新核對規格。');
+      if(![1,2].includes(document.version)||document.document_type!=='SDM_CANDIDATE'||value.qa_passed!==false||value.release_ready!==false||document.filter_logic!=='ALL'||document.filter_null_policy!=='EXCLUDE_UNKNOWN'||document.target?.write_mode!=='APPEND'||(document.aggregation&&document.aggregation.null_policy!=='SQL_NULLS'))throw new Error('SDM 政策或文件版本不受支援，請重新核對規格。');
+      if(document.version===2&&(!Array.isArray(document.source_refs)||document.source_refs.join(',')!=='source.0,source.1'||!Array.isArray(document.joins)||document.joins.length!==1))throw new Error('SDM 雙來源或 Join 規則不完整。');
       if(live)setData(value);
     }).catch(e=>live&&setError(e.message)).finally(()=>live&&setBusy(false));
     return()=>{live=false};
@@ -45,7 +47,8 @@ export function SdmPreview({url,specificationChecksum}:{url:string;specification
       {saved&&<><p role="status">候選 Excel 已保存；尚未通過 QA，不可作為正式交付。</p><button disabled={busy||saving} onClick={download}>下載 SDM 候選 Excel（非 Release）</button></>}
       <section aria-label="SDM 轉換規則">
         <h6>來源與目標</h6>
-        <p>來源識別：{data.document.source_ref}</p>
+        <p>來源識別：{data.document.version===2?data.document.source_refs.join('、'):data.document.source_ref}</p>
+        <JoinSummary joins={data.document.joins}/>
         <p>目標表：{data.document.target.schema}.{data.document.target.table}</p>
         <p>寫入模式：{data.document.target.write_mode==='APPEND'?'附加資料（APPEND）':data.document.target.write_mode}</p>
         <h6>篩選條件</h6>
@@ -59,7 +62,7 @@ export function SdmPreview({url,specificationChecksum}:{url:string;specification
         <h6>分組與聚合</h6>
         {data.document.aggregation?<><p>分組欄位：{data.document.aggregation.group_by.length?data.document.aggregation.group_by.join('、'):'無分組欄位（整體聚合）'}</p><p>空值處理：SQL_NULLS；各聚合輸出與來源列於下表。</p></>:<p>不進行聚合，依輸出順序直接對應欄位。</p>}
       </section>
-      <div style={{maxWidth:'100%',overflowX:'auto'}}><table><thead><tr><th>順序</th><th>輸出欄位</th><th>型別</th><th>轉換方式</th><th>來源欄位</th></tr></thead><tbody>{data.document.mappings.map((mapping:any)=><tr key={mapping.target_column}><td>{mapping.position}</td><td>{mapping.target_column}</td><td>{mapping.target_type}</td><td>{labels[mapping.operation]||mapping.operation}</td><td>{mapping.source_columns.length?mapping.source_columns.map((source:any)=>`${source.original_name} → ${source.stream_name}`).join('、'):'整筆資料計數（不對應單一欄位）'}</td></tr>)}</tbody></table></div>
+      <div style={{maxWidth:'100%',overflowX:'auto'}}><table><thead><tr><th>順序</th><th>輸出欄位</th><th>型別</th><th>轉換方式</th><th>來源欄位</th></tr></thead><tbody>{data.document.mappings.map((mapping:any)=><tr key={mapping.target_column}><td>{mapping.position}</td><td>{mapping.target_column}</td><td>{mapping.target_type}</td><td>{labels[mapping.operation]||mapping.operation}</td><td>{mapping.source_columns.length?mapping.source_columns.map((source:any)=>`${data.document.version===2?source.source_ref+'.':''}${source.original_name} → ${source.stream_name}`).join('、'):'整筆資料計數（不對應單一欄位）'}</td></tr>)}</tbody></table></div>
       <details><summary>SDM 版本指紋</summary><p>{data.checksum}</p><p>命名指紋：{data.document.naming.checksum}</p><p>規格指紋：{data.document.specification_checksum}</p></details>
     </>}
   </section>;

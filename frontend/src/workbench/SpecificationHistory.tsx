@@ -3,6 +3,7 @@ import {request, jsonBody} from './api';
 import {SpecificationEditor} from './SpecificationEditor';
 import {SdmPreview} from './SdmPreview';
 import {SdmHistory} from './SdmHistory';
+import {JoinSummary} from './JoinSummary';
 
 const operators: Record<string, string> = {EQ: '等於', NE: '不等於', GT: '大於', GE: '大於或等於', LT: '小於', LE: '小於或等於', IS_NULL: '為空值', IS_NOT_NULL: '非空值'};
 const functions: Record<string, string> = {SUM: '加總', COUNT_ROWS: '筆數', COUNT_NON_NULL: '非空值筆數', MIN: '最小值', MAX: '最大值'};
@@ -46,10 +47,11 @@ export function SpecificationHistory({taskId, runId}: {taskId: string; runId: st
       <dl>
         <div><dt>目標資料表</dt><dd>{spec.target_schema}.{spec.target_table}</dd></div>
         <div><dt>寫入方式</dt><dd>{spec.write_mode === 'APPEND' ? '附加資料（APPEND）' : spec.write_mode}</dd></div>
-        <div><dt>來源參照</dt><dd>{spec.source_ref}</dd></div>
+        <div><dt>來源參照</dt><dd>{spec.version === 2 ? spec.source_refs.join('、') : spec.source_ref}</dd></div>
         <div><dt>命名版本</dt><dd>第 {spec.naming.version} 版</dd></div>
         <div><dt>規格識別碼</dt><dd className="spec-checksum">{current.content_checksum}</dd></div>
       </dl>
+      <JoinSummary joins={spec.joins}/>
       <h5>篩選條件（全部符合）</h5>
       {spec.filters.length ? <ul>{spec.filters.map((filter: any, index: number) => <li key={index}>{filter.column} {operators[filter.operator] || filter.operator} {filter.constant ? String(filter.constant.value) : ''}</li>)}</ul> : <p>不篩選資料。</p>}
       <p>空值比較結果不明時排除該筆資料；明確的「為空值」條件除外。</p>
@@ -59,7 +61,7 @@ export function SpecificationHistory({taskId, runId}: {taskId: string; runId: st
       {current.approval_effective&&<SdmPreview key={current.specification_id} url={`${base}/specifications/${current.specification_id}/sdm-preview`} specificationChecksum={current.content_checksum}/>}
       <p>{current.approval_effective ? '此規格核准目前有效；尚未授權執行或 Release。' : current.approval_id ? '歷史核准已失效，紀錄仍保留。請檢查最新規格及上游內容。' : current.reviewable ? '可檢閱後核准此規格。' : '此版本目前不可核准，請檢查需求、設定與命名版本。'}</p>
       {current.reviewable && !current.approval_effective && <>
-        <label><input type="checkbox" checked={confirmed} disabled={busy} onChange={event => setConfirmed(event.target.checked)}/>我已檢查目標、篩選、分組與輸出，確認此規格；這不是執行授權。</label>
+        <label><input type="checkbox" checked={confirmed} disabled={busy} onChange={event => setConfirmed(event.target.checked)}/>我已檢查來源、{spec.version === 2 ? 'Join 規則、' : ''}目標、篩選、分組與輸出，確認此規格；這不是執行授權。</label>
         <button disabled={busy || !confirmed} onClick={() => action(async () => {
           await request(`${base}/specifications/${current.specification_id}/approve`, jsonBody('POST', {content_checksum: current.content_checksum}));
           await load(); setMessage('規格核准已保存；未啟動 Hop 或產生 Release。');
@@ -72,7 +74,7 @@ export function SpecificationHistory({taskId, runId}: {taskId: string; runId: st
         <details><summary>查看 HPL 候選（非交付產物）</summary><pre>{preview.hpl}</pre></details>
         <details><summary>查看 HWF 候選（非交付產物）</summary><p>Start → Pipeline，等待完成，不自動重試。引用同目錄 pipeline.hpl；執行時仍須提供已驗證的來源與連線。</p><pre>{preview.hwf}</pre></details>
         <details><summary>查看 DDL 候選（未執行）</summary><p>只包含此規格的輸出欄位。不會自動建表、刪表或重建既有表；仍須確認目標環境及核准。</p><pre>{preview.ddl}</pre></details>
-        <details><summary>查看參數範本與環境需求</summary><p>SOURCE_CSV 須在執行時指定，不隨包附帶資料。目的環境需另設 local 執行設定與 etl_target 連線；此範本不會由 Hop 自動載入，也不含平台密鑰。</p><pre>{preview.parameters}</pre><p className="spec-checksum">參數範本指紋：{preview.parameters_checksum}</p></details>
+        <details><summary>查看參數範本與環境需求</summary><p>{spec.version === 2 ? 'SOURCE_CSV_0（左側）與 SOURCE_CSV_1（右側）' : 'SOURCE_CSV'} 須在執行時指定，不隨包附帶資料。目的環境需另設 local 執行設定與 etl_target 連線；此範本不會由 Hop 自動載入，也不含平台密鑰。</p><pre>{preview.parameters}</pre><p className="spec-checksum">參數範本指紋：{preview.parameters_checksum}</p></details>
         <details><summary>Hop 候選指紋</summary><p className="spec-checksum">HPL：{preview.hpl_checksum}</p><p className="spec-checksum">HWF：{preview.hwf_checksum}</p><p className="spec-checksum">DDL：{preview.ddl_checksum}</p></details>
       </div>)}
     </>}
