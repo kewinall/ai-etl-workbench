@@ -1,0 +1,18 @@
+{
+  "case_id": "pilot-missing-target-column-v1",
+  "csv": "record_key,label\nA,alpha\nB,beta\n",
+  "fields": [
+    {"name":"record_key","type":"VARCHAR(32)"},
+    {"name":"label","type":"VARCHAR(32)"}
+  ],
+  "expected_rows": [
+    {"record_key":"A","label":"alpha"},
+    {"record_key":"B","label":"beta"}
+  ],
+  "fault": {
+    "scope":"NEW_PLATFORM_MANAGED_AI_SAMPLE_TARGET_ONLY",
+    "missing_target_column":"label",
+    "expected_outcome":"HOP_EXECUTION_FAILED",
+    "repair":"NEW_REVISION_NEW_TARGET_NO_REPLAY_NO_DROP_OF_ORIGINAL"
+  }
+}

@@ -26,3 +26,16 @@
 建立獨立 Task、事前標準答案與新測試目標，經真實 SA／Developer 核准，在受控測試範圍製造缺欄位失敗。
 保存 Hop 日誌、目標結構與筆數，核對引擎停止後結案，再建立新目標 revision，重新核准與真實執行／QA。
 須證明新結果正確、原失敗仍可追溯，才可宣告第 4 階段通過。目前第 4–7 階段均未完成。
+
+## 2026-09-27 真實案例已建立與 SA 通過
+
+- 固定合成輸入與事前兩筆答案：`backend/tests/fixtures/pilot_missing_column_case_v1.json`。
+- 已建立獨立 Project／Task／Run，識別碼、輸入／設定指紋與核准綁定留在本機平台紀錄。
+- 輸入已核准，Gate CHECKED。
+- 真實 SA：READY_FOR_REVIEW，無 issue；未執行工具、未自動重試。
+  模型用量明細留在平台 trace，不公開內部識別碼或用量 metadata。
+- 首次誤用 DW_DM 分類而被 API 422 拒絕，未建立 Task；改用單來源 STAGE 後建立成功。
+  Project 沿用，合成 CSV 上傳兩次；沒有刪除既有來源。
+
+尚未做 SA 交接核准、Naming Contract、Developer、規格／Oracle 核准、Hop 或故障注入。
+下一步從平台既有缺欄位驗收 Run 繼續，不重建案例、不再次呼叫 SA；測試限 ai_sample 專用新目標。
