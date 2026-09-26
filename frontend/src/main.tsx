@@ -7,6 +7,7 @@ import {useSettingsDraft} from './workbench/useSettingsDraft';
 import {ExecutionSettings} from './workbench/ExecutionSettings';
 import {PilotHome} from './workbench/PilotHome';
 import {WorkerStatus} from './workbench/WorkerStatus';
+import {TwoCsvTaskForm} from './workbench/TwoCsvTaskForm';
 import {readRoute} from './workbench/routes';
 import {createRoot} from 'react-dom/client';
 import {Activity,BarChart3,BookOpen,Boxes,ChevronRight,CircleGauge,Database,FilePlus2,History,LayoutDashboard,Play,RefreshCw,Settings,ShieldCheck,SlidersHorizontal,Workflow,Zap,CheckCircle2,Clock3,AlertTriangle,TerminalSquare,FileSearch2,GitBranch,Search,Code2} from 'lucide-react';
@@ -320,7 +321,8 @@ function StageModeSelector({mode,config,paths,onChange}:{mode:string;config:any;
 function StageEnhancedTaskForm(props:any){return <StageEnhancedInner {...props}/>}
 function StageEnhancedInner({onCreated,onError,projectId}:{onCreated:(t:Task)=>void;onError:(s:string)=>void;projectId?:string}){
  const [stageConfig,setStageConfig]=useState<any>({stage_mode:'NORMAL'}),[category,setCategory]=useState('STAGE');
- return <div className="stage-enhanced-wrapper"><PerSourceTaskFormWithStage projectId={projectId} onCreated={onCreated} onError={onError} stageConfig={stageConfig} setStageConfig={setStageConfig} setCategory={setCategory}/></div>
+ const [sourceMode,setSourceMode]=useState('existing');
+ return <div className="stage-enhanced-wrapper"><div className="choice"><button className={sourceMode==='existing'?'selected':''} onClick={()=>setSourceMode('existing')}>單檔／資料表流程</button><button className={sourceMode==='csv-join'?'selected':''} onClick={()=>setSourceMode('csv-join')}>雙 CSV Join</button></div>{sourceMode==='csv-join'?<TwoCsvTaskForm projectId={projectId} onCreated={onCreated} onError={onError}/>:<PerSourceTaskFormWithStage projectId={projectId} onCreated={onCreated} onError={onError} stageConfig={stageConfig} setStageConfig={setStageConfig} setCategory={setCategory}/>}</div>
 }
 function PerSourceTaskFormWithStage({onCreated,onError,projectId,stageConfig,setStageConfig,setCategory}:{onCreated:(t:Task)=>void;onError:(s:string)=>void;projectId?:string;stageConfig:any;setStageConfig:(x:any)=>void;setCategory:(x:string)=>void}){
  return <PerSourceTaskForm projectId={projectId} onCreated={onCreated} onError={onError} stageConfig={stageConfig} setStageConfig={setStageConfig} setCategory={setCategory}/>

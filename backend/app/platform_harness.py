@@ -34,15 +34,19 @@ def inferred_vertica_type(values:list[Any], declared:str|None=None)->str:
 def naming_suggestions(profile:dict[str,Any], project_rules:dict[str,Any]|None=None)->dict[str,Any]:
     aliases=(project_rules or {}).get("column_aliases") or {}
     columns=[];seen=set()
-    for source in profile.get("sources",[]):
+    sources=profile.get("sources",[])
+    for source_index,source in enumerate(sources):
         examples=source.get("masked_examples") or []
         for ordinal,field in enumerate(source.get("fields") or [],start=len(columns)+1):
-            original=str(field.get("name") or "").strip(); base=str(aliases.get(original) or normalize_identifier(original,ordinal)); name=base
+            original=str(field.get("name") or "").strip()
+            source_name=f"source.{source_index}.{original}" if len(sources)>1 else original
+            alias=aliases.get(source_name) or aliases.get(original)
+            base=str(alias or normalize_identifier(original,ordinal)); name=base
             suffix=2
             while name in seen:name=f"{base}_{suffix}";suffix+=1
             seen.add(name)
             values=[row.get(original) for row in examples if original in row]
-            columns.append({"source_name":original,"english_name":name,"vertica_type":inferred_vertica_type(values,field.get("type")),"confidence":1.0 if original in aliases or original.isascii() else 0.72,"reason":"project_dictionary" if original in aliases else "deterministic_normalizer"})
+            columns.append({"source_name":source_name,"english_name":name,"vertica_type":inferred_vertica_type(values,field.get("type")),"confidence":1.0 if alias or original.isascii() else 0.72,"reason":"project_dictionary" if alias else "deterministic_normalizer"})
     return {"contract_type":"NamingContractV1","status":"DRAFT","columns":columns,"checksum":checksum(columns)}
 
 def requirement_issues(task:dict[str,Any])->list[dict[str,Any]]:

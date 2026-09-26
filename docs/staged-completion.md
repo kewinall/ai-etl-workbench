@@ -25,6 +25,11 @@
 
 ## 第 3 階段目前進度
 
+最新入口驗證：雙 CSV 正常建立／上傳／來源限定命名已補齊，網站實際 API 互動通過；
+完整隔離回歸 1008 passed／37 skipped，網站新建與規格互動 3 passed（4.7s）。
+尚未呼叫此案例的真實模型或執行 Join 寫入；完整第 3 階段仍未完成。
+最新證據：[Join 驗證紀錄](verification/join-stage3-2026-09-26.md)。
+
 已新增獨立 `JoinContractV1`，不向既有 `RequirementConditionsV1` 加入預設欄位，
 避免改變已交付單來源版本的 canonical document。Join 條件可透過既有 Run revision
 API 補正並重新核准；SA evidence 僅包含白名單语意欄位。

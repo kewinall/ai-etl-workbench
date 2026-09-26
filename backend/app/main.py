@@ -387,7 +387,10 @@ def create(data:TaskCreate):
    for key in ('data_path','reject_path','exception_path'):
     if not str((payload.get('target_config') or {}).get(key,'')).startswith('/'):raise HTTPException(422,f'{key} 必須使用 Vertica Server 絕對路徑')
   if category=='ODS' and (len(sources)!=1 or sources[0].get('type') not in ('CSV','EXCEL','VERTICA')):raise HTTPException(422,'ODS 必須使用一個檔案或 Vertica Table 來源')
-  if category=='DW_DM' and (len(sources)<2 or any(x.get('type')!='VERTICA' for x in sources)):raise HTTPException(422,'DW/DM 必須使用至少兩個 Vertica Table 來源')
+  if category=='DW_DM':
+   table_sources=len(sources)>=2 and all(x.get('type')=='VERTICA' for x in sources)
+   csv_join_sources=len(sources)==2 and all(x.get('type')=='CSV' for x in sources)
+   if not (table_sources or csv_join_sources):raise HTTPException(422,'DW/DM 必須使用至少兩個 Vertica Table，或恰好兩個 CSV 來源；不可混用')
  return repo.create_task(payload)
 @app.post('/api/tasks/{task_id}/requirements/validate')
 def validate_requirements(task_id:str):
