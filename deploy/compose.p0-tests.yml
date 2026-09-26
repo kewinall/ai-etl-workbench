@@ -29,7 +29,7 @@ services:
         from app.migrations import migrate;
         print('Applied migrations:',len(migrate(os.environ['DATABASE_URL'],Path('/app/database/migrations'))));
         import pytest;
-        sys.exit(pytest.main(['/app/backend/tests','-q','--tb=short','-p','no:cacheprovider']))
+        sys.exit(pytest.main(['/app/backend/tests','-q','-ra','--tb=short','-p','no:cacheprovider']))
     environment:
       DATABASE_URL: postgresql://workbench@postgres:5432/workbench
       DATABASE_HOST: postgres

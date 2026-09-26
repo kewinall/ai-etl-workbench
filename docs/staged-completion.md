@@ -45,3 +45,23 @@ docker compose -f deploy/compose.yml build web
 
 已知另有 Worker 對本機 Vertica image/JDBC 的相依；必須整理來源與重建方法，
 不能因控制平面測試可重建就宣稱整套部署可攜。
+
+### 跳過測試與漏版檢查
+
+2026-09-20 再次隔離回歸：844 passed、23 skipped、1 warning（20.37s）。
+現在預設輸出 `-ra`，讓 skip 原因可查閱：
+
+| 類別 | 數量 | 處理方式 |
+|---|---:|---|
+| 原生 Hop／Worker 執行環境 | 10 | 在明確 opt-in 的原生容器／WSL runner 執行；不可在普通控制平面測試假造通過 |
+| 指定持久化 Run 證據（reconciliation、QA context/dispatch/journal） | 12 | 需要綁定實際案例，採專用驗收；不能任意重跑已交付版本 |
+| Git checkout 檔案發佈檢查 | 1 | 在 repository checkout 執行；測試容器未掛載 .git，故跳過 |
+
+發現 InspectVerticaMetadata.java、VerifyMetadataExport.java 被 ignore，
+但原生測試引用它們。已只增加兩檔白名單及 REQUIRED 發佈檢查；
+仍忽略憑證、未知 CSV 與其他本機工具。此漏版不能以原本 844 項通過掩蓋。
+
+補充驗證：2026-09-20 原生 Hop metadata roundtrip 測試 2 passed（9.72s），
+禁止網路且不連接資料庫、不執行 ETL。2026-09-26 在實際 checkout 重跑
+test_source_distribution.py：1 passed（0.08s）。這些證據僅涵蓋 metadata
+與發佈檔案完整性，不代表第 1 階段或所有原生整合測試已完成。
