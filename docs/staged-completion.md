@@ -65,3 +65,18 @@ docker compose -f deploy/compose.yml build web
 禁止網路且不連接資料庫、不執行 ETL。2026-09-26 在實際 checkout 重跑
 test_source_distribution.py：1 passed（0.08s）。這些證據僅涵蓋 metadata
 與發佈檔案完整性，不代表第 1 階段或所有原生整合測試已完成。
+
+### 2026-09-26 乾淨 checkout 驗證
+
+- GitHub `main` 已核對 `ce3eca3c6670adf5642f0d18dc1599dc576efdfa`。
+- 從 GitHub 新 clone，未複製原工作目錄的 .env 或未追蹤檔案。
+- 發佈檔案檢查：1 passed（0.09s）。
+- 原生 Hop metadata：2 passed（9.22s）；使用既有 apache/hop:2.12.0 映像，
+  禁止網路，不連接資料庫、不執行 ETL。Python runner 沿用本機 venv，並非乾淨 Python 環境。
+- 完整控制平面回歸另在 `ai-etl-clean-regression` 隔離 Compose 專案建置與執行；
+  實測 844 passed、23 skipped、1 warning（20.64s），程序 exit 0。
+  全新測試資料庫、無發布埠、internal network；結束後容器正常停止，volume 保留。
+  測試 image ID：sha256:a9c2d0ae9b736ba5ce7214f717ebeef5c02d834354658eac9319b8dc2d465677。
+- 新發現：boto3 使用下限版本，間接 Python 相依亦未鎖定。
+  即使回歸通過，也需補齊相依鎖定才可宣稱版本可重現。
+- Worker 仍由 local/vertica:25.3.0-rpm 取得 JDBC；本機映像存在不代表其他電腦可建置。
