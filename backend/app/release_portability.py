@@ -2,6 +2,7 @@
 from typing import Literal
 from pydantic import BaseModel,ConfigDict,Field
 from .sa_contract import digest
+from .source_binding import source_set_checksum
 
 
 class PortabilityEvidenceV1(BaseModel):
@@ -23,9 +24,18 @@ class PortabilityEvidenceV1(BaseModel):
     workflow_completed: Literal[True]
 
 
-def validate_portability(row,candidate,source_checksum,*,expected_checksum,expected_count):
+class PortabilityEvidenceV2(PortabilityEvidenceV1):
+    version: Literal[2]
+    source_checksums: dict[str,str]
+
+
+def validate_portability(row,candidate,source_checksum,*,expected_checksum,expected_count,source_checksums=None):
     if not row or row['status']!='PASS':raise ValueError('RELEASE_PORTABILITY_REQUIRED')
-    evidence=PortabilityEvidenceV1.model_validate(row['evidence']).model_dump()
+    evidence=(PortabilityEvidenceV2 if source_checksums is not None else PortabilityEvidenceV1).model_validate(row['evidence']).model_dump()
+    if source_checksums is not None:
+        if (evidence['source_checksums'] != source_checksums
+                or source_set_checksum(source_checksums) != source_checksum):
+            raise ValueError('RELEASE_PORTABILITY_SOURCE_SET_CHANGED')
     if digest(evidence)!=row['checksum'] or evidence['candidate_checksum']!=candidate['checksum']:
         raise ValueError('RELEASE_PORTABILITY_CHANGED')
     artifacts={a['type']:a for a in candidate['manifest']['artifacts']}

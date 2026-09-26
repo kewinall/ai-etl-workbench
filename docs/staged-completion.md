@@ -41,7 +41,9 @@ Developer 現在依來源數選擇 V1／V2 context、proposal schema 與 prompt�
 API 核准預覽、保存 intent、gateway 與 local bridge 使用一致的版本與 checksum。
 雙來源版本校驗已接入 reservation／write guard；QA context v4 同時保存兩來源解析證據與 Join intent。
 這些程式路徑已接通並有定向測試，但正式多來源授權仍阻擋，尚非真實派送驗收。
-最新控制平面回歸：993 passed、35 skipped、1 warning（22.07s），exit 0。
+雙來源 HWF／參數模板、SDM 來源對照及 Join 規則已接通；原生 HWF 成功／缺右檔兩例通過。
+Portability replay 與 proof v2 已接兩份來源，但 replay 的資料庫／引擎整合仍待真實驗收。
+最新控制平面回歸：1002 passed、37 skipped、1 warning（22.17s），exit 0。
 新增 8 個 opt-in 原生測試在此環境跳過，但已在上述禁止網路的 Hop 環境實際執行。
 此進度**不是多來源執行或 INNER/LEFT 語意攔截驗收**；仍保留 runtime blocker。
 詳見 [Join 階段證據與下一步](verification/join-stage3-2026-09-26.md)。

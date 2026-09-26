@@ -75,7 +75,8 @@ def approval_offer(queue,repo,conn,task_id,run_id,candidate_id,*,root=None):
     expected=compare_oracle_document(oracle['content'],[],document_checksum=oracle['document_checksum'],
         specification_checksum=auth['specification_checksum'],naming_checksum=delivery['specification']['naming']['checksum'])
     validate_portability(proof,candidate,auth['source_checksum'],
-        expected_checksum=expected['expected_checksum'],expected_count=expected['expected_count'])
+        expected_checksum=expected['expected_checksum'],expected_count=expected['expected_count'],
+        source_checksums=auth.get('source_checksums'))
     sdm=conn.execute('SELECT checksum FROM platform.sdm_artifact WHERE sdm_id=%s',(candidate['sdm_id'],)).fetchone()
     fresh=assemble_release_candidate(queue,task_id,run_id,candidate['sdm_id'],candidate['qa_binding_checksum'],repo=repo,root=root,connection=conn)
     content=release_files.read(storage_root(root),candidate['project_id'],run_id,candidate_id,candidate['checksum'],candidate['file_size'])

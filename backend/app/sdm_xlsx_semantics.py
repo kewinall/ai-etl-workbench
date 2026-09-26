@@ -15,10 +15,18 @@ def expected_sdm_cells(payload, run, naming, *, release_binding=None):
     for m in d['mappings']:
         sources=m['source_columns']
         rows.append([m['position'],m['target_column'],m['target_type'],labels[m['operation']],
-            '、'.join(s['original_name'] for s in sources),
+            '、'.join((s['source_ref'] + '.' if d['version'] == 2 else '') + s['original_name'] for s in sources),
             '、'.join(s['stream_name'] for s in sources) if sources else '整筆資料計數，無單一來源欄位'])
-    rules=[['來源識別',d['source_ref']],['目標表',f'{d["target"]["schema"]}.{d["target"]["table"]}'],
+    rules=[['來源識別','、'.join(d['source_refs']) if d['version'] == 2 else d['source_ref']],['目標表',f'{d["target"]["schema"]}.{d["target"]["table"]}'],
         ['寫入模式','APPEND（附加資料）'],['篩選邏輯','ALL（全部成立）；EXCLUDE_UNKNOWN（排除比較結果未知的資料）']]
+    for join in d.get('joins', []):
+        prefix = 'Join ' + join['id']
+        rules.extend([[prefix, f'{join["left_source"]} {join["join_type"]} JOIN {join["right_source"]}'],
+                      [prefix + ' null 鍵', join['null_key_policy']],
+                      [prefix + ' 重複鍵', join['duplicate_key_policy']],
+                      [prefix + ' 字串比較', join['string_comparison']]])
+        for i,key in enumerate(join['keys'],1):
+            rules.append([f'{prefix} 鍵 {i}', f'{join["left_source"]}.{key["left_column"]} = {join["right_source"]}.{key["right_column"]}'])
     for i,f in enumerate(d['filters'],1):
         value=f'{f["column"]} {f["operator"]}'
         if f['constant']:

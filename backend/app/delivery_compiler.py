@@ -15,12 +15,19 @@ SOURCE_CSV=
 # This file is documentation only; Hop does not load it automatically.
 '''
 
+PARAMETERS_TEMPLATE_V2 = PARAMETERS_TEMPLATE.replace(
+    '# SOURCE_CSV must be supplied at execution time; source data is not included.\nSOURCE_CSV=\n',
+    '# Both CSV sources must be supplied separately; source data is not included.\n'
+    '# SOURCE_CSV_0 binds source.0 (left); SOURCE_CSV_1 binds source.1 (right).\n'
+    'SOURCE_CSV_0=\nSOURCE_CSV_1=\n')
+
 
 def compile_delivery_components(payload, run, naming):
     compiled = compile_hwf(payload, run, naming)
     if 'hwf' not in compiled:
         return compiled
     spec = compiled['specification']
+    parameters = PARAMETERS_TEMPLATE_V2 if spec['version'] == 2 else PARAMETERS_TEMPLATE
     columns = []
     for name in spec['output_columns']:
         declared = _type(compiled['output_types'][name])
@@ -30,8 +37,8 @@ def compile_delivery_components(payload, run, naming):
     ddl = (f'CREATE TABLE "{spec["target_schema"]}"."{spec["target_table"]}" (\n'
            + ',\n'.join(columns) + '\n);\n')
     return {**compiled, 'ddl': ddl, 'ddl_checksum': sha256(ddl.encode()).hexdigest(),
-            'parameters': PARAMETERS_TEMPLATE,
-            'parameters_checksum': sha256(PARAMETERS_TEMPLATE.encode()).hexdigest(),
+            'parameters': parameters,
+            'parameters_checksum': sha256(parameters.encode()).hexdigest(),
             'compiler_status': 'DELIVERY_COMPONENTS_NOT_RELEASED',
             'qa_passed': False, 'release_ready': False}
 

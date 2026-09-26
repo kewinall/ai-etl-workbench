@@ -21,7 +21,8 @@ from .formal_release_bundle import candidate_parts
 from .release_bundle import MEMBERS
 from .release_portability import validate_portability
 from .delivery_context import load_delivery_context
-from .source_staging import stage_csv_source
+from .source_staging import stage_csv_source,stage_csv_sources
+from .source_binding import execution_sources
 from .bound_result_query import load_bound_result_query,execute_bound_result_query
 from .result_oracle import compare_oracle_document
 from .result_reader import read_result_rows
@@ -67,6 +68,11 @@ def replay(queue,repo,task_id,run_id,candidate_id,*,root=None):
     query,oracle=load_bound_result_query(queue,task_id,run_id)
     with queue.conn() as conn:
         candidate,parts,run,spec=replay_context(queue,repo,conn,task_id,run_id,candidate_id,root)
+        source_config=run['input_snapshot']['source_config']
+        source_binding=execution_sources(source_config,spec['version'])
+        auth=conn.execute('SELECT binding FROM platform.task_run_execution_authorization WHERE run_id=%s',(run_id,)).fetchone()
+        if not auth or any(auth['binding'].get(key)!=value for key,value in source_binding.items()):
+            raise ValueError('PORTABILITY_EXECUTED_SOURCE_CHANGED')
         original=run['settings_snapshot']['connection']
         if all(str(target[k]).lower()==str(original[k]).lower() for k in ('host','port','database')):
             raise ValueError('PORTABILITY_SEPARATE_DESTINATION_REQUIRED')
@@ -80,9 +86,10 @@ def replay(queue,repo,task_id,run_id,candidate_id,*,root=None):
     config={key:target[key] for key in ('host','port','database','user','tlsmode')}
     config.update(password=secret,connection_timeout=10)
     try:
-        source_config=run['input_snapshot']['source_config'];sources=source_config.get('sources') or []
-        if len(sources)!=1:raise ValueError('PORTABILITY_SINGLE_CSV_REQUIRED')
-        with stage_csv_source(run_id,sources[0],source_config['csv_input_contract_v1']) as staged:
+        sources=source_config['sources'];multi=spec['version']==2
+        staging=(stage_csv_sources(run_id,source_config) if multi else
+                 stage_csv_source(run_id,sources[0],source_config['csv_input_contract_v1']))
+        with staging as staged:
             directory=staged['directory'];(directory/'hop').mkdir()
             for name,data in parts.items():
                 with (directory/name).open('xb') as stream:stream.write(data)
@@ -95,7 +102,7 @@ def replay(queue,repo,task_id,run_id,candidate_id,*,root=None):
                 if cursor.fetchone() is not None:raise ValueError('PORTABILITY_DESTINATION_TABLE_EXISTS')
                 cursor.execute('CREATE SCHEMA IF NOT EXISTS ai_sample')
                 cursor.execute(parts[MEMBERS['DDL']].decode('utf-8'));db.commit()
-            command=hop_command(directory.as_posix(),credential_launcher=True)
+            command=hop_command(directory.as_posix(),credential_launcher=True,source_count=2 if multi else 1)
             command=[('--file='+str(directory/MEMBERS['HWF'])) if arg.startswith('--file=') else arg for arg in command]
             environment={key:os.environ[key] for key in ('PATH','HOME','JAVA_HOME','LANG','LC_ALL') if key in os.environ}
             environment.update(HOP_HOME='/opt/hop',HOP_SHARED_JDBC_FOLDERS='/opt/hop/lib/jdbc',WORKBENCH_VERTICA_PASSWORD=secret)
@@ -111,7 +118,10 @@ def replay(queue,repo,task_id,run_id,candidate_id,*,root=None):
             if hop['result']['status']!='COMPLETED' or not hop['workflow_completed']:
                 raise ValueError('PORTABILITY_HOP_NOT_COMPLETED')
             if any((directory/name).read_bytes()!=content for name,content in parts.items()):raise ValueError('PORTABILITY_ARTIFACT_CHANGED')
-            if sha256(staged['path'].read_bytes()).hexdigest()!=sources[0]['checksum']:raise ValueError('PORTABILITY_SOURCE_CHANGED')
+            source_paths=({ref:item['path'] for ref,item in staged['sources'].items()} if multi else {'source.0':staged['path']})
+            for i,source in enumerate(sources):
+                if sha256(source_paths[f'source.{i}'].read_bytes()).hexdigest()!=source['checksum']:
+                    raise ValueError('PORTABILITY_SOURCE_CHANGED')
             document=json.loads(oracle['content'])
             with vertica_python.connect(**config) as db:
                 cursor=db.cursor();execute_bound_result_query(cursor,query,oracle)
@@ -119,13 +129,14 @@ def replay(queue,repo,task_id,run_id,candidate_id,*,root=None):
             comparison=compare_oracle_document(oracle['content'],rows,document_checksum=oracle['document_checksum'],
                 specification_checksum=digest(spec),naming_checksum=spec['naming']['checksum'])
             if comparison['status']!='MATCH':raise ValueError('PORTABILITY_RESULT_MISMATCH')
-            evidence=dict(version=1,candidate_checksum=candidate['checksum'],source_checksum=sources[0]['checksum'],
+            evidence=dict(version=2 if multi else 1,candidate_checksum=candidate['checksum'],**source_binding,
                 hop_log_checksum=hop['result']['log_checksum'],result_expected_checksum=comparison['expected_checksum'],
                 result_actual_checksum=comparison['actual_checksum'],expected_count=comparison['expected_count'],actual_count=comparison['actual_count'],
                 exit_code=0,isolated_target_created=True,original_artifacts_unmodified=True,workflow_completed=hop['workflow_completed'],
                 **{kind.lower()+'_checksum':sha256(parts[MEMBERS[kind]]).hexdigest() for kind in ('HPL','HWF','DDL')})
-            validate_portability({'status':'PASS','evidence':evidence,'checksum':digest(evidence)},candidate,sources[0]['checksum'],
-                expected_checksum=comparison['expected_checksum'],expected_count=comparison['expected_count'])
+            validate_portability({'status':'PASS','evidence':evidence,'checksum':digest(evidence)},candidate,source_binding['source_checksum'],
+                expected_checksum=comparison['expected_checksum'],expected_count=comparison['expected_count'],
+                source_checksums=source_binding.get('source_checksums'))
             with queue.conn() as conn:
                 current=replay_context(queue,repo,conn,task_id,run_id,candidate_id,root)
                 if current[0]['checksum']!=candidate['checksum']:raise ValueError('PORTABILITY_UPSTREAM_CHANGED')
