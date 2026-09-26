@@ -42,6 +42,10 @@ def build_sa_context(run):
     except ValueError:
         conditions = {'invalid': True}
     evidence.append({'id': 'conditions', 'kind': 'CONDITIONS', 'value': conditions})
+    from .join_contract import join_evidence
+    join_input = join_evidence(snapshot)
+    if join_input is not None:
+        evidence.append({'id': 'join.conditions', 'kind': 'JOIN_CONDITIONS', 'value': join_input})
     csv_input = csv_evidence(snapshot.get('source_config') or {})
     if csv_input:
         evidence.append({'id': 'source.0.csv_input', 'kind': 'CSV_INPUT', 'value': csv_input})

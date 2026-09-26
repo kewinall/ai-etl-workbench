@@ -37,7 +37,11 @@ def condition_issues(snapshot):
     sources = (snapshot.get('source_config') or {}).get('sources') or []
     fields = [field.get('name') for source in sources for field in source.get('fields', [])]
     if len(sources) > 1:
-        issue('UNSUPPORTED', 'join', '多來源 Join 結構化條件尚未接通，不可視為規格檢查通過')
+        issue('UNSUPPORTED', 'join', '多來源 Join 編譯與執行尚未接通；保存結構化條件不代表可執行')
+    # Contract capture is separate from runtime support. Keep the compiler
+    # blocker until multi-source staging, HPL and delivery are all connected.
+    from .join_contract import join_condition_issues
+    issues.extend(join_condition_issues(snapshot))
     if values.date_scope == 'ALL' and any((values.date_column, values.start_date, values.end_date_exclusive)):
         issue('CONFLICT', 'date_scope', '全部資料不可同時指定日期篩選條件')
     if values.date_scope == 'RANGE':

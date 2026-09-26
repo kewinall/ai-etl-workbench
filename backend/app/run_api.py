@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool
 import os
 from .run_queue import RunConflict, RunBlocked
 from .requirement_contract import RequirementConditionsV1
+from .join_contract import JoinContractV1, join_evidence
 from .source_revision import SourceFieldsV1, editable_source
 from .source_replacement import CsvReplacementV1
 from .csv_contract import CsvInputContractV1, editable_csv_source, csv_evidence
@@ -83,6 +84,7 @@ class ReviseRun(BaseModel):
     source_fields_v1: SourceFieldsV1 | None = None
     csv_input_contract_v1: CsvInputContractV1 | None = None
     csv_replacement_v1: CsvReplacementV1 | None = None
+    join_contract_v1: JoinContractV1 | None = None
 
 
 def public_run(row):
@@ -98,6 +100,9 @@ def public_run(row):
     result['input_summary']['target_schema'] = target.get('schema', '')
     result['input_summary']['target_table'] = target.get('table', '')
     result['input_summary']['requirements_v1'] = target.get('requirements_v1')
+    join_input = join_evidence(row['input_snapshot'])
+    if join_input is not None:
+        result['input_summary']['join_contract_v1'] = join_input
     source = row['input_snapshot'].get('source_config') or {}
     result['input_summary']['source_fields_editable'] = editable_source(source)
     result['input_summary']['csv_contract_editable'] = editable_csv_source(source)
@@ -205,7 +210,8 @@ def create_run_router(queue):
                                data.requirements_v1.model_dump() if data.requirements_v1 else None,
                                data.source_fields_v1.model_dump() if data.source_fields_v1 else None,
                                data.csv_input_contract_v1.model_dump() if data.csv_input_contract_v1 else None,
-                               data.csv_replacement_v1.model_dump(mode='json') if data.csv_replacement_v1 else None))
+                               data.csv_replacement_v1.model_dump(mode='json') if data.csv_replacement_v1 else None,
+                               data.join_contract_v1.model_dump() if data.join_contract_v1 else None))
 
     @router.get('/{task_id}/runs/{run_id}/sa-invocation')
     def sa_invocation(task_id: str, run_id: UUID):

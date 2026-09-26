@@ -6,7 +6,7 @@
 |---|---|---|
 | 1 | 可重現基準、機密排除、回歸測試與 GitHub 版本 | 基準驗收通過；部署前置條件與限制見下方證據 |
 | 2 | 日期範圍補正、新 revision 與真實執行 | 日期案例驗收通過；同 Run 真實模型、Hop、Vertica、QA、可攜與 Release 已驗證 |
-| 3 | 多來源 Join、INNER/LEFT 語意攔截與節點證據 | 未完成 |
+| 3 | 多來源 Join、INNER/LEFT 語意攔截與節點證據 | 進行中；需求契約與 revision 已驗證，編譯／真實執行未完成 |
 | 4 | 缺欄位失敗、診斷、人工核准修正及新版本成功 | 未完成 |
 | 5 | 真實成果頁、專案評估、全站互動與窄版回歸 | 未完成 |
 | 6 | 20 案例、人工基準、完整分母及主管報告 | 未完成 |
@@ -22,6 +22,16 @@
 - 每次 push 後核對遠端 commit；不 force push、不改寫歷史、不上傳 .env、機密、來源資料或資料庫備份。
 - 完整案例已有 RELEASE_READY，不重跑、不修改；新的情境使用獨立 Task/revision。
 - 模型費用、正式核准與人工工時是實際輸入，缺失時保留阻擋，不以合成值冒充驗收。
+
+## 第 3 階段目前進度
+
+已新增獨立 `JoinContractV1`，不向既有 `RequirementConditionsV1` 加入預設欄位，
+避免改變已交付單來源版本的 canonical document。Join 條件可透過既有 Run revision
+API 補正並重新核准；SA evidence 僅包含白名單语意欄位。
+
+控制平面回歸：894 passed、25 skipped、1 warning（21.06s），exit 0。
+此進度**不是多來源執行或 INNER/LEFT 語意攔截驗收**；仍保留 runtime blocker。
+詳見 [Join 階段證據與下一步](verification/join-stage3-2026-09-26.md)。
 
 ## 第 1 階段進度
 
