@@ -70,3 +70,24 @@ context 仍傳遞已確認的 conditions，不變更既有 context/schema 版本
 - 完整隔離回歸：865 passed、25 skipped、1 warning（20.76 秒），exit 0。
 - API 映像已重建並更新；未啟用模型或 Hop 派送。
 - 本輪沒有真實模型呼叫；待使用者確認日期案例的狀態不變。
+
+## 18:10 實際日期補正與 SA 結果（優先於上述準備狀態）
+
+使用者確認日期規則後，原始 Run 經輸入核准，真實 Control Worker 回傳
+NEEDS_INPUT，指出 requirements_v1.date_scope 為 AMBIGUOUS；六筆來源 bytes
+驗證成功。補正版 `693d61a1-f0fb-45d8-8b19-c549fd6dd36f` 建立後重新輸入核准，
+Gate 為 CHECKED。父 Run 與缺口保留，不重用舊核准。
+
+對子 Run 進行一次真實 `copilot/gpt-5.4` SA：
+
+- Invocation：`0044f4a2-f727-4bd5-800b-580f7f530315`
+- 結構驗證：VALIDATED_NOT_APPROVED；語意結果：**NEEDS_INPUT**。
+- 時間：22,937 ms；6.43975 AI credits、1 premium request、1 CLI session。
+- 自動重試 0、工具操作 0；token 數未提供，不當作零。
+- 缺口一：明確定義目標輸出欄位、型別與對應。
+- 缺口二：category／amount 空值處理未指定。
+
+日期範圍已被模型正確理解；沒有將模型缺口改成 PASS 或人工核准，沒有
+Developer／Hop／Vertica 寫入。下一步請使用者確認輸出 category VARCHAR(32)、
+total_amount NUMERIC(24,4)、row_count BIGINT；並決定 category／amount 空值規則，
+再建立新 revision 重跑 Gate／SA。正式 Release 不在本次確認範圍內。
