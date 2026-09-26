@@ -2,7 +2,9 @@ FROM python:3.12-slim-bookworm AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PYTHONPATH=/app/backend
 WORKDIR /app
 COPY backend/requirements.txt /app/backend/requirements.txt
-RUN pip install --no-cache-dir -r /app/backend/requirements.txt \
+COPY backend/constraints-linux-py312.txt /app/backend/constraints-linux-py312.txt
+RUN pip install --no-cache-dir -c /app/backend/constraints-linux-py312.txt -r /app/backend/requirements.txt \
+    && pip check \
     && groupadd -g 10001 workbench && useradd -u 10001 -g workbench -m workbench
 RUN mkdir -p /app/runtime-temp /app/hop-project /app/outputs \
     && chown -R 10001:10001 /app/runtime-temp /app/hop-project /app/outputs

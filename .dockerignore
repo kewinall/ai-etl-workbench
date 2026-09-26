@@ -3,6 +3,7 @@
 !backend/app/
 !backend/app/**
 !backend/requirements.txt
+!backend/constraints-linux-py312.txt
 !database/
 !database/migrations/
 !database/migrations/*.sql

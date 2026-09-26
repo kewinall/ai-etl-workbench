@@ -80,3 +80,19 @@ test_source_distribution.py：1 passed（0.08s）。這些證據僅涵蓋 metada
 - 新發現：boto3 使用下限版本，間接 Python 相依亦未鎖定。
   即使回歸通過，也需補齊相依鎖定才可宣稱版本可重現。
 - Worker 仍由 local/vertica:25.3.0-rpm 取得 JDBC；本機映像存在不代表其他電腦可建置。
+
+### Python 部署相依版本鎖定
+
+`backend/constraints-linux-py312.txt` 記錄上述通過回歸的 Linux CPython 3.12
+映像實際套件版本。Docker runtime/API/Worker 共用 `pip install -c ...` 與
+`pip check`；一般 Windows 開發環境仍使用 requirements.txt，不強制安裝 Linux 專用套件。
+
+隔離回歸啟用 `WORKBENCH_VERIFY_DEPENDENCY_LOCK=1`，檢查所有鎖定版本及
+目前平台適用的相依是否完整，避免只留下沒被安裝流程使用的清單。
+更新直接需求時須同步檢視 constraints，重新執行完整隔離回歸後才能上版。
+這是套件版本固定，不是下載內容 hash 鎖定、漏洞掃描或 OS/JDK 映像固定；
+也不代表真實模型相容性驗收。
+
+2026-09-26 鎖定後重新 Docker build 與 `pip check` 成功，獨立
+`ai-etl-locked-regression` 回歸：846 passed、23 skipped、1 warning（20.04s），
+exit 0。兩個新檢查均執行通過；容器正常停止、測試 volume 保留。
