@@ -1,6 +1,7 @@
 # 階段 2：日期需求補正（部分驗證）
 
-目前不是階段 2 完成，也不是新的正式 Release。
+最新判定：第 2 階段日期案例驗收通過，已產生新的正式 Release。
+以下早期段落為歷史紀錄，最新實測與限制見文末。
 
 ## 修改
 
@@ -91,3 +92,50 @@ Gate 為 CHECKED。父 Run 與缺口保留，不重用舊核准。
 Developer／Hop／Vertica 寫入。下一步請使用者確認輸出 category VARCHAR(32)、
 total_amount NUMERIC(24,4)、row_count BIGINT；並決定 category／amount 空值規則，
 再建立新 revision 重跑 Gate／SA。正式 Release 不在本次確認範圍內。
+
+## 19:12 日期案例驗收完成（最新判定）
+
+使用者後續明確授權自動核准並持續完成目標。核准由代理依此授權操作，
+不是宣稱使用者逐筆點選網站。程式檢查、版本綁定與禁止重試規則仍保留。
+
+### 版本與真實模型
+
+- 補正版 `57bb0291-efbf-40d2-8abd-f36d86a83c1f`：SA
+  `9e928ba5-4bdd-47bc-8a38-e98e1b2f807f` NEEDS_INPUT，要求 CSV 空值／錯誤策略。
+- 最終 Run：`105c0171-020d-4230-9ff3-d705cc56c5d8`，技術契約補正後重新核准。
+- SA `b98ae107-8861-4c9c-b758-4fa7dfa57d75` READY_FOR_REVIEW；13,250 ms，3.8399 credits。
+- Developer `edd28422-68d8-4fe4-b18e-257068f03c71` VALIDATED_NOT_APPROVED；14,531 ms，4.6939 credits。
+- QA `f5407d69-06d4-4d50-82be-d18d46f896f2` PASS；27,953 ms，5.99815 credits。
+- 全部使用 copilot/gpt-5.4。三次 SA（含前兩次缺口）＋Developer＋QA 共五次模型請求；
+  每次一個 CLI session／premium request、零自動重試與工具操作。Token 未提供。
+- 第二次 SA 耗時 27,859 ms、5.69265 credits；第一次 SA 證據保留於上節。
+- 本次 QA 首次啟動漏加 --website-authorized，於領取／模型呼叫前被拒絕；
+  補旗標後消耗原已保存授權，並未建立第二筆 QA 或重跑 Hop。
+
+### 原始執行與隔離重播
+
+規格 `f5fff67d-f2ac-4058-8376-596c9f1bec1f`；日期上下界及空值 filters
+通過 deterministic validator，DDL 僅 CREATE 新表。原始 Hop 寫入 ai_sample 專用表一次。
+獨立標準答案與實際 Vertica 結果：A=150.2500／2 筆，B=200.0000／1 筆。
+
+- EXACT_MULTISET MATCH：expected 2、actual 2、missing 0、unexpected 0。
+- 結果 SHA-256：`54ecba0eab9ec825f3827c080eb90a98ff43a372cdb86043b1c6493a300acdf5`。
+- 七個節點、WRITE_STARTED／EXECUTION_RESERVED／HOP_EXECUTED_QA_REQUIRED 各一次。
+- 可攜候選 `dd4ce4bb-490e-4186-9aca-64108081f16d` 在隔離 Vertica 25.3.0-2 執行
+  原始 HWF/HPL/DDL，PASS；check `22b1ebc7-1b62-4038-b9e2-726e09684207`，結果同為 2/2。
+- 正式核准後再次唯讀查詢原目標，仍 MATCH 2/2，無重複寫入。
+
+### 交付與限制
+
+- Release `e844e931-7358-4542-9b6d-0281230a467c`：RELEASE_READY。
+- 下載 10,657 bytes，SHA-256
+  `ccf5e51a199f0b523a86b0c6a9b55f49e7c2ab44464328cb5e9098be14a63495`。
+- 本機：D:\ChatGPT\hop_transfer\outputs\workbench-date-20260926\Release.zip。
+- ZIP 只有五個核准產物及 manifest，全部產物 hash 一致；包含 SDM XML 在內，
+  未發現已知 runtime host/path、來源檔或常見私鑰/token 標記。非全面秘密偵測保證。
+- 瀏覽器交付頁實際顯示正式核准、可攜 PASS、相同 SHA 與下載連結。
+- 舊成果區仍顯示 legacy Task 尚未成功；不得與正式 Run 混為一談，列入第 5 階段顯示修正。
+- WSL 暫時保持程序到期後容器曾正常停止；恢復後讀回核准與資料不丟失、未重跑。
+  Windows/WSL 常駐維運仍屬第 7 階段待完成，不因這次恢復成功而結案。
+- 這一案例證明日期範圍補正與同 Run 交付；不代表所有 CSV 日期／錯誤路徑均已驗收，
+  更不代表第 3–7 階段或完整平台完成。既有 TASK-20260917-0007 Release 未重播或修改。
