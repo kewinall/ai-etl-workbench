@@ -10,6 +10,7 @@ import {SourceEvidence} from './SourceEvidence';
 import {CsvReplacement} from './CsvReplacement';
 import {HopOutcome} from './HopOutcome';
 import {ExecutionReconciliation} from './ExecutionReconciliation';
+import {ExecutionDiagnosis} from './ExecutionDiagnosis';
 
 const states: Record<string, string> = {QUEUED: '待處理（未啟動）', RUNNING: '處理中', NEEDS_REVIEW: '需要人工檢查', SUCCEEDED: '流程已結束', FAILED: '失敗', CANCELLED: '已取消'};
 
@@ -92,6 +93,7 @@ export function RunVersions({taskId}: {taskId: string}) {
     {detail && <article aria-label="版本內容" className="run-version-detail">
       <h4>本次輸入與設定</h4>
       <HopOutcome code={detail.outcome_code}/>
+      {['HOP_EXECUTION_FAILED','HOP_RESULT_UNKNOWN'].includes(detail.outcome_code)&&<ExecutionDiagnosis key={'diagnosis-'+detail.run_id} base={`/api/tasks/${encodeURIComponent(taskId)}/runs/${detail.run_id}`}/>}
       {['HOP_EXECUTION_FAILED','HOP_RESULT_UNKNOWN'].includes(detail.outcome_code)&&<ExecutionReconciliation key={'reconcile-'+detail.run_id} base={`/api/tasks/${encodeURIComponent(taskId)}/runs/${detail.run_id}`} onSaved={async()=>{await load();await open(detail.run_id)}}/>}
       <SAEvidence key={detail.run_id} taskId={taskId} runId={detail.run_id}/>
       <SAInvocation key={'invocation-' + detail.run_id} taskId={taskId} runId={detail.run_id}/>
@@ -115,7 +117,8 @@ export function RunVersions({taskId}: {taskId: string}) {
       <p>寫入模式：{detail.input_summary.requirements_v1?.write_mode || '尚未確認'}；資料期間：{detail.input_summary.requirements_v1?.date_scope || '尚未確認'}</p>
       {detail.input_summary.requirements_v1?.date_scope === 'RANGE' && <p>日期欄位：{detail.input_summary.requirements_v1.date_column}；{detail.input_summary.requirements_v1.start_date}（包含）至 {detail.input_summary.requirements_v1.end_date_exclusive}（不包含）</p>}
       {!!detail.input_summary.requirements_v1?.key_columns?.length && <p>鍵欄位：{detail.input_summary.requirements_v1.key_columns.join('、')}</p>}
-      {detail.state === 'NEEDS_REVIEW' && detail.gate_result && !detail.write_started && detail.matches_current && <>
+      {((detail.state === 'NEEDS_REVIEW' && detail.gate_result && !detail.write_started) || detail.failed_revision_available) && detail.matches_current && <>
+        {detail.failed_revision_available && <p>此失敗版本已核對結案。修正後必須指定 ai_sample 中不同的新目標，重新通過需求與執行核准；不沿用舊核准、不重跑舊寫入，舊失敗與證據完整保留。</p>}
         {!editing && <button disabled={busy} onClick={() => {
           setDraft({requirement_text: detail.input_summary.requirement_text || '', target_schema: detail.input_summary.target_schema || '', target_table: detail.input_summary.target_table || ''});
           setConditions(detail.input_summary.requirements_v1 || {version: 1, write_mode: null, date_scope: null, date_column: '', start_date: '', end_date_exclusive: '', key_columns: []});

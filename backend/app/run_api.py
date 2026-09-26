@@ -91,7 +91,7 @@ class ReviseRun(BaseModel):
 
 def public_run(row):
     keys = ('run_id','task_id','project_id','state','phase','input_checksum','write_started',
-            'outcome_code','created_at','updated_at','matches_current','approval','events','gate_result','parent_run_id')
+            'outcome_code','created_at','updated_at','matches_current','approval','events','gate_result','parent_run_id','failed_revision_available')
     result = {key: row[key] for key in keys if key in row}
     settings = row['settings_snapshot']
     result['settings_checksum'] = settings['checksum']
@@ -163,6 +163,11 @@ def create_run_router(queue):
     @router.get('/{task_id}/runs/{run_id}/reconciliation')
     def read_reconciliation(task_id:str,run_id:UUID):
         from .execution_reconciliation import read
+        return call(read,queue,task_id,run_id)
+
+    @router.get('/{task_id}/runs/{run_id}/diagnosis')
+    def read_diagnosis(task_id:str,run_id:UUID):
+        from .execution_diagnosis import read
         return call(read,queue,task_id,run_id)
 
     @router.post('/{task_id}/runs/{run_id}/reconciliation')

@@ -154,7 +154,22 @@ class RunQueue:
                 if existing['parent_run_id'] != parent_id or snapshot['requirement_text'] != requirement_text or snapshot['target_config'] != target or snapshot['source_config'] != source:
                     raise RunConflict('IDEMPOTENCY_KEY_REUSED')
                 return existing
-            if parent['state'] != 'NEEDS_REVIEW' or parent['phase'] != 'REQUIREMENT_GATE' or not parent['gate_result'] or parent['write_started']:
+            failed_revision = (parent['state']=='FAILED' and parent['phase']=='HOP_EXECUTION'
+                and parent['write_started'] and parent['lease_token'] is None
+                and parent['outcome_code'] in ('HOP_RESULT_UNKNOWN','HOP_EXECUTION_FAILED'))
+            reconciliation = None
+            if failed_revision:
+                reconciliation=conn.execute('SELECT * FROM platform.execution_reconciliation WHERE run_id=%s',(parent_id,)).fetchone()
+                if (not reconciliation or reconciliation['binding']['input_checksum']!=parent['input_checksum']
+                        or reconciliation['binding']['outcome_code']!=parent['outcome_code']):
+                    raise RunConflict('FAILED_REVISION_RECONCILIATION_REQUIRED')
+                previous_target=parent['input_snapshot'].get('target_config') or {}
+                if (target_schema!='ai_sample' or
+                        (target_schema,target_table)==(previous_target.get('schema'),previous_target.get('table')) or
+                        conn.execute('SELECT 1 FROM platform.platform_sample_table WHERE schema_name=%s AND table_name=%s',
+                                     (target_schema,target_table)).fetchone()):
+                    raise RunConflict('FAILED_REVISION_NEW_TARGET_REQUIRED')
+            elif parent['state'] != 'NEEDS_REVIEW' or parent['phase'] != 'REQUIREMENT_GATE' or not parent['gate_result'] or parent['write_started']:
                 raise RunConflict('RUN_NOT_REVISABLE')
             if not self.matches_current(conn, task, parent):
                 raise RunConflict('INPUT_OR_SETTINGS_CHANGED')
@@ -174,11 +189,14 @@ class RunQueue:
             snapshot, digest = self.input_snapshot(updated_task, overrides)
             # All changes commit together; never reset legacy Task execution or artifacts.
             conn.execute('UPDATE platform.task SET requirement_text=%s,target_config=%s,source_config=%s WHERE task_id=%s', (requirement_text, Jsonb(target), Jsonb(source), task_id))
-            conn.execute("UPDATE platform.task_run SET state='CANCELLED',outcome_code='SUPERSEDED_BY_REVISION',updated_at=now() WHERE run_id=%s", (parent_id,))
+            if not failed_revision:
+                conn.execute("UPDATE platform.task_run SET state='CANCELLED',outcome_code='SUPERSEDED_BY_REVISION',updated_at=now() WHERE run_id=%s", (parent_id,))
             result = conn.execute('INSERT INTO platform.task_run(run_id,task_id,project_id,request_key,input_snapshot,input_checksum,settings_snapshot,parent_run_id) VALUES(%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *',
                 (uuid4(), task_id, task['project_id'], request_key, Jsonb(snapshot), digest, Jsonb(resolved['snapshot']), parent_id)).fetchone()
-            self.event(conn, parent_id, 'SUPERSEDED_BY_REVISION', parent['phase'])
-            self.event(conn, result['run_id'], 'REVISION_CREATED', 'PREFLIGHT')
+            self.event(conn, parent_id, 'FAILED_REVISION_LINKED' if failed_revision else 'SUPERSEDED_BY_REVISION', parent['phase'])
+            self.event(conn, result['run_id'], 'REVISION_CREATED', 'PREFLIGHT',
+                {'reconciliation_id':str(reconciliation['reconciliation_id']),'automatic_retry_allowed':False}
+                if failed_revision else None)
             return result
 
     @staticmethod
@@ -262,7 +280,13 @@ class RunQueue:
                 raise ValueError('RUN_NOT_FOUND')
             approval = conn.execute('SELECT * FROM platform.task_run_approval WHERE run_id=%s', (run_id,)).fetchone()
             events = conn.execute('SELECT event_id,event_type,phase,created_at,event_context FROM platform.task_run_event WHERE run_id=%s ORDER BY event_id', (run_id,)).fetchall()
-            return {**run, 'approval': approval, 'matches_current': self.matches_current(conn, task, run), 'events': events}
+            failed_revision_available=(run['state']=='FAILED' and run['phase']=='HOP_EXECUTION'
+                and run['write_started'] and run['lease_token'] is None
+                and run['outcome_code'] in ('HOP_RESULT_UNKNOWN','HOP_EXECUTION_FAILED')
+                and conn.execute('SELECT 1 FROM platform.execution_reconciliation WHERE run_id=%s',(run_id,)).fetchone() is not None
+                and conn.execute('SELECT 1 FROM platform.task_run WHERE parent_run_id=%s',(run_id,)).fetchone() is None)
+            return {**run, 'approval': approval, 'matches_current': self.matches_current(conn, task, run),
+                    'failed_revision_available':failed_revision_available,'events': events}
 
     def heartbeat(self, run_id, token, lease_seconds=60):
         if type(lease_seconds) is not int or not 10 <= lease_seconds <= 300:
