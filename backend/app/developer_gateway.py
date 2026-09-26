@@ -2,7 +2,7 @@
 import json
 import time
 from .model_gateway import complete_json,completion_options,GatewayError
-from .developer_contract import DeveloperProposalV1,validate_proposal
+from .developer_contract import proposal_model,validate_proposal
 from .sa_contract import digest
 
 PROMPT_VERSION=2
@@ -20,6 +20,23 @@ PROMPT=('You are the Developer design reviewer in a controlled ETL workbench. '
     'Do not emit XML, SQL, code, credentials, connection settings, tools or execution instructions. '
     'The controller validates and compiles the proposal; your response grants no approval or execution permission.')
 
+PROMPT_V2 = PROMPT.replace('EtlSpecificationV1', 'EtlSpecificationV2') + (
+    ' For two sources, return proposal version 2 and specification version 2. '
+    'Use source_refs ["source.0", "source.1"]. Copy the complete joins from join.conditions exactly, '
+    'including Join ID, source references, original key names, join type and all null, duplicate and string policies. '
+    'Cite requirement, join.conditions and sources.csv_inputs. '
+    'Naming source_name is qualified as source.N.original_name; use the confirmed English names in expressions. '
+    'The compiler handles sorting and NEVER_MATCH null exclusion; do not invent additional null filters. '
+    'Preserve LEFT unmatched rows; never substitute INNER. Both CSV inputs have their own parsing contract.')
+
+
+def developer_material(context):
+    model = proposal_model(context)
+    prompt = PROMPT_V2 if context['version'] == 2 else PROMPT
+    schema = model.model_json_schema()
+    return {'prompt': prompt, 'prompt_version': 3 if context['version'] == 2 else PROMPT_VERSION,
+            'prompt_checksum': digest(prompt), 'schema': schema, 'schema_checksum': digest(schema)}
+
 
 class DeveloperInvocationError(ValueError):
     def __init__(self,code,trace):super().__init__(code);self.trace=trace
@@ -27,10 +44,11 @@ class DeveloperInvocationError(ValueError):
 
 def complete_developer(captured,profile,*,secret=None,completion=None,native_completion=None,before_call=None):
     started=time.monotonic();context=captured['context'];run=captured['run']
+    material=developer_material(context)
     trace={'provider':profile.get('provider_type'),'model':None,'run_id':str(run['run_id']),
         'input_checksum':run['input_checksum'],'context_checksum':context.get('context_checksum'),
-        'prompt_version':PROMPT_VERSION,'prompt_checksum':digest(PROMPT),
-        'schema_checksum':digest(DeveloperProposalV1.model_json_schema()),'usage':None,'output_checksum':None}
+        'prompt_version':material['prompt_version'],'prompt_checksum':material['prompt_checksum'],
+        'schema_checksum':material['schema_checksum'],'usage':None,'output_checksum':None}
     def fail(code):
         raise DeveloperInvocationError(code,{**trace,'status':'FAILED','error_code':code,
             'duration_ms':round((time.monotonic()-started)*1000)}) from None
@@ -45,8 +63,8 @@ def complete_developer(captured,profile,*,secret=None,completion=None,native_com
     except GatewayError as error:fail(str(error))
     if trace['model']!=(run['settings_snapshot'].get('model_routes') or {}).get('etl_specification'):
         fail('DEVELOPER_MODEL_VERSION_MISMATCH')
-    payload={'prompt':PROMPT,'prompt_checksum':trace['prompt_checksum'],
-        'schema':DeveloperProposalV1.model_json_schema(),'schema_checksum':trace['schema_checksum'],'context':context}
+    payload={key:material[key] for key in ('prompt','prompt_checksum','schema','schema_checksum')}
+    payload['context']=context
     try:
         if profile.get('provider_type')=='LOCAL_COPILOT':
             if not callable(native_completion) or not callable(before_call):fail('DEVELOPER_NATIVE_WORKER_REQUIRED')
@@ -56,7 +74,7 @@ def complete_developer(captured,profile,*,secret=None,completion=None,native_com
             if any(native_trace.get(k)!=v for k,v in expected.items()):fail('DEVELOPER_NATIVE_TRACE_MISMATCH')
             usage=native_trace.get('usage')
         else:
-            messages=[{'role':'system','content':PROMPT},{'role':'user','content':json.dumps(
+            messages=[{'role':'system','content':material['prompt']},{'role':'user','content':json.dumps(
                 {'schema':payload['schema'],'context':context},ensure_ascii=False)}]
             output,usage=complete_json(profile,'etl_specification',messages,secret=secret,completion=completion,max_output_tokens=4096)
         trace.update(usage=usage,output_checksum=digest(output))

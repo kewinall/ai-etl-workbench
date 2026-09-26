@@ -14,9 +14,9 @@ from app.specification_api import create_specification_router
 pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1', reason='Isolated Compose DB required')
 
 
-def prepared(context, source_override=None):
+def prepared(context, source_override=None, design_factory=design):
     queue, task_id = context
-    spec, template, naming = design()
+    spec, template, naming = design_factory()
     snapshot = template['input_snapshot']
     if source_override is not None:
         snapshot['source_config']['sources'] = [source_override]

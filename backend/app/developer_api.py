@@ -3,8 +3,8 @@ import os
 from uuid import UUID
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
-from .developer_contract import load_context, DeveloperProposalV1
-from .developer_gateway import PROMPT, PROMPT_VERSION
+from .developer_contract import load_context
+from .developer_gateway import developer_material
 from .developer_journal import DeveloperJournal, checked_trace
 from .sa_contract import digest
 
@@ -47,11 +47,12 @@ def read(queue, task_id, run_id):
             record.update(invocation_id=str(row['invocation_id']), proposal=output.get('proposal'),
                           specification=output.get('specification'), usage=trace['usage'] if trace else None,
                           duration_ms=trace['duration_ms'] if trace else None)
+        material = developer_material(context or {'version': 1})
         return {'invocation':record, 'context':context, 'model':model,
                 'matches_current': bool(context and (not row or context == row['input_json']['context'])),
                 'eligible': bool(context and native and not row),
                 'dispatch_enabled': os.getenv('WORKBENCH_DEVELOPER_DISPATCH_ENABLED') == 'true',
-                'prompt_checksum':digest(PROMPT), 'schema_checksum':digest(DeveloperProposalV1.model_json_schema()),
+                'prompt_checksum':material['prompt_checksum'], 'schema_checksum':material['schema_checksum'],
                 'execution_authorized':False, 'release_ready':False}
 
 

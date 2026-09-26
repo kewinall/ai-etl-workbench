@@ -4,8 +4,8 @@ No provider calls, automatic approval or ETL execution occur in this module.
 """
 from uuid import uuid4
 from psycopg.types.json import Jsonb
-from .developer_contract import DeveloperProposalV1, load_context, validate_proposal
-from .developer_gateway import PROMPT, PROMPT_VERSION
+from .developer_contract import load_context, validate_proposal
+from .developer_gateway import developer_material
 from .etl_specification import validate_specification
 from .invocation_usage import checked_usage
 from .sa_contract import digest
@@ -55,14 +55,13 @@ class DeveloperJournal:
             if not operator:
                 raise ValueError('OPERATOR_NOT_CONFIGURED')
             identity = uuid4()
+            material = developer_material(context)
             payload = {'context': context, 'operator_id': str(operator['operator_id']), 'consent_recorded': True,
-                       'prompt': PROMPT, 'prompt_checksum': digest(PROMPT),
-                       'schema': DeveloperProposalV1.model_json_schema(),
-                       'schema_checksum': digest(DeveloperProposalV1.model_json_schema())}
+                       **{key: material[key] for key in ('prompt', 'prompt_checksum', 'schema', 'schema_checksum')}}
             conn.execute("""INSERT INTO platform.agent_invocation
                 (invocation_id,task_id,run_id,role,provider,model,prompt_version,context_checksum,input_json,status)
                 VALUES(%s,%s,%s,'pilot_developer',%s,%s,%s,%s,%s,'DEVELOPER_RESERVED')""",
-                (identity, task_id, run_id, settings['ai']['provider_type'], model, PROMPT_VERSION, context_checksum, Jsonb(payload)))
+                (identity, task_id, run_id, settings['ai']['provider_type'], model, material['prompt_version'], context_checksum, Jsonb(payload)))
             self.queue.event(conn, run_id, 'DEVELOPER_INTENT_RECORDED', 'SPEC_GENERATION',
                              {'invocation_id': str(identity), 'context_checksum': context_checksum, 'automatic_retry': False})
         return {'invocation_id': str(identity), 'status': 'DEVELOPER_RESERVED'}

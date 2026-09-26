@@ -6,7 +6,7 @@
 |---|---|---|
 | 1 | 可重現基準、機密排除、回歸測試與 GitHub 版本 | 基準驗收通過；部署前置條件與限制見下方證據 |
 | 2 | 日期範圍補正、新 revision 與真實執行 | 日期案例驗收通過；同 Run 真實模型、Hop、Vertica、QA、可攜與 Release 已驗證 |
-| 3 | 多來源 Join、INNER/LEFT 語意攔截與節點證據 | 進行中；需求契約與 revision 已驗證，編譯／真實執行未完成 |
+| 3 | 多來源 Join、INNER/LEFT 語意攔截與節點證據 | 進行中；契約、編譯、Developer V2 交接已驗證，正式執行與交付未完成 |
 | 4 | 缺欄位失敗、診斷、人工核准修正及新版本成功 | 未完成 |
 | 5 | 真實成果頁、專案評估、全站互動與窄版回歸 | 未完成 |
 | 6 | 20 案例、人工基準、完整分母及主管報告 | 未完成 |
@@ -36,7 +36,10 @@ V2 已接 Join 語意攔截、來源限定命名／型別驗證與正向 Hop DAG
 確認須排除右側 null 鍵，不能直接沿用 MergeJoin 的 null 匹配行為。
 多來源 staging／prepared integrity／Hop CLI 參數已接通；另有 2 個真實 Hop CLI 案例通過，
 但核准載入為測試替身，正式授權及 Vertica 仍待接通。
-最新控制平面回歸：959 passed、35 skipped、1 warning（20.73s），exit 0。
+Developer 現在依來源數選擇 V1／V2 context、proposal schema 與 prompt；V1 歷史格式不變。
+雙來源引用 Join／CSV evidence，仍須通過 deterministic specification validator；模型不授予執行權。
+API 核准預覽、保存 intent、gateway 與 local bridge 使用一致的版本與 checksum。
+最新控制平面回歸：974 passed、35 skipped、1 warning（21.93s），exit 0。
 新增 8 個 opt-in 原生測試在此環境跳過，但已在上述禁止網路的 Hop 環境實際執行。
 此進度**不是多來源執行或 INNER/LEFT 語意攔截驗收**；仍保留 runtime blocker。
 詳見 [Join 階段證據與下一步](verification/join-stage3-2026-09-26.md)。
