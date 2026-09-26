@@ -15,6 +15,8 @@ from .csv_contract import CsvInputContractV1
 from .control_worker import check_requirements
 from .platform_harness import checksum as naming_checksum
 from .sa_contract import digest
+from .join_contract import JoinV1
+from .join_semantics import validate_join_semantics
 
 IDENTIFIER = r'^[a-z_][a-z0-9_]{0,62}$'
 SHA256 = r'^[a-f0-9]{64}$'
@@ -114,6 +116,39 @@ class EtlSpecificationV1(ContractModel):
         return value
 
 
+class EtlSpecificationV2(ContractModel):
+    """Two-source Join design. V1 model/canonical output remains unchanged."""
+    version: Literal[2]
+    run_id: UUID
+    input_checksum: str = Field(pattern=SHA256)
+    settings_checksum: str = Field(pattern=SHA256)
+    naming: NamingReferenceV1
+    source_refs: list[Literal['source.0', 'source.1']] = Field(min_length=2, max_length=2)
+    joins: list[JoinV1] = Field(min_length=1, max_length=1)
+    target_schema: str = Field(pattern=IDENTIFIER)
+    target_table: str = Field(pattern=IDENTIFIER)
+    write_mode: Literal['APPEND', 'REPLACE', 'UPSERT']
+    filters: list[FilterPredicateV1] = Field(max_length=100)
+    filter_logic: Literal['ALL']
+    filter_null_policy: Literal['EXCLUDE_UNKNOWN']
+    aggregation: AggregationV1 | None
+    output_columns: list[str] = Field(min_length=1, max_length=200)
+
+    @field_validator('version', mode='before')
+    @classmethod
+    def integer_version(cls, value):
+        if type(value) is not int:
+            raise ValueError('INTEGER_VERSION_REQUIRED')
+        return value
+
+    @field_validator('source_refs')
+    @classmethod
+    def exact_sources(cls, value):
+        if value != ['source.0', 'source.1']:
+            raise ValueError('JOIN_SOURCE_ORDER_MISMATCH')
+        return value
+
+
 def _type(value):
     """Compiler subset, not a claim to support all Vertica SQL types."""
     if not isinstance(value, str):
@@ -146,6 +181,19 @@ Full SQL semantics against business intent still require human review and QA.
     issues = []
     def issue(code, path, message):
         issues.append({'code': code, 'field_path': path, 'message': message})
+    # V2 is inspectable before its execution chain is activated. Never label a
+    # semantically matching Join VALIDATED while its compiler is incomplete.
+    if isinstance(payload, dict) and type(payload.get('version')) is int and payload['version'] == 2:
+        try:
+            spec2 = EtlSpecificationV2.model_validate(payload)
+        except ValueError:
+            return {'status': 'INVALID', 'issues': [{'code': 'SPEC_SCHEMA_INVALID', 'field_path': 'specification',
+                    'message': '雙來源規格格式不合法或包含不支援的欄位'}], 'execution_authorized': False}
+        issues.extend(validate_join_semantics([join.model_dump() for join in spec2.joins], run['input_snapshot']))
+        if str(spec2.run_id) != str(run['run_id']) or spec2.input_checksum != run['input_checksum'] or spec2.settings_checksum != run['settings_snapshot']['checksum']:
+            issue('SPEC_VERSION_MISMATCH', 'run_id', '規格與輸入或設定版本不一致')
+        issue('SPEC_JOIN_COMPILATION_NOT_READY', 'joins', '雙來源規格尚未接通完整編譯及執行鏈，不可保存核准或執行')
+        return {'status': 'INVALID', 'issues': issues, 'execution_authorized': False}
     try:
         spec = EtlSpecificationV1.model_validate(payload)
     except ValueError:

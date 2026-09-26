@@ -30,7 +30,8 @@
 API 補正並重新核准；SA evidence 僅包含白名單语意欄位。
 
 已接上每來源 CSV 契約、逐檔 preflight、獨立暫存副本與 revision；正式 Hop／交付仍待接通。
-最新控制平面回歸：915 passed、25 skipped、1 warning（21.11s），exit 0。
+V2 已接程式層 Join 精確語意攔截（含節點及 expected／actual），正向編譯仍阻擋。
+最新控制平面回歸：928 passed、25 skipped、1 warning（21.13s），exit 0。
 此進度**不是多來源執行或 INNER/LEFT 語意攔截驗收**；仍保留 runtime blocker。
 詳見 [Join 階段證據與下一步](verification/join-stage3-2026-09-26.md)。
 
