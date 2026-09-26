@@ -1,0 +1,18 @@
+{
+  "case_id": "pilot-left-join-v1",
+  "description": "Synthetic LEFT JOIN: duplicate expansion, unmatched/null keys, case and whitespace sensitivity",
+  "left_csv": "客戶編號,名稱\nA,left_a1\nA,left_a2\nB,left_b\nC,left_c\na,left_lower\n,left_null\n A,left_space\n",
+  "right_csv": "客戶編號|名稱\nA|right_a1\nA|right_a2\nB|right_b\n|right_null\nX|right_x\nA |right_space\n",
+  "expected_columns": ["left_key", "left_label", "right_key", "right_label"],
+  "expected_rows": [
+    {"left_key":"A","left_label":"left_a1","right_key":"A","right_label":"right_a1"},
+    {"left_key":"A","left_label":"left_a1","right_key":"A","right_label":"right_a2"},
+    {"left_key":"A","left_label":"left_a2","right_key":"A","right_label":"right_a1"},
+    {"left_key":"A","left_label":"left_a2","right_key":"A","right_label":"right_a2"},
+    {"left_key":"B","left_label":"left_b","right_key":"B","right_label":"right_b"},
+    {"left_key":"C","left_label":"left_c","right_key":null,"right_label":null},
+    {"left_key":"a","left_label":"left_lower","right_key":null,"right_label":null},
+    {"left_key":null,"left_label":"left_null","right_key":null,"right_label":null},
+    {"left_key":" A","left_label":"left_space","right_key":null,"right_label":null}
+  ]
+}
