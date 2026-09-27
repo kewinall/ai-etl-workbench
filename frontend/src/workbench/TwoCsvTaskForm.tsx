@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import {useTaskDraft} from './TaskDraftBoundary';
 
 type Props={projectId?:string; onCreated:(task:any)=>void; onError:(message:string)=>void};
 type CsvContract={version:1;encoding:string;delimiter:string;header:boolean;extra_columns:string};
@@ -18,6 +19,7 @@ export function TwoCsvTaskForm({projectId,onCreated,onError}:Props){
   const [confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false);
   const [schema,setSchema]=useState('ai_sample'),[table,setTable]=useState('');
   const [uploading,setUploading]=useState<number|null>(null);
+  useTaskDraft('two-csv',{name,requirement,sources,contracts,keys,joinType,confirmed,schema,table},busy||uploading!==null);
   const patchContract=(index:number,patch:Partial<CsvContract>)=>{
     setContracts(old=>old.map((value,i)=>i===index?{...value,...patch}:value));setConfirmed(false);
   };
