@@ -100,6 +100,27 @@ def test_project_stale_update_is_rejected(client_repo):
     assert response.json()['detail']['code'] == 'PROJECT_CHANGED'
 
 
+def test_evaluation_missing_project_does_not_query(client_repo,monkeypatch):
+    client,_=client_repo
+    monkeypatch.setattr('app.project_evaluation.read',lambda *args:pytest.fail('must validate project first'))
+    assert client.get(f'/api/projects/{uuid4()}/evaluation').status_code==404
+    assert client.get('/api/projects/invalid/evaluation').status_code==422
+
+
+@pytest.mark.parametrize('stage',['lookup','read'])
+def test_evaluation_failure_is_not_empty_inventory(client_repo,monkeypatch,stage):
+    client,repo=client_repo
+    project=client.post('/api/projects',json={'project_name':'evaluation unavailable'}).json()
+    def fail(*args):raise RuntimeError('password=synthetic-secret host=private.example')
+    if stage=='lookup':monkeypatch.setattr(repo,'get_project',fail)
+    else:monkeypatch.setattr('app.project_evaluation.read',fail)
+    response=client.get(f"/api/projects/{project['project_id']}/evaluation")
+    assert response.status_code==503
+    assert response.json()['detail']['code']=='PROJECT_EVALUATION_UNAVAILABLE'
+    assert 'cases' not in response.text
+    assert 'synthetic-secret' not in response.text and 'private.example' not in response.text
+
+
 def test_summary_missing_project_does_not_query_counts(client_repo, monkeypatch):
     client, _ = client_repo
     def unexpected(*args):

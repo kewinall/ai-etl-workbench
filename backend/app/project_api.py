@@ -69,9 +69,11 @@ def create_project_router(repo) -> APIRouter:
     @router.get('/{project_id}/evaluation')
     def evaluation(project_id: UUID):
         from .project_evaluation import read
-        get_project(project_id)
         try:
+            get_project(project_id)
             return read(repo,str(project_id))
+        except HTTPException:
+            raise
         except Exception:
             raise HTTPException(503,detail={'code':'PROJECT_EVALUATION_UNAVAILABLE','message':'專案評估證據暫時無法讀取，不代表沒有案例。'}) from None
 
