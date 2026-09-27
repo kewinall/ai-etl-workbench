@@ -2,6 +2,23 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 2026-09-28：準備失聯核對正式部署
+
+部署前 active leases／pending Hop 皆 0，agent invocation 僅既有終態或待
+審查狀態。短暫停止 API／control-worker，建立 migration 前 custom-format
+DB 私有備份，SHA-256 `1eb53c2462b1d5e7c95ac7e7de0d4905c21240a0f130f685c05d86597c9265e3`。
+備份未加入 Git；此處是單次 DB 備份，不冒充完整自動一致性備份方案。
+
+套用 056，runner 回 Applied 1 migrations；以原四項派發開關 true 更新
+API／control-worker／web，DB 與既有資料卷不重建、不刪除 orphan 容器。
+正式 readiness 200，migration 最新為 056。SQL 回讀 events 仍 2,861、
+active leases 0、pending Hop 0、新核對表 0 筆。已交付版本的核對端點回
+NOT_ELIGIBLE，沒有測試性結案寫入正式資料。
+
+正式指南／固定集合量測／報告唯讀瀏覽器回歸 **3 passed（14.6 秒）**。
+本段取代下方各歷史段落「尚未正式部署」；真實 Vertica 部分写入中斷、
+持久 lifecycle 與一致性備份自動協調仍未完成，不因此宣稱第 7 階段完成。
+
 ## 程序死亡保留 DB 的網站結案與 SQL 回讀
 
 新增 opt-in `compose.claim-review.yml`，只連先前專用 synthetic claim-death
