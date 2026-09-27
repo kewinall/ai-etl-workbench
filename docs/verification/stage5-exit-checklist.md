@@ -58,6 +58,13 @@ run_count 0。未授權模型、未執行 Hop 或建立 Vertica 表；保留該 
 
 ## 後續階段邊界
 
+重送去重前端已接線：兩種建立表單以 CreationRequest 保存本次內容與 UUID，
+相同內容重試沿用 key，改內容／新表單產生新 key；只保存在記憶體，不寫 browser
+storage。5 項前端邏輯測試與 build 通過。Pilot 套用 1 migration 後部署 API/web，
+實際 API 合成請求連送兩次回同一 Task，改內容回 409，該 Task run_count=0。
+此結果證明部署 API 去重，不等於已完成瀏覽器回應遺失後重試 E2E；重載頁面
+視為新表單，跨分頁只有帶相同 key 才會去重，不以名稱或相同需求自動合併。
+
 Task 重送去重後端已實作（尚未部署）：新增 migration 050、選用 UUID
 creation_request_key，專案＋key 綁定 payload checksum 與 Task。同內容回既有
 Task，不重建節點／事件；同 key 改內容回衝突。舊客戶端未帶 key 仍是原建立語意。

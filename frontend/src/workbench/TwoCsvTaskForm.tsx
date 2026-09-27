@@ -1,4 +1,5 @@
-import React, {useState} from 'react';
+import React, {useRef,useState} from 'react';
+import {CreationRequest} from './creationRequest';
 import {useTaskDraft,useTaskOperation} from './TaskDraftBoundary';
 
 type Props={projectId?:string; onCreated:(task:any)=>void; onError:(message:string)=>void};
@@ -13,6 +14,7 @@ async function request(url:string, init?:RequestInit){
 
 export function TwoCsvTaskForm({projectId,onCreated,onError}:Props){
   const operation=useTaskOperation();
+  const creationRequest=useRef(new CreationRequest());
   const [name,setName]=useState(''),[requirement,setRequirement]=useState('');
   const [sources,setSources]=useState<any[]>([null,null]);
   const [contracts,setContracts]=useState<CsvContract[]>([emptyContract(),emptyContract()]);
@@ -50,7 +52,7 @@ export function TwoCsvTaskForm({projectId,onCreated,onError}:Props){
           id:'join_sources',left_source:'source.0',right_source:'source.1',join_type:joinType,
           keys:[{left_column:keys[0],right_column:keys[1]}],null_key_policy:'NEVER_MATCH',
           duplicate_key_policy:'EXPAND',string_comparison:'CASE_SENSITIVE_NO_TRIM'}]}}};
-      onCreated(await request(`/api/projects/${projectId}/tasks`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}));
+      onCreated(await request(`/api/projects/${projectId}/tasks`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(creationRequest.current.bind(payload))}));
     }catch(error:any){onError(error.message)}finally{operation.release();setBusy(false)}
   };
   return <section className="panel form wb-two-csv">
