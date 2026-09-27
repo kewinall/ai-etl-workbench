@@ -63,6 +63,16 @@ def test_website_hop_request_requires_lineage_and_is_single_consumption(context,
             assert api.post(url,json=body).json()==first.json()
             assert conn.execute('SELECT count(*) n FROM platform.task_run_execution_authorization WHERE run_id=%s',(run['run_id'],)).fetchone()['n']==1
             job=claim(q,task,run['run_id']);assert job and claim(q,task,run['run_id']) is None
+            # A client may retry after losing the response while a separate Hop
+            # worker already owns the request. Never enqueue/claim a second write.
+            repeated=api.post(url,json=body)
+            assert repeated.status_code==200
+            assert repeated.json()['request_id']==first.json()['request_id']
+            assert repeated.json()['status']=='CLAIMED'
+            assert repeated.json()['automatic_retry'] is False
+            assert conn.execute('SELECT count(*) n FROM platform.hop_dispatch_request WHERE run_id=%s',(run['run_id'],)).fetchone()['n']==1
+            assert claim(q,task,run['run_id']) is None
+            assert not conn.execute('SELECT write_started FROM platform.task_run WHERE run_id=%s',(run['run_id'],)).fetchone()['write_started']
             with pytest.raises(ValueError):finish(q,{**job,'claim_token':uuid4()},'COMPLETED','HOP_EXECUTED_QA_REQUIRED')
             finish(q,job,'NEEDS_REVIEW','HOP_PREPARATION_OR_COMPARISON_FAILED')
             assert api.get(url).json()['request']['status']=='NEEDS_REVIEW'

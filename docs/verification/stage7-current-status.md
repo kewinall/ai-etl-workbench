@@ -2,6 +2,25 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 中斷驗收的兩個領取階段
+
+程式查核：`hop_dispatch.claim` 先將請求標為 CLAIMED，之後
+`prepare_new_target` 才建立新表，`execute_once` 再取得 Run lease 並標记 write
+started。因此 Run lease 逾時測試不能證明準備階段程序死亡的復原行為。
+目前不得自動把舊 CLAIMED 重設 QUEUED；準備階段可能已有 DDL 副作用。
+
+新增隔離 PostgreSQL 重複 HTTP 請求驗證：request 已 CLAIMED 時再 POST 原
+binding，仍回原 request ID／CLAIMED／automatic_retry=false，全庫同 Run
+request 僅一筆、再次 claim 為 None、write_started 仍 false。定向 **1 passed、
+1 warning（2.26 秒）**。角色為合成、交易最後回滾，不是程序死亡或 Vertica E2E。
+
+完整中斷驗收仍須分兩條：
+1. claim 後／Run lease 前強制死亡：確認 DDL 是否已發生、保留原 request，
+   不能靠時間猜無副作用或自動重新建立表。
+2. lease 後／資料提交中死亡：使用新受控目標、獨立連線確認已提交 rows、
+   失聯後 NEEDS_REVIEW／UNKNOWN，重啟不能重新寫入；保存人工核對證據。
+這是仍待執行的驗收契約，並非通過結果；不可使用現有已交付目標演練。
+
 ## 2026-09-28：真實 Hop 處理中取消
 
 新增 opt-in `test_hop_interruption_native.py`。每次使用新 network-none Worker
