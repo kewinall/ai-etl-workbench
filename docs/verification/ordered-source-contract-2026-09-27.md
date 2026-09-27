@@ -337,3 +337,26 @@ naming confirmation, model request, Hop execution or candidate creation occurred
 The preview process was identity-checked and stopped; deployed services remain
 unchanged. This supplies UI interaction evidence, not ordered XLSX visual or
 live end-to-end acceptance. Those gates remain pending.
+
+## Ordered XLSX independent visual checkpoint
+
+Generated one synthetic V3 candidate through the existing platform renderer in
+its own dependency environment. The bundled Python could not import pytest or
+psycopg; no dependencies were installed. The probe initially passed the renderer
+result dictionary instead of its content bytes to the validator; corrected the
+probe, not the production validator. Earlier failed attempts produced no XLSX.
+
+Final candidate: 6,848 bytes, SHA-256
+`0fc9228ef08d5637d8ef43dc1e4b9d3115b6094171ae2551ff2d949f006f4ce3`.
+Structure gate: nine allowed parts; semantic equality CANDIDATE_LAYOUT_MATCHED;
+portability NOT_VERIFIED; QA/release flags false. Local output is under
+outputs/source-order-visual-20260927 (ignored, not published).
+
+The independent bundled artifact runtime imported both sheets and found no
+formulas. Expanded the existing inspection script's rules range to B24 so the
+new rules and final checksum row are included. Both rendered images were
+visually inspected: generated-field description wraps legibly, logical-record
+and ORDER BY rules are readable, and all version fingerprints are visible.
+No workbook content was rewritten by the independent tool. Native Microsoft
+Excel behavior was not tested. This closes synthetic ordered-candidate visual
+inspection only, not formal run, released workbook or portable replay acceptance.

@@ -12,7 +12,7 @@ const workbook = await SpreadsheetFile.importXlsx(await FileBlob.load(input));
 workbook.recalculate();
 console.log((await workbook.inspect({kind:'sheet',include:'id,name'})).ndjson);
 console.log((await workbook.inspect({kind:'formula',maxChars:1500,options:{maxResults:10}})).ndjson);
-for (const [sheetName, range, name] of [['欄位對照','A1:F9','mapping'],['規則及版本','A1:B20','rules']]) {
+for (const [sheetName, range, name] of [['欄位對照','A1:F9','mapping'],['規則及版本','A1:B24','rules']]) {
   const preview = await workbook.render({sheetName,range,scale:1.5,format:'png'});
   await fs.writeFile(path.join(path.dirname(input),name+'.png'),new Uint8Array(await preview.arrayBuffer()));
 }
