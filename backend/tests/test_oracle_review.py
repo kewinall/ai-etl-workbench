@@ -4,7 +4,7 @@ from app import oracle_store
 
 
 def test_pagination_and_precision(monkeypatch):
-    doc={'columns':[{'name':'value','kind':'INTEGER','nullable':True}],
+    doc={'version':1,'columns':[{'name':'value','kind':'INTEGER','nullable':True}],
          'rows':[{'value':9223372036854775807},{'value':None},{'value':True}]}
     monkeypatch.setattr(oracle_store,'read_oracle',lambda *args:json.dumps(doc).encode())
     first=oracle_store.review_oracle(None,'t','r','s','o',0,1)

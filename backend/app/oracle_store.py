@@ -51,7 +51,10 @@ def oracle_editor_context(queue,task_id,run_id,specification_id):
         candidate=load_approved_candidate(queue,conn,task_id,run_id,specification_id)
         compiled=candidate['compiled']
         columns=oracle_columns(compiled)
-    return {'version':1,'specification_checksum':candidate['specification_checksum'],
+    order_fields=({'version':2,'comparison':'EXACT_SOURCE_SEQUENCE',
+                   'ordinal_column':compiled['specification']['source_order']['ordinal_column']}
+                  if compiled['specification']['version']==3 else {'version':1})
+    return {**order_fields,'specification_checksum':candidate['specification_checksum'],
         'naming_checksum':compiled['specification']['naming']['checksum'],'columns':columns,
         'output_types':compiled['output_types'],
         'max_rows':10000,'max_document_bytes':8*1024*1024,
@@ -98,7 +101,9 @@ def review_oracle(queue,task_id,run_id,specification_id,oracle_id,offset=0,limit
         if isinstance(value,bool):return 'true' if value else 'false'
         return str(value)
     rows=document['rows'];page=rows[offset:offset+limit]
-    return {'oracle_id':str(oracle_id),'document_checksum':sha256(content).hexdigest(),
+    order_fields=({'comparison':document['comparison'],'ordinal_column':document['ordinal_column']}
+                  if document['version']==2 else {})
+    return {**order_fields,'oracle_id':str(oracle_id),'document_checksum':sha256(content).hexdigest(),
         'columns':document['columns'],'rows':[{key:cell(value) for key,value in row.items()} for row in page],
         'offset':offset,'limit':limit,'total_rows':len(rows),'has_more':offset+len(page)<len(rows),
         'view':'HISTORICAL_READ_ONLY','qa_passed':False,'release_ready':False}

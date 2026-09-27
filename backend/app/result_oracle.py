@@ -7,7 +7,7 @@ from decimal import Decimal, InvalidOperation
 from hashlib import sha256
 import json
 import re
-from .expected_result import ResultColumn, compare_expected_result
+from .expected_result import ResultColumn, compare_expected_result, compare_ordered_result
 
 
 def _unique(pairs):
@@ -31,10 +31,18 @@ def compare_oracle_document(content, actual, *, document_checksum, specification
         doc=json.loads(content.decode('utf-8'),object_pairs_hook=_unique)
     except (UnicodeError,json.JSONDecodeError,RecursionError) as exc:
         raise ValueError('ORACLE_INVALID_JSON') from exc
-    if not isinstance(doc,dict) or set(doc)!={'version','specification_checksum','naming_checksum','columns','rows'}:
+    if not isinstance(doc,dict):
         raise ValueError('ORACLE_INVALID_DOCUMENT')
-    if type(doc['version']) is not int or doc['version']!=1:
+    fields={'version','specification_checksum','naming_checksum','columns','rows'}
+    if doc.get('version') == 2:
+        fields |= {'comparison','ordinal_column'}
+    if set(doc)!=fields:
+        raise ValueError('ORACLE_INVALID_DOCUMENT')
+    if type(doc['version']) is not int or doc['version'] not in (1,2):
         raise ValueError('ORACLE_UNSUPPORTED_VERSION')
+    if doc['version']==2 and (doc['comparison']!='EXACT_SOURCE_SEQUENCE'
+            or not isinstance(doc['ordinal_column'],str)):
+        raise ValueError('ORACLE_ORDER_CONTRACT_INVALID')
     if doc['specification_checksum']!=specification_checksum or doc['naming_checksum']!=naming_checksum:
         raise ValueError('ORACLE_BINDING_MISMATCH')
     if not isinstance(doc['columns'],list) or not 1<=len(doc['columns'])<=128:
@@ -61,6 +69,7 @@ def compare_oracle_document(content, actual, *, document_checksum, specification
                 try:decoded[column.name]=Decimal(value)
                 except InvalidOperation as exc:raise ValueError('ORACLE_INVALID_DECIMAL') from exc
         expected.append(decoded)
-    evidence=compare_expected_result(columns,expected,actual)
+    evidence=(compare_ordered_result(columns,expected,actual,ordinal_column=doc['ordinal_column'])
+              if doc['version']==2 else compare_expected_result(columns,expected,actual))
     return {**evidence,'oracle_document_checksum':document_checksum,
             'specification_checksum':specification_checksum,'naming_checksum':naming_checksum}

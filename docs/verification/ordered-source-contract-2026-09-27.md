@@ -80,3 +80,37 @@ Reference: [Apache Hop CSV input options](https://hop.apache.org/manual/latest/p
 documents the optional row-number output; the installed engine behavior was
 verified separately by the native probe above rather than inferred from latest
 documentation.
+
+## Oracle and evidence persistence checkpoint
+
+Added oracle document V2 and comparison evidence V2 for EXACT_SOURCE_SEQUENCE.
+The pinned ordinal column and positional mismatch count are preserved; a
+reversed sequence with the same multiset is MISMATCH, never MATCH. Public
+evidence validation rejects inconsistent counts, forged MATCH labels and
+incorrect comparison modes even when the submitted checksum is recalculated.
+Oracle V1 and historical unordered evidence remain unchanged.
+
+V3 specifications require the ordered oracle, including the exact ordinal
+column and non-null contract. V1/V2 specifications reject the ordered oracle.
+The editor context and historical review expose the ordered mode explicitly.
+
+Verified in the isolated PostgreSQL test environment:
+
+- Save and approve a synthetic V3 specification internally while the public V3
+  API remains blocked (422) pending complete execution/QA/release support.
+- Save the ordered oracle encrypted, read back the original bytes, preserve
+  one-based row order in the review, and coalesce identical repeated saves.
+- Reject a downgraded unordered oracle for that specification.
+- Persist and read synthetic unverified MATCH and order-only MISMATCH packets;
+  both retain absent provenance and cannot grant QA/release authority.
+- Reject updates to immutable persisted comparison history.
+
+Full isolated backend regression: 1,345 passed, 48 skipped, one warning,
+27.47 seconds, exit 0. The native source-order tests are opt-in and skipped in
+this suite; their separate successful execution is recorded above. An earlier
+focused run found an incomplete mocked legacy document lacking its version;
+the fixture was corrected to the actual V1 document format before full rerun.
+
+No production migration, model invocation, original Task replay, Vertica write
+or release approval occurred in this checkpoint. QA context, public editing,
+ordered portable replay and the real corrected case still require integration.

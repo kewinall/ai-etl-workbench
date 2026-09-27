@@ -16,6 +16,16 @@ def oracle_columns(compiled):
 
 
 def validate_oracle_schema(document, compiled):
+    spec=compiled['specification']
+    if spec.get('version')==3:
+        ordinal=spec['source_order']['ordinal_column']
+        if (document.get('version')!=2 or document.get('comparison')!='EXACT_SOURCE_SEQUENCE'
+                or document.get('ordinal_column')!=ordinal):
+            raise ValueError('ORACLE_ORDER_CONTRACT_MISMATCH')
+        if not any(c.get('name')==ordinal and c.get('nullable') is False for c in document['columns']):
+            raise ValueError('ORACLE_ORDER_COLUMN_NOT_NULL_REQUIRED')
+    elif spec.get('version') in (1,2) and document.get('version')!=1:
+        raise ValueError('ORACLE_ORDER_CONTRACT_MISMATCH')
     columns=document['columns']
     if [column['name'] for column in columns]!=compiled['specification']['output_columns']:
         raise ValueError('ORACLE_OUTPUT_COLUMNS_MISMATCH')

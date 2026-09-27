@@ -11,25 +11,35 @@ EVIDENCE_FIELDS={'version','comparison','status','expected_count','actual_count'
     'expected_checksum','actual_checksum','qa_passed','release_ready','oracle_document_checksum',
     'specification_checksum','naming_checksum','run_id','oracle_id','execution_binding_checksum',
     'hop_event_id','hop_log_checksum','actual_provenance'}
+ORDER_FIELDS={'ordinal_column','position_mismatch_count'}
 
 
 def checked_public_evidence(evidence,checksum,run_id):
-    if not isinstance(evidence,dict) or set(evidence)!=EVIDENCE_FIELDS:
+    if not isinstance(evidence,dict):
+        raise ValueError('COMPARISON_EVIDENCE_INVALID')
+    ordered=evidence.get('version')==2
+    if set(evidence)!=(EVIDENCE_FIELDS | ORDER_FIELDS if ordered else EVIDENCE_FIELDS):
         raise ValueError('COMPARISON_EVIDENCE_INVALID')
     if (evidence['run_id']!=str(run_id) or evidence['actual_provenance']!='NOT_VERIFIED'
             or evidence['qa_passed'] is not False or evidence['release_ready'] is not False):
         raise ValueError('COMPARISON_EVIDENCE_INVALID')
     digest=sha256(json.dumps(evidence,sort_keys=True,separators=(',',':')).encode()).hexdigest()
     if digest!=checksum:raise ValueError('COMPARISON_EVIDENCE_CHANGED')
-    if (type(evidence['version']) is not int or evidence['version']!=1
-            or evidence['comparison']!='EXACT_MULTISET' or evidence['status'] not in ('MATCH','MISMATCH')):
+    if (type(evidence['version']) is not int or evidence['version'] not in (1,2)
+            or evidence['comparison']!=('EXACT_SOURCE_SEQUENCE' if ordered else 'EXACT_MULTISET')
+            or evidence['status'] not in ('MATCH','MISMATCH')):
         raise ValueError('COMPARISON_EVIDENCE_INVALID')
     counts=[evidence[key] for key in ('expected_count','actual_count','missing_count','unexpected_count')]
     if any(type(value) is not int or not 0<=value<=10000 for value in counts):
         raise ValueError('COMPARISON_EVIDENCE_INVALID')
     expected,actual,missing,unexpected=counts
+    positions=evidence.get('position_mismatch_count',0)
+    if ordered and (type(positions) is not int or not max(missing,unexpected,abs(expected-actual))<=positions<=max(expected,actual)
+            or not isinstance(evidence['ordinal_column'],str)
+            or not re.fullmatch('[a-z_][a-z0-9_]{0,62}',evidence['ordinal_column'])):
+        raise ValueError('COMPARISON_EVIDENCE_INVALID')
     if (missing>expected or unexpected>actual or expected-missing!=actual-unexpected
-            or (evidence['status']=='MATCH')!=(missing==unexpected==0)):
+            or (evidence['status']=='MATCH')!=(missing==unexpected==positions==0)):
         raise ValueError('COMPARISON_EVIDENCE_INVALID')
     if (type(evidence['hop_event_id']) is not int or evidence['hop_event_id']<=0
             or any(not isinstance(evidence[key],str) or not re.fullmatch('[a-f0-9]{64}',evidence[key])

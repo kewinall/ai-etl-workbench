@@ -116,7 +116,7 @@ def compare_ordered_result(columns, expected, actual, *, ordinal_column):
                  'ordinal_column': ordinal_column, 'rows': rows}
         return sha256(json.dumps(value, ensure_ascii=True, separators=(',', ':')).encode()).hexdigest()
 
-    return {**baseline, 'comparison': 'EXACT_SOURCE_SEQUENCE',
+    return {**baseline, 'version': 2, 'comparison': 'EXACT_SOURCE_SEQUENCE',
             'ordinal_column': ordinal_column,
             'status': 'MATCH' if wanted == observed else 'MISMATCH',
             'position_mismatch_count': sum(a != b for a, b in zip(wanted, observed))
