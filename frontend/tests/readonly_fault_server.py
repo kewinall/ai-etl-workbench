@@ -20,7 +20,7 @@ lock = Lock()
 class Handler(SimpleHTTPRequestHandler):
     def do_PUT(self):
         # Observe pending UI state without changing any saved configuration.
-        if not self.path.startswith(('/api/settings/ai-profiles/', '/api/projects/')):
+        if self.path!='/api/projects' and not self.path.startswith(('/api/settings/ai-profiles/', '/api/projects/')):
             self.send_error(405)
             return
         length = int(self.headers.get('Content-Length', '0'))
@@ -41,6 +41,8 @@ class Handler(SimpleHTTPRequestHandler):
         pass
 
     def do_POST(self):
+        if self.path=='/api/projects':
+            return self.do_PUT()  # Delay/reject locally; never create a project.
         # Fault injection only: never forward a write to the real API.
         if self.path != '/api/task-sources/upload':
             self.send_error(405)
