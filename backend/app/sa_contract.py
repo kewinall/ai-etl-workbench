@@ -55,6 +55,10 @@ def build_sa_context(run):
     intent = intent_evidence(snapshot)
     if intent is not None:
         evidence.append({'id': 'transformation.conditions', 'kind': 'TRANSFORMATION_CONDITIONS', 'value': intent})
+    from .source_order_input import order_evidence
+    order = order_evidence(snapshot)
+    if order is not None:
+        evidence.append({'id':'source_order.conditions','kind':'SOURCE_ORDER_CONDITIONS','value':order})
     from .join_contract import join_evidence
     join_input = join_evidence(snapshot)
     if join_input is not None:
@@ -69,7 +73,7 @@ def build_sa_context(run):
         for field_index, field in enumerate(source.get('fields') or []):
             evidence.append({'id': f'source.{source_index}.field.{field_index}', 'kind': 'SOURCE_FIELD',
                              'value': {key: field.get(key) for key in ('name', 'type')}})
-    context = {'version': 3 if intent is not None else 2, 'run_id': str(run['run_id']), 'input_checksum': run['input_checksum'],
+    context = {'version': 4 if order is not None else 3 if intent is not None else 2, 'run_id': str(run['run_id']), 'input_checksum': run['input_checksum'],
                'settings_checksum': run['settings_snapshot']['checksum'], 'evidence': evidence,
                'deterministic_gate': check_requirements(snapshot)}
     return {**context, 'context_checksum': digest(context)}
@@ -88,6 +92,8 @@ def validate_sa_review(payload, context):
         raise ValueError('SA_REQUIREMENT_EVIDENCE_REQUIRED')
     if review.status == 'READY_FOR_REVIEW' and (review.issues or context['deterministic_gate']['status'] != 'CHECKED'):
         raise ValueError('SA_CANNOT_OVERRIDE_GATE')
+    if review.status == 'READY_FOR_REVIEW' and 'source_order.conditions' in valid_ids and 'source_order.conditions' not in review.evidence_ids:
+        raise ValueError('SA_SOURCE_ORDER_EVIDENCE_REQUIRED')
     if review.status == 'NEEDS_INPUT' and not review.issues:
         raise ValueError('SA_MISSING_ISSUE_DETAILS')
     # Citation existence does not establish semantic correctness or authorize execution.

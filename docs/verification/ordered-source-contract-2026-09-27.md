@@ -178,3 +178,26 @@ Public V3 specification/model execution is still unavailable. Remaining work
 includes SA/Developer evidence and schema, UI controls, SDM generated-column
 documentation, deployment and genuine ordered-case acceptance. This checkpoint
 does not claim the user-facing feature is complete or that case 19 passed.
+
+## SA and Developer handoff checkpoint
+
+SA context V4 includes safe `source_order.conditions` evidence. READY_FOR_REVIEW
+requires citing it and still cannot override deterministic requirement issues.
+SA prompt V6 explicitly explains the logical source-record ordinal and current
+stage responsibilities. Prior context bytes without order remain unchanged;
+the newly selected prompt is versioned and does not rewrite historical traces.
+
+Developer context/proposal V3 and prompt V6 require EtlSpecificationV3, explicit
+order evidence, the confirmed generated BIGINT mapping, all source rows and
+the exact projection. Legacy V1/V2 Developer materials remain unchanged.
+Tests reject omitted citations, downgraded context/proposal/specification,
+changed ordinal and omitted ordinal projection. No model approval is inferred.
+
+Focused tests: 29 passed. First full run found the old explicit SA prompt-version
+assertion (5 instead of the intentional new 6). Updated that assertion and added
+checks for the new order instructions. Full rerun: 1,389 passed, 48 skipped,
+one warning, 27.88 seconds, exit 0.
+
+No provider calls, deployment or real corrected-case execution occurred.
+Pending: user-facing order controls, naming/editor support, SDM generated-field
+semantics and visual verification, public V3 API, deployment and real acceptance.

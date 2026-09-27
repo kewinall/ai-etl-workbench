@@ -43,6 +43,18 @@ def developer_material(context):
                    'Never replace COUNT_ROWS with COUNT_NON_NULL or alter an inclusive/exclusive boundary. '
                    'Do not resolve a conflict by silently ignoring the confirmed contract or prose.')
         version = 5 if context['version'] == 2 else 4
+    if context['version']==3:
+        prompt=prompt.replace('EtlSpecificationV1','EtlSpecificationV3') + (
+            ' Return proposal version 3 and specification version 3. Cite source_order.conditions. '
+            'Copy source_order.conditions exactly into specification.source_order. '
+            'Preserve every logical CSV data record, including duplicate values and multiline fields. '
+            'Use filters [] and aggregation null. Map $source_order.source.0 to its confirmed English BIGINT name '
+            'and retain it in output_columns alongside the confirmed projection. '
+            'The compiler generates this ordinal from logical source record positions; it is not a CSV input field, '
+            'not record_id ordering, and not a user-generated expression. Do not add SQL or sort expressions. '
+            'The controller pins an ascending ordinal result query and exact sequence validation. '
+            'Do not claim that database insertion order alone guarantees ordered retrieval.')
+        version=6
     schema = model.model_json_schema()
     return {'prompt': prompt, 'prompt_version': version,
             'prompt_checksum': digest(prompt), 'schema': schema, 'schema_checksum': digest(schema)}

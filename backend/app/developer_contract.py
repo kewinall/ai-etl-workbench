@@ -1,7 +1,7 @@
 """Version-bound Developer proposal. Models propose supported specs, never XML/SQL."""
 from typing import Literal
 from pydantic import BaseModel,ConfigDict,Field,field_validator
-from .etl_specification import EtlSpecificationV1,EtlSpecificationV2,validate_specification
+from .etl_specification import EtlSpecificationV1,EtlSpecificationV2,EtlSpecificationV3,validate_specification
 from .sa_contract import build_sa_context,digest
 from .sa_approval import load_binding
 from .specification_store import context as specification_context
@@ -29,11 +29,23 @@ class DeveloperProposalV2(DeveloperProposalV1):
         return value
 
 
+class DeveloperProposalV3(DeveloperProposalV1):
+    version: Literal[3]
+    specification: EtlSpecificationV3
+
+    @field_validator('version', mode='before')
+    @classmethod
+    def strict_version(cls, value):
+        if type(value) is not int or value != 3:
+            raise ValueError('DEVELOPER_PROPOSAL_VERSION_INVALID')
+        return value
+
+
 def proposal_model(context):
     version = context.get('version')
-    if type(version) is not int or version not in (1, 2):
+    if type(version) is not int or version not in (1, 2, 3):
         raise ValueError('DEVELOPER_CONTEXT_VERSION_UNSUPPORTED')
-    return DeveloperProposalV2 if version == 2 else DeveloperProposalV1
+    return DeveloperProposalV3 if version == 3 else DeveloperProposalV2 if version == 2 else DeveloperProposalV1
 
 
 def build_context(run,naming,approval,sa_review):
@@ -56,6 +68,11 @@ def build_context(run,naming,approval,sa_review):
             raise RunConflict('DEVELOPER_SOURCE_COUNT_UNSUPPORTED')
         value.update(version=2,
             supported_scope='TWO_CSV_EXPLICIT_INNER_OR_LEFT_JOIN_FILTERS_OPTIONAL_GROUPED_AGGREGATION_APPEND')
+    if 'source_order_v1' in target:
+        from .source_order_input import order_issues
+        if order_issues(run['input_snapshot']):
+            raise RunConflict('DEVELOPER_SOURCE_ORDER_UNSUPPORTED')
+        value.update(version=3,supported_scope='ONE_CSV_FULL_ROW_PROJECTION_WITH_GENERATED_SOURCE_ORDINAL_APPEND')
     return {**value,'context_checksum':digest(value)}
 
 
@@ -75,7 +92,9 @@ def validate_proposal(payload,captured):
     if digest({k:v for k,v in context.items() if k!='context_checksum'})!=context['context_checksum']:
         raise ValueError('DEVELOPER_CONTEXT_CHANGED')
     source_count = len(captured['run']['input_snapshot'].get('source_config', {}).get('sources') or [])
-    if source_count not in (1, 2) or context.get('version') != source_count:
+    ordered='source_order_v1' in (captured['run']['input_snapshot'].get('target_config') or {})
+    expected_version=3 if ordered else source_count
+    if source_count not in (1, 2) or (ordered and source_count!=1) or context.get('version') != expected_version:
         raise ValueError('DEVELOPER_CONTEXT_VERSION_MISMATCH')
     proposed=proposal_model(context).model_validate(payload)
     if proposed.context_checksum!=context['context_checksum']:
@@ -87,6 +106,8 @@ def validate_proposal(payload,captured):
         raise ValueError('DEVELOPER_JOIN_EVIDENCE_REQUIRED')
     if 'transformation.conditions' in valid_ids and 'transformation.conditions' not in proposed.evidence_ids:
         raise ValueError('DEVELOPER_TRANSFORMATION_EVIDENCE_REQUIRED')
+    if ordered and ('source_order.conditions' not in valid_ids or 'source_order.conditions' not in proposed.evidence_ids):
+        raise ValueError('DEVELOPER_SOURCE_ORDER_EVIDENCE_REQUIRED')
     checked=validate_specification(proposed.specification.model_dump(mode='json'),captured['run'],captured['naming'])
     if checked['status']!='VALIDATED_NOT_APPROVED':
         raise ValueError('DEVELOPER_SPECIFICATION_INVALID')
