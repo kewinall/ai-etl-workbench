@@ -4,6 +4,7 @@ import {OracleEditor} from './OracleEditor';
 import {OracleReview} from './OracleReview';
 import {ComparisonHistory} from './ComparisonHistory';
 import {QAReviewHistory} from './QAReviewHistory';
+import {ExecutionDiagnosis} from './ExecutionDiagnosis';
 
 export function OracleHistory({taskId,requestedRunId}:{taskId:string;requestedRunId?:string}) {
   const canLeave=()=>window.dispatchEvent(new Event('workbench:before-navigate',{cancelable:true}));
@@ -37,11 +38,14 @@ export function OracleHistory({taskId,requestedRunId}:{taskId:string;requestedRu
       .catch(e=>live&&setError(e.message)).finally(()=>live&&setLoading(false));
     return()=>{live=false};
   },[taskId,run,spec]);
+  const selectedRun=runs.find(item=>item.run_id===run);
   return <section className="panel" aria-label="標準答案版本紀錄" style={{overflowWrap:'anywhere'}}>
     <h3>標準答案版本紀錄</h3><p>核准紀錄僅代表當時的人工確認，不表示目前仍有效、已執行或 QA 通過。可按「查看答案內容」讀取指定歷史版本。</p>
     <button disabled={loading} onClick={()=>{if(canLeave())setRefresh(n=>n+1)}}>重新讀取標準答案</button>
     {!!runs.length&&<label>準備版本<select aria-label="標準答案準備版本" value={run} onChange={e=>{if(canLeave()){setSpec('');setItems([]);setRun(e.target.value)}}}>{!run&&<option value="">指定版本不可用，請明確選擇其他版本</option>}{runs.map(r=><option key={r.run_id} value={r.run_id}>{r.run_id} · {r.state}</option>)}</select></label>}
     {!!specs.length&&<label>規格版本<select aria-label="標準答案規格版本" value={spec} onChange={e=>{if(canLeave()){setItems([]);setSpec(e.target.value)}}}>{specs.map(s=><option key={s.specification_id} value={s.specification_id}>第 {s.version} 版{s.approval_effective?' · 規格核准有效':' · 規格待重新檢查'}</option>)}</select></label>}
+    {selectedRun&&<p>此版本控制狀態：{selectedRun.state}；階段：{selectedRun.phase||'未記錄'}；結果：{selectedRun.outcome_code||'尚無結果'}。</p>}
+    {selectedRun&&['HOP_EXECUTION_FAILED','HOP_RESULT_UNKNOWN'].includes(selectedRun.outcome_code)&&<ExecutionDiagnosis key={'diagnosis-'+run} base={`/api/tasks/${encodeURIComponent(taskId)}/runs/${run}`}/>}
     {loading&&<p role="status">正在讀取標準答案紀錄…</p>}
     {error&&<p role="alert">無法讀取標準答案：{error}。請重新讀取。</p>}
     {!loading&&!error&&!items.length&&<p>{!runs.length?'尚無準備版本。':!specs.length?'此準備版本尚無已保存規格。':'此規格尚未保存標準答案。'}</p>}
