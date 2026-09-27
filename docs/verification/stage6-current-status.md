@@ -5,6 +5,23 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 零列案 Hop 通過、QA 阻擋（2026-09-27）
+
+第 4 案第 3 次準備的 Developer 真實提案通過，核對 amount GT INTEGER 100、
+EXCLUDE_UNKNOWN、只投影 record_id、APPEND、無聚合。標準答案先與正式登錄
+definition／oracle 指紋核對，再核准本版規格與零列答案。
+單次真實 Hop 完成，EXACT_MULTISET 預期 0／實際 0、缺少 0／額外 0，
+另存 BOUND_PLATFORM_TARGET 證據；未將零筆單獨視為成功。
+
+真實 QA 回覆 NEEDS_REVIEW：需求要求 YYYY-MM-DD，但模型收到的 runtime
+options 只有 type／length／precision／trim_type，缺少 date format 綁定證據。
+已確認 hpl_compiler 會產生 DATE 的 format=yyyy-MM-dd，而 qa_runtime_options
+的 expected／inspect 都未包含 format，屬交接證據缺漏；不能據此跳過 QA。
+尚未核准 QA、未產生 Release 候選。不得重跑原目標。
+下一步新增版本化、與已執行 HPL checksum 綁定的 format 證據與檢查，保留舊
+PASS context／核准，以及此次 NEEDS_REVIEW；回歸後對同次執行作有限複核。
+格式設定證據不可誇大成所有非法日期輸入皆嚴格拒絕的 runtime 證明。
+
 ### 零列案與 SA 階段邊界修正（2026-09-27）
 
 第 4 案尚未交付。首次 SA 指出輸出契約、重複列規則，以及需求中零筆宣稱
