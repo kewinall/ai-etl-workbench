@@ -40,6 +40,7 @@ services:
     restart: "no"
   postgres:
     image: postgres:17
+    restart: unless-stopped
     environment:
       POSTGRES_DB: workbench
       POSTGRES_USER: workbench
@@ -64,6 +65,7 @@ services:
     restart: "no"
   api:
     <<: *api
+    restart: unless-stopped
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -73,6 +75,7 @@ services:
       timeout: 5s
       retries: 10
   web:
+    restart: unless-stopped
     build:
       context: ..
       dockerfile: deploy/Dockerfile.web

@@ -77,3 +77,23 @@ HTTP 還原部署、持久 lifecycle 或中斷寫入不重複。上節尚未證�
 先建立可重現的隔離整體復原流程：停止還原環境派發能力、保持無外部網路，
 納入新備份、密鑰與產物的私有副本，再以只讀 API 核對。不得把正式 volume
 直接掛成還原環境的可寫資料，不得以修改既有 migration ledger 來繞過版本檢查。
+
+## 基礎容器重啟策略與網站退出驗證
+
+Compose 的 postgres、api、web 新增 `restart: unless-stopped`，control-worker
+維持原策略。init／migrate 保留 `restart: no`；沒有開啟原本未启用的執行
+profiles。透過 `--profile pilot-control config --format json` 驗證實際解析值。
+最初未指定 profile 的檢查沒有包含 control-worker，該次檢查失敗；指定正確
+profile 後六個服務的策略檢查通過，不把缺失服務視為已通過。
+
+以 `docker update --restart unless-stopped` 套用三個既有基礎容器，無重建、
+無 migration 或工作重跑。對網站執行 `nginx -s quit` 後，同一容器自行恢復：
+RestartCount 從 0 變 1、state running，網站 `/api/ready` 回 ready。
+過程未手動 start 網站以替代自動重啟。資料庫／Worker 未在這次測試中中斷。
+退出恢復後正式量測與報告唯讀瀏覽器回歸：**2 passed（20.6 秒）**，逐案
+證據及歷史事件一致。這是網站恢復的驗證，不擴大到未執行的中斷情境。
+
+此證據只涵蓋網站程序退出；不代表 PostgreSQL crash、API in-flight request、
+Worker 正在寫入、Docker daemon 或 WSL／Windows reboot 已驗證。手動停止的
+服務依 unless-stopped 語意保持停止；沒有修改全域 WSL、Windows 開機排程或
+防護軟體。四小時 WSL keepalive 的持久性問題仍待解決。
