@@ -4,6 +4,7 @@ import './project-workspace.css';
 import {ProjectDefaults} from './ProjectDefaults';
 import {ProjectSummary} from './ProjectSummary';
 import {ProjectEvaluation} from './ProjectEvaluation';
+import {mergeProjectHistory} from './projectHistory';
 
 type Project = {project_id: string; project_name: string; description: string; default_ai_profile: string; default_connection: string; naming_rules: Record<string, any>; updated_at: string};
 type Props = {projectId?: string; tab?: string; navigate: (path: string) => void; onError: (message: string) => void};
@@ -81,10 +82,8 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
     if (projectId && !creating && tab === 'history') {
       setTasksLoading(true);
       Promise.all([request<any[]>(`/api/projects/${projectId}/tasks`),request(`/api/projects/${projectId}/evaluation`)]).then(([items,evaluation]) => {
-        if(evaluation.project_id!==projectId||evaluation.basis!=='ALL_PERSISTED_RUNS')throw Error('版本摘要與目前專案不一致');
-        const latest=new Map<string,any>();
-        for(const entry of evaluation.cases)if(!latest.has(entry.task_id))latest.set(entry.task_id,entry);
-        if(active)setTasks(items.map(task=>({...task,latest_run:latest.get(task.id),display_state:latest.get(task.id)?.state||'NO_RUN'})));
+        const rows=mergeProjectHistory(projectId,items,evaluation);
+        if(active)setTasks(rows);
       })
         .catch(e => active && setTasksError(e.message)).finally(()=>active&&setTasksLoading(false));
     }
