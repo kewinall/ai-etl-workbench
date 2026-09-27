@@ -16,6 +16,7 @@ export function ExecutionSettings({group}:{group:string}) {
   const [version,setVersion]=useState('');
   const [connectionId,setConnectionId]=useState('vertica-default');
   const [secret,setSecret]=useState('');
+  const [secretVersion,setSecretVersion]=useState<string|null>(null);
   const [busy,setBusy]=useState(false);
   const [toolMessage,setToolMessage]=useState('');
   const [secretMessage,setSecretMessage]=useState('');
@@ -51,10 +52,21 @@ export function ExecutionSettings({group}:{group:string}) {
     }catch(e:any){setToolMessage('儲存或回讀未完成：'+e.message)}finally{setBusy(false)}
   };
   const saveSecret=async()=>{
-    if(busy||!secret.trim()||!connectionId.trim())return;setBusy(true);setSecretMessage('');
+    if(busy||!secret.trim()||!connectionId.trim()||!secretVersion)return;setBusy(true);setSecretMessage('');
     try {
-      await request(`/api/settings/connections/${encodeURIComponent(connectionId.trim())}/secret`,jsonBody('POST',{secret_value:secret}));
+      const options=jsonBody('POST',{secret_value:secret});
+      await request(`/api/settings/connections/${encodeURIComponent(connectionId.trim())}/secret`,{...options,headers:{...options.headers,'X-Settings-Version':secretVersion}});
       setSecret('');setSecretMessage('資料庫連線機密已加密儲存，無法讀回');
+    }catch(e:any){setSecretMessage(e.message)}finally{setBusy(false);setSecretVersion(null)}
+  };
+  const readSecretStatus=async()=>{
+    if(busy||!connectionId.trim())return;
+    setBusy(true);setSecretVersion(null);setSecretMessage('');
+    try{
+      const result=await request(`/api/settings/connections/${encodeURIComponent(connectionId.trim())}/secret-status`);
+      if(result.connection_id!==connectionId.trim()||typeof result.version!=='string'||!result.version)throw new Error('機密版本回應不完整');
+      setSecretVersion(result.version);
+      setSecretMessage(result.secret_configured?'已有機密；已讀取版本，不讀取密碼。請確認本次覆蓋內容。':'尚未保存機密；已讀取版本，可建立。');
     }catch(e:any){setSecretMessage(e.message)}finally{setBusy(false)}
   };
   return <>
@@ -74,9 +86,10 @@ export function ExecutionSettings({group}:{group:string}) {
     <section hidden={group!=='security'} className="panel setting-card">
       <h2>資料庫連線機密</h2><p>密碼或 Token 只可寫入，不會由 API 或畫面回傳。儲存不會自動測試連線。</p>
       <fieldset disabled={busy} style={{border:0,padding:0,margin:0,minWidth:0}}>
-        <div className="settings-fields"><label className="setting-field"><b>Connection ID</b><input value={connectionId} onChange={e=>setConnectionId(e.target.value)}/></label>
+        <div className="settings-fields"><label className="setting-field"><b>Connection ID</b><input value={connectionId} onChange={e=>{setConnectionId(e.target.value);setSecretVersion(null);setSecret('');setSecretMessage('連線已切換；請讀取版本後重新輸入機密')}}/></label>
         <label className="setting-field"><b>密碼或 Token</b><input type="password" aria-label="密碼或 Token" autoComplete="new-password" value={secret} onChange={e=>setSecret(e.target.value)}/><small>AES-256-GCM 加密保存</small></label></div>
-        <button className="primary" disabled={!secret.trim()||!connectionId.trim()} onClick={saveSecret}>儲存資料庫機密</button>
+        <button disabled={!connectionId.trim()} onClick={readSecretStatus}>讀取機密狀態與最新版本</button>
+        <button className="primary" disabled={!secret.trim()||!connectionId.trim()||!secretVersion} onClick={saveSecret}>儲存資料庫機密</button>
         <button disabled={!secret} onClick={()=>{setSecret('');setSecretMessage('')}}>清除未儲存機密</button>
       </fieldset>
       {secretMessage&&<p role="status">{secretMessage}</p>}

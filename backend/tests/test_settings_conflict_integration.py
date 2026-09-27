@@ -3,10 +3,39 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 import pytest
+from uuid import uuid4
 from app.repository import PostgresRepository, SettingsConflict
 from test_run_queue_integration import context
 
 pytestmark=pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS')!='1',reason='Isolated PostgreSQL required')
+
+def test_connection_secret_first_write_and_stale_write_are_serialized(context):
+    repo=PostgresRepository(os.environ['DATABASE_URL'])
+    ref='connection:synthetic-'+uuid4().hex
+    barrier=Barrier(2)
+    try:
+        assert repo.secret_version(ref) is None
+        def create(index):
+            barrier.wait()
+            try:
+                repo.save_secret(ref,f'cipher-{index}'.encode(),b'synthetic-nonce',expected_version='missing')
+                return index
+            except SettingsConflict:
+                return None
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            winners=[i for i in pool.map(create,range(2)) if i is not None]
+        assert len(winners)==1
+        version=repo.secret_version(ref)
+        repo.save_secret(ref,b'new-cipher',b'new-nonce',expected_version=version)
+        with pytest.raises(SettingsConflict):
+            repo.save_secret(ref,b'rejected',b'rejected',expected_version=version)
+        with repo.conn() as conn:
+            row=conn.execute('select cipher_text,nonce from platform.secret_vault_entry where secret_ref=%s',(ref,)).fetchone()
+            assert bytes(row['cipher_text'])==b'new-cipher'
+            assert bytes(row['nonce'])==b'new-nonce'
+    finally:
+        with repo.conn() as conn:
+            conn.execute('delete from platform.secret_vault_entry where secret_ref=%s',(ref,))
 
 def test_profile_updates_allow_only_one_writer_for_each_version(context):
     from app.ai_profile_api import ProfileConflict

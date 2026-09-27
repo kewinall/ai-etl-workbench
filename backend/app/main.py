@@ -746,12 +746,18 @@ def update_setting_group(group_key:str,value:dict[str,Any],x_settings_version:st
 app.include_router(create_ai_profile_router(repo))
 from .connection_test_api import create_connection_test_router
 app.include_router(create_connection_test_router(repo))
+@app.get('/api/settings/connections/{connection_id}/secret-status')
+def connection_secret_status(connection_id:str):
+ if not re.fullmatch(r'[A-Za-z0-9_-]{2,80}',connection_id):raise HTTPException(422,'Invalid connection id')
+ version=repo.secret_version(f'connection:{connection_id}')
+ return {'connection_id':connection_id,'secret_configured':version is not None,'version':version or 'missing'}
 @app.post('/api/settings/connections/{connection_id}/secret')
-def put_connection_secret(connection_id:str,data:SecretInput):
+def put_connection_secret(connection_id:str,data:SecretInput,x_settings_version:str|None=Header(default=None)):
  if not re.fullmatch(r'[A-Za-z0-9_-]{2,80}',connection_id):raise HTTPException(422,'Invalid connection id')
  try:
-  cipher,nonce=encrypt_secret(data.secret_value);repo.save_secret(f'connection:{connection_id}',cipher,nonce)
+  cipher,nonce=encrypt_secret(data.secret_value);repo.save_secret(f'connection:{connection_id}',cipher,nonce,expected_version=x_settings_version)
   return {'connection_id':connection_id,'secret_configured':True}
+ except SettingsConflict as exc:raise HTTPException(409,str(exc)) from exc
  except ValueError as exc:raise HTTPException(422,str(exc)) from exc
 @app.get('/api/tasks/{task_id}/trace')
 def task_trace(task_id:str):

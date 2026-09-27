@@ -280,11 +280,18 @@ class PostgresRepository:
    if expected_version is not None and row['updated_at'].isoformat()!=expected_version:
     raise ProfileConflict('AI Profile 已被更新，機密未儲存；請重新讀取後再確認。')
    secret_ref=f'ai-profile:{profile_id}'
+   c.execute('select pg_advisory_xact_lock(271828,4)')
    c.execute('insert into platform.secret_vault_entry(secret_ref,cipher_text,nonce,updated_at) values(%s,%s,%s,clock_timestamp()) on conflict(secret_ref) do update set cipher_text=excluded.cipher_text,nonce=excluded.nonce,updated_at=excluded.updated_at',(secret_ref,cipher,nonce))
    # Only change the reference/version, never replay a stale profile snapshot.
    c.execute('update platform.ai_provider_profile set secret_ref=%s,updated_at=clock_timestamp() where profile_id=%s',(secret_ref,profile_id))
- def save_secret(self,secret_ref,cipher,nonce):
-  with self.conn() as c:c.execute("insert into platform.secret_vault_entry(secret_ref,cipher_text,nonce,updated_at) values(%s,%s,%s,now()) on conflict(secret_ref) do update set cipher_text=excluded.cipher_text,nonce=excluded.nonce,updated_at=now()",(secret_ref,cipher,nonce))
+ def save_secret(self,secret_ref,cipher,nonce,expected_version=None):
+  with self.conn() as c:
+   c.execute('select pg_advisory_xact_lock(271828,4)')
+   row=c.execute('select updated_at from platform.secret_vault_entry where secret_ref=%s for update',(secret_ref,)).fetchone()
+   version=row['updated_at'].isoformat() if row else 'missing'
+   if expected_version is not None and expected_version!=version:
+    raise SettingsConflict('連線機密已被更新，本次未儲存。請讀取最新版本並重新確認。')
+   c.execute("insert into platform.secret_vault_entry(secret_ref,cipher_text,nonce,updated_at) values(%s,%s,%s,clock_timestamp()) on conflict(secret_ref) do update set cipher_text=excluded.cipher_text,nonce=excluded.nonce,updated_at=excluded.updated_at",(secret_ref,cipher,nonce))
  def read_secret(self,secret_ref):
   from .platform_harness import decrypt_secret
   with self.conn() as c:r=c.execute('select cipher_text,nonce from platform.secret_vault_entry where secret_ref=%s',(secret_ref,)).fetchone()
