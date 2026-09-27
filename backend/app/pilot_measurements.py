@@ -66,6 +66,16 @@ def read(repo, project_id):
     from .pilot_usage import read as read_usage
     for cohort in result:
         cohort['usage'] = read_usage(repo, project_id, cohort['cohort_id'])
+    from .pilot_scenario import check as check_scenario
+    for original, measured in zip(cohorts, result):
+        for case, row in zip(original['cases'], measured['cases']):
+            try:
+                row['scenario_evidence'] = check_scenario(queue, case, row)
+            except Exception:
+                row['scenario_evidence'] = {'status':'CHECK_UNAVAILABLE','source_verified':False,
+                                            'frozen_oracle_verified':False,'precondition':None}
+            row['scenario_acceptance_verified'] = row['scenario_evidence']['status']=='SCENARIO_EVIDENCE_MATCHED'
+        measured['scenario_evidence_matched_count'] = sum(r['scenario_acceptance_verified'] for r in measured['cases'])
     return {'project_id': str(project_id), 'basis': 'FROZEN_COHORT_CURRENT_DELIVERY_V1',
             'checked_from': started, 'checked_until': datetime.now(timezone.utc), 'cohorts': result,
             'limitations': [

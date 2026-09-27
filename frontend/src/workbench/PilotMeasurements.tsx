@@ -25,6 +25,7 @@ export function PilotMeasurements({projectId,navigate}:{projectId:string;navigat
       {!data.cohorts.length&&<p>尚無正式登錄集合，不計算通過率。</p>}
       {data.cohorts.map((c:any)=><article key={c.cohort_id}>
         <h4>{c.name}</h4><p>目前可交付：{c.release_ready_count} / {c.denominator}；無法確認：{c.unverified_count}。準備版本 {c.attempt_count}，補正版本 {c.revision_count}。</p>
+        <p>符合凍結情境證據：{c.scenario_evidence_matched_count??'尚未核對'} / {c.denominator}（包含來源指紋、固定答案、前置攔截／失敗修正與目前交付；不代表工時改善）。</p>
         <p>首次通過率、人工操作工時、人工基準、改善率與成本：尚無完整量測。</p>
         {c.usage&&<section aria-label="模型用量覆蓋">
           <h5>模型用量（含所有版本）</h5>
@@ -39,6 +40,7 @@ export function PilotMeasurements({projectId,navigate}:{projectId:string;navigat
         </section>}
         {c.cases.map((row:any)=><article className="wb-record" key={row.case_key}>
           <h5>{row.title}</h5><p>{row.status} · 準備版本 {row.attempt_count} · 補正 {row.revision_count}</p>
+          {row.scenario_evidence&&<p>情境證據：{row.scenario_evidence.status}；來源指紋{row.scenario_evidence.source_verified?'已核對':'尚未核對'}、固定答案{row.scenario_evidence.frozen_oracle_verified?'已核對':'尚未核對'}、前置情境{row.scenario_evidence.precondition?'有綁定證據':'尚缺證據'}。</p>}
           <p>首版建立至交付總經過時間：{row.elapsed_to_delivery_seconds===null?'尚無可用交付時間':`${Math.round(row.elapsed_to_delivery_seconds)} 秒（含等待，非人工工時）`}</p>
           {c.usage?.cases?.[row.task_id]&&<p>本案模型紀錄（含舊版）：{c.usage.cases[row.task_id].journal_invocations} 筆；成本尚無可用費率。</p>}
           {row.task_id&&row.run_id&&<button onClick={()=>navigate(`/projects/${projectId}/tasks/${encodeURIComponent(row.task_id)}/execution/${encodeURIComponent(row.run_id)}`)}>查看量測版本證據</button>}

@@ -21,6 +21,25 @@ test('正式集合量測與逐案 gate 一致，保留分母且無寫入',async(
       eventsBefore[base]=(await (await request.get(base)).json()).events;
     }
     expect(cohort.release_ready_count).toBe(ready);
+    expect(cohort.scenario_evidence_matched_count).toBe(cohort.cases.filter((r:any)=>r.scenario_acceptance_verified).length);
+    for(const row of cohort.cases){
+      const proof=row.scenario_evidence;
+      if(row.scenario_acceptance_verified){
+        expect(proof.status).toBe('SCENARIO_EVIDENCE_MATCHED');
+        expect(row.status).toBe('RELEASE_READY');expect(proof.source_verified).toBe(true);expect(proof.frozen_oracle_verified).toBe(true);
+      }
+      if(proof.precondition?.event_id){
+        const prior=await (await request.get(`/api/tasks/${row.task_id}/runs/${proof.precondition.run_id}`)).json();
+        const event=prior.events.find((e:any)=>e.event_id===proof.precondition.event_id);
+        expect(event).toBeTruthy();
+        if(row.scenario==='EXECUTION_RECOVERY'){
+          expect(event.event_type).toBe('HOP_EXECUTION_FAILED');expect(prior.state).toBe('FAILED');
+        }else{
+          expect(prior.write_started).toBe(false);
+          expect(event.event_type).toBe(row.scenario==='REQUIREMENT_GAP'?'REQUIREMENT_NEEDS_INPUT':'SPECIFICATION_SEMANTIC_REJECTED');
+        }
+      }
+    }
     expect(cohort.first_pass_rate).toBeNull();expect(cohort.human_active_seconds).toBeNull();
     expect(cohort.usage.basis).toBe('ALL_BOUND_RUN_JOURNAL_RECORDS');
     expect(cohort.usage.groups.reduce((n:number,g:any)=>n+g.journal_invocations,0)).toBe(
@@ -37,6 +56,7 @@ test('正式集合量測與逐案 gate 一致，保留分母且無寫入',async(
   const region=page.getByRole('region',{name:'正式案例量測',exact:true});
   await region.getByRole('button',{name:'重新量測正式案例',exact:true}).click();
   await expect(region).toContainText(`目前可交付：${measured.cohorts[0].release_ready_count} / 20`);
+  await expect(region).toContainText(`符合凍結情境證據：${measured.cohorts[0].scenario_evidence_matched_count} / 20`);
   await expect(region).toContainText('尚無完整量測');
   await expect(region.getByRole('region',{name:'模型用量覆蓋'}).first()).toBeVisible();
   for(const width of [390,768,1440]){
