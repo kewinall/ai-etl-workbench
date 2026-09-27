@@ -38,6 +38,18 @@ test('隔離真實 API/DB 計時開始結束與中斷放棄',async({page,request
   expect(saved.events.every((e:any)=>e.actor==='FUNCTIONAL_TEST')).toBe(true);
   expect(saved.summary.totals.WORKBENCH.recorded_human_seconds).toBeNull();
   expect(saved.recovery).toBeNull();expect(saved.comparison_ready).toBe(false);
+  const measured=await (await request.get(`/api/projects/${project}/pilot-measurements`)).json();
+  const effort=measured.cohorts.find((c:any)=>c.cohort_id===cohort).effort;
+  expect(effort.status).toBe('RECORDED_INTERVALS_ONLY');
+  expect(effort.excluded_nonhuman_sessions).toBe(1);expect(effort.abandoned_sessions).toBe(1);
+  expect(effort.modes.WORKBENCH.recorded_seconds).toBeNull();
+  expect(effort.modes.WORKBENCH.cases_without_recorded_intervals).toBe(20);
+  const measurements=page.getByRole('region',{name:'正式案例量測',exact:true});
+  await measurements.getByRole('button',{name:'重新量測正式案例',exact:true}).click();
+  const coverage=measurements.getByRole('region',{name:'操作時間覆蓋',exact:true});
+  await expect(coverage).toContainText('工作台操作：尚未量測');
+  await expect(coverage).toContainText('有區間紀錄 0 / 20 案，未記錄 20 案');
+  await expect(coverage).toContainText('排除代理／功能測試 1 段，放棄 1 段');
   for(const width of [390,768,1440]){
     await page.setViewportSize({width,height:1000});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true);

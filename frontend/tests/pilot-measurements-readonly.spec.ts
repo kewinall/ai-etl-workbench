@@ -41,6 +41,12 @@ test('正式集合量測與逐案 gate 一致，保留分母且無寫入',async(
       }
     }
     expect(cohort.first_pass_rate).toBeNull();expect(cohort.human_active_seconds).toBeNull();
+    expect(cohort.effort.status).toBe('RECORDED_INTERVALS_ONLY');
+    expect(cohort.effort.denominator).toBe(20);expect(cohort.effort.comparison_ready).toBe(false);
+    for(const m of Object.values(cohort.effort.modes) as any[]){
+      expect(m.cases_with_recorded_intervals+m.cases_without_recorded_intervals).toBe(20);
+      if(m.cases_with_recorded_intervals===0)expect(m.recorded_seconds).toBeNull();
+    }
     expect(cohort.usage.basis).toBe('ALL_BOUND_RUN_JOURNAL_RECORDS');
     expect(cohort.usage.groups.reduce((n:number,g:any)=>n+g.journal_invocations,0)).toBe(
       Object.values(cohort.usage.cases).reduce((n:number,c:any)=>n+c.journal_invocations,0));
@@ -82,6 +88,7 @@ test('正式集合量測與逐案 gate 一致，保留分母且無寫入',async(
   await expect(region).toContainText(`目前可交付：${measured.cohorts[0].release_ready_count} / 20`);
   await expect(region).toContainText(`符合凍結情境證據：${measured.cohorts[0].scenario_evidence_matched_count} / 20`);
   await expect(region).toContainText('尚無完整量測');
+  await expect(region.getByRole('region',{name:'操作時間覆蓋',exact:true}).first()).toContainText('不是完整案例工時');
   await expect(region.getByRole('region',{name:'模型用量覆蓋'}).first()).toBeVisible();
   for(const width of [390,768,1440]){
     await page.setViewportSize({width,height:1000});
