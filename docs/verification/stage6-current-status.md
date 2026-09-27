@@ -5,6 +5,21 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 第十七案：日期邊界缺欄位失敗與復原（2026-09-27）
+
+recovery-date-boundaries 完成。SA v5／Developer v4 真實審查後，依凍結案例
+只在新建登錄空目標 rename record_id；原 HPL 不變，真實 Hop exit 1／errors 1。
+COLUMN_NOT_FOUND 診斷引用加密 Log 第 16／23／43 行，獨立連線確認 0 列與
+record_id_missing_fault。修正後 probe 自動完成合法派發收尾，未重跑。
+核對結案後另建目標及 revision，原失敗與查核證據均保留。
+
+修訂重新核准 SA／Developer；真實 Hop EXACT_MULTISET 4／4 MATCH，包含
+起日且不包含迄日，BOUND_PLATFORM_TARGET。QA v8 PASS、隔離候選包重播
+PASS、正式 RELEASE_READY，下載指紋、六個 allowlist 成員及內容檢查通過。
+真實唯讀網站回歸 1 passed（1.7s），父子版本、診斷指紋、窄版、返回及無
+變更請求通過。正式交付 17／20；仍缺 JOIN／全列投影／NULL 分組三個復原
+案例、完整量測報告與維運驗收，knowledge-workspace 尚未同步。
+
 ### 復原歷史真實網站回歸（2026-09-27）
 
 新增 recovery-history-readonly.spec.ts，以第十六案既有真實失敗與修正版
