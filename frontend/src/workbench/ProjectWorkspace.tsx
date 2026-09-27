@@ -40,16 +40,17 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
     const warn = (event: BeforeUnloadEvent) => {event.preventDefault(); event.returnValue = ''};
     const beforeNavigate = (event: Event) => {
       if (!dirtyRef.current) return;
-      if (!window.confirm('專案設定尚未儲存。確定放棄修改並離開？')) event.preventDefault();
-      else restore(snapshot || undefined);
+      event.preventDefault();
+      setMessage('尚未離開：專案設定尚未儲存。請先「儲存設定」或「取消變更」，再選擇目的頁面；目前草稿已保留。');
     };
     window.addEventListener('beforeunload', warn);
     window.addEventListener('workbench:before-navigate', beforeNavigate);
     return () => {window.removeEventListener('beforeunload', warn); window.removeEventListener('workbench:before-navigate', beforeNavigate)};
-  }, [dirty, snapshot]);
+  }, [dirty]);
   const leave = navigate;
   const restore = (p?: Project) => {
     dirtyRef.current = false;
+    setMessage('');
     setForm(p ? toForm(p) : blank());
     setAliases(Object.entries(p?.naming_rules?.column_aliases || {}));
     setSnapshot(p || null);
