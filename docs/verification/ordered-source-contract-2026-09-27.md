@@ -380,3 +380,19 @@ actual imported module locations. /api/openapi.json is not exposed and returned
 404; this was not treated as schema acceptance. Deployed-site intercepted-write
 browser regression passed (one test, 5.1 seconds). No revised formal case,
 provider call, Vertica write or portable replay occurred in this checkpoint.
+
+## Formal ordered revision preparation
+
+Created a new child revision for the unresolved full-projection case using the
+current checksum-bound QA correction offer and a new ai_sample target. The input
+explicitly preserves logical CSV record order and adds source_position after
+record_id. The original frozen unordered oracle and historical QA review remain
+unchanged. The child is QUEUED/PREFLIGHT with no input approval and no write.
+No model call was made. Private run identifiers remain in platform storage.
+
+Before advancing, reconcile the ordinal non-null requirement with the generated
+DDL: the existing delivery compiler emits types without NOT NULL constraints.
+Do not ask the model to waive this mismatch or reinterpret physical table order.
+Next action: implement/test V3-only ordinal nullability in DDL and verify the
+QA target-contract inspection, then rebuild affected images before approving
+and executing the prepared revision. Other legacy DDL must remain unchanged.
