@@ -24,6 +24,7 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
   const [form, setForm] = useState(blank);
   const [aliases, setAliases] = useState<[string, string][]>([]);
   const [snapshot, setSnapshot] = useState<Project | null>(null);
+  const [latestProject,setLatestProject]=useState<Project|null>(null);
   const [busy, setBusy] = useState(false);
   const busyRef=useRef(false);
   const operation=useRef(new OperationLatch());
@@ -55,6 +56,7 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
   }, [dirty]);
   const leave = navigate;
   const restore = (p?: Project) => {
+    setLatestProject(null);
     dirtyRef.current = false;
     setMessage('');
     setForm(p ? toForm(p) : blank());
@@ -119,6 +121,15 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
       setMessage('已儲存；重新載入後仍可保留設定。');
     } catch (error: any) {setMessage(error.message)} finally {setBusy(false);busyRef.current=false;operation.current.release()}
   };
+  const compareProject=async()=>{
+    if(creating||!projectId||!operation.current.acquire())return;
+    busyRef.current=true;setBusy(true);setMessage('');
+    try{
+      const latest=await request<Project>(`/api/projects/${projectId}`);
+      if(latest.project_id!==projectId||!latest.updated_at)throw new Error('專案版本回應不完整，草稿未變更');
+      setLatestProject(latest);setMessage('已讀取最新版本供比較，草稿與伺服器均未變更。');
+    }catch(e:any){setMessage(e.message)}finally{busyRef.current=false;setBusy(false);operation.current.release()}
+  };
 
   if (!projectId) return <section className="panel wb-project-home" aria-label="專案工作區首頁">
     <div className="wb-heading"><div><h2>選擇工作專案</h2><p>設定、Task 與歷史紀錄都從專案開始。</p></div><button onClick={() => navigate('/projects/new/settings')}>新增專案</button></div>
@@ -181,6 +192,18 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
             <button type="button" aria-label={`移除對照 ${index+1}`} onClick={() => setAliases(old => old.filter((_,i) => i !== index))}>移除</button>
           </div>)}
           <button type="button" onClick={() => setAliases(old => [...old, ['', '']])}>新增對照</button>
+          {!creating&&<button type="button" onClick={compareProject}>比較專案草稿與最新版本</button>}
+          {latestProject&&<section aria-label="專案版本比較">
+            <h3>專案草稿與最新版本</h3><p>不自動合併、不寫入。採用最新版本會捨棄此專案草稿與未儲存字典。</p>
+            <div className="wb-fields">{(['project_name','description','default_ai_profile','default_connection'] as const).map(key=><div key={key} style={{minWidth:0,overflowWrap:'anywhere'}}>
+              <b>{{project_name:'專案名稱',description:'說明',default_ai_profile:'AI Profile',default_connection:'資料連線'}[key]}</b>
+              <p>草稿：{form[key]||'未設定'}</p><p>最新：{latestProject[key]||'未設定'}</p>
+            </div>)}</div>
+            <h4>命名字典</h4><p>草稿</p><ul>{aliases.map(([source,target],i)=><li key={i}>{source||'未填'} → {target||'未填'}</li>)}</ul>
+            <p>最新</p><ul>{Object.entries(latestProject.naming_rules?.column_aliases||{}).map(([source,target])=><li key={source}>{source} → {String(target)}</li>)}</ul>
+            <button type="button" onClick={()=>setLatestProject(null)}>保留專案草稿並關閉比較</button>
+            <button type="button" onClick={()=>{setProjects(old=>old.map(p=>p.project_id===latestProject.project_id?latestProject:p));restore(latestProject);setMessage('已採用比較版本，尚未寫入。')}}>捨棄專案草稿與字典，採用比較版本</button>
+          </section>}
           <div className="wb-actions"><button type="button" disabled={busy} onClick={() => {restore(selected); if (creating) navigate(projects.length ? `/projects/${projects[0].project_id}/settings` : '/projects')}}>取消變更</button><button className="primary" type="submit" disabled={busy || form.project_name.trim().length < 2}>{busy ? '儲存中…' : creating ? '建立專案' : '儲存設定'}</button></div>
           </fieldset>
         </form> : <section className="panel wb-history" aria-label="專案歷史 Task">
