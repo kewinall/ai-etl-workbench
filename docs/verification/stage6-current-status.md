@@ -5,6 +5,23 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 第十三案：LEFT／INNER 植錯與修正交付（2026-09-27）
+
+正式 semantic-left-join 完成。在真實 Developer 提案副本將 LEFT 改為
+INNER，validate／compile-preview／save 均 INVALID，引用 customer_orders
+節點、joins.0.join_type、需求路徑及預期 LEFT／實際 INNER。沒有 HPL、新
+規格或寫入；重複保存只一筆拒絕事件。唯讀網站 1 passed（4.1s），可查歷史
+差異，390／768／1440px 無水平溢出，返回正常且未發送 mutating request。
+
+另建修訂後 SA v4／Developer v5 重新核准；真實 Hop → Vertica 的精確多重
+集合 4／4 MATCH，包含一對多與未配對左列 NULL，來源 BOUND_PLATFORM_TARGET。
+雙來源獨立轉換意圖交接及 QA prompt v8 真實 PASS；候選包隔離重播 PASS，
+正式 RELEASE_READY，下載 ZIP 指紋與 API 一致，六個 allowlist 成員與內容
+檢查通過。未重跑原目標。首次 SA 格式矛盾及其用量、第二版植錯均保留。
+
+正式集合 13／20，仍缺零列／NULL 聚合兩個語意案例及五個執行復原案例；
+人工基準、完整成效報告、第七階段與 knowledge-workspace 同步仍未完成。
+
 ### 第十三案前置：真實 SA 矛盾格式攔截（2026-09-27）
 
 Join 案首次原生 SA 在 RESULT_PERSISTENCE 被拒絕，安全碼
