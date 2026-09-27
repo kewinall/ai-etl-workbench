@@ -107,3 +107,22 @@ human_attested 聲明；不是登入／身分驗證。不允許無聲明的真�
 整合測試、網站明確來源標籤與開始／停止／放棄流程、活動與斷線處理。
 054／055 均未部署正式 Pilot，沒有新增正式真人工時。不得把這些合成測試
 列入人工基準；實際真人量測仍必須由真人進行。
+
+## HTTP 至 PostgreSQL 整合
+
+在隔離資料庫分別測試 FUNCTIONAL_TEST 與合成 HUMAN_SELF_REPORTED 請求，
+經 FastAPI 真正保存／回讀；結束整筆交易回滾，沒有正式真人量測資料。
+驗證拒絕舊計畫指紋與客戶端時間、開始／結束重送一致、復原 session、
+兩筆事件且身分未驗證、非真人不計入真人小計。完整回歸 1431 passed／
+48 skipped／1 warning（30.03 秒）。
+
+### 同輪服務恢復與新增維運待辦
+
+正式回讀曾遇連線拒絕，確認 WSL 沒有運行。新增四小時暫時維持程序並恢復
+原容器；compose start 遇既有舊 migrate 容器「Applied migration files are
+missing from this version」保護性失敗，沒有修改 ledger 或停用檢查。
+直接恢復現有較新 API／網站容器後 API healthy、HTTP health ok，成果回讀
+20／20 可交付、19／20 凍結情境、人工工時 null。沒有部署 054／055。
+獨立 portability 容器仍為停止狀態，本輪未派發任何 Hop／模型。
+第 7 階段須一併修復 migrate 容器版本一致性與 WSL 持久生命週期；暫時
+維持程序不是可靠部署驗收，亦未證明無人值守可持續運行。
