@@ -2,6 +2,34 @@ import pytest
 from hashlib import sha256
 from pydantic import ValidationError
 from app.pilot_cohort import PilotCohortPlan, fingerprint
+from app.pilot_cohort import annotate_order_scope
+
+
+def test_order_scope_keeps_changed_success_out_of_frozen_acceptance():
+    runs = [{'state': 'FAILED', 'source_order_contract': None},
+            {'state': 'RELEASE_READY', 'source_order_contract': {'ordinal_column': 'source_position'}}]
+    annotate_order_scope(runs, True)
+    assert len(runs) == 2 and runs[0]['state'] == 'FAILED'
+    assert runs[0]['source_order_scope'] == 'UNCHANGED_NOT_ACCEPTANCE_PROOF'
+    assert runs[1]['source_order_scope'] == 'CHANGED_REQUIRES_PROTOCOL_REVIEW'
+    assert all(not r['cohort_acceptance_verified'] for r in runs)
+    assert all('source_order_contract' not in r for r in runs)
+
+
+@pytest.mark.parametrize('verified', [True, False])
+def test_order_scope_does_not_call_initial_order_contract_an_extension(verified):
+    runs = [{'source_order_contract': {'ordinal_column': 'position'}},
+            {'source_order_contract': {'ordinal_column': 'position'}}]
+    annotate_order_scope(runs, verified)
+    expected = 'UNCHANGED_NOT_ACCEPTANCE_PROOF' if verified else 'UNVERIFIED_ATTEMPT_ORDER'
+    assert all(r['source_order_scope'] == expected for r in runs)
+
+
+def test_removing_order_contract_also_requires_review():
+    runs = [{'source_order_contract': {'ordinal_column': 'position'}}, {'source_order_contract': None}]
+    annotate_order_scope(runs, True)
+    assert runs[1]['source_order_scope'] == 'CHANGED_REQUIRES_PROTOCOL_REVIEW'
+    annotate_order_scope([], False)
 
 
 def plan_payload():

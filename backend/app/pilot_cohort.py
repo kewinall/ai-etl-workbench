@@ -86,18 +86,36 @@ def inventory(repo, project_id):
             for case in cases:
                 # No latest-only selection: failed/cancelled and every revision remain visible.
                 case['runs'] = [dict(row) for row in conn.execute('''SELECT r.run_id,r.parent_run_id,
-                    r.state,r.phase,r.outcome_code,r.created_at,a.attempt_ordinal
+                    r.state,r.phase,r.outcome_code,r.created_at,a.attempt_ordinal,
+                    r.input_snapshot->'target_config'->'source_order_v1' AS source_order_contract
                     FROM platform.task_run r LEFT JOIN platform.pilot_case_attempt a USING(run_id)
                     WHERE r.task_id=%s ORDER BY a.attempt_ordinal NULLS LAST,r.created_at,r.run_id''',
                     (case['task_id'],)).fetchall()] if case['task_id'] else []
                 case['attempt_order_verified'] = bool(case['runs']) and all(
                     run['attempt_ordinal'] == index for index, run in enumerate(case['runs'], 1))
+                annotate_order_scope(case['runs'], case['attempt_order_verified'])
             result.append({**dict(cohort), 'registered_cases': 20,
                            'bound_cases': sum(case['task_id'] is not None for case in cases),
                            'cases': [dict(case) for case in cases],
                            'execution_verified': False, 'comparison_ready': False,
                            'limitations': ['登錄或綁定不等於樣本指紋已核對或執行通過；尚待情境證據與人工基準。']})
     return {'project_id': str(project_id), 'cohorts': result}
+
+
+def annotate_order_scope(runs, attempt_order_verified):
+    """Describe contract changes, never infer cohort acceptance or first-pass success.
+
+    The first prospectively numbered attempt is a comparison reference, not proof
+    of agreement with the frozen oracle. Missing authoritative ordering fails closed.
+    """
+    baseline = runs[0].get('source_order_contract') if runs and attempt_order_verified else None
+    for run in runs:
+        contract = run.pop('source_order_contract', None)
+        run['source_order_scope'] = (
+            'UNVERIFIED_ATTEMPT_ORDER' if not attempt_order_verified else
+            'CHANGED_REQUIRES_PROTOCOL_REVIEW' if contract != baseline else
+            'UNCHANGED_NOT_ACCEPTANCE_PROOF')
+        run['cohort_acceptance_verified'] = False
 
 
 def bind_task(repo, project_id, cohort_id, case_key, task_id):

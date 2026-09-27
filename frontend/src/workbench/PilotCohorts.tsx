@@ -96,6 +96,11 @@ export function PilotCohorts({projectId,navigate}:{projectId:string;navigate:(pa
           </fieldset>}
           {!item.runs.length?<p>尚無 Run 證據；不算通過。</p>:item.runs.map((run:any)=><p key={run.run_id}>
             {run.attempt_ordinal?`準備嘗試 #${run.attempt_ordinal}`:'舊版本次序未驗證'} · {run.state} · {run.outcome_code||'尚無結果'} · {run.run_id}{' '}
+            <span>{run.source_order_scope==='CHANGED_REQUIRES_PROTOCOL_REVIEW'
+              ?'順序需求已變更：須另行審核，不代表原凍結案例通過。'
+              :run.source_order_scope==='UNCHANGED_NOT_ACCEPTANCE_PROOF'
+                ?'順序契約與首次嘗試相同；仍不代表案例驗收通過。'
+                :'順序需求比較尚未驗證。'}</span>{' '}
             <button onClick={()=>navigate(`/projects/${projectId}/tasks/${encodeURIComponent(item.task_id)}/execution/${run.run_id}`)}>查看此 Run 證據</button>
           </p>)}
         </details>})}

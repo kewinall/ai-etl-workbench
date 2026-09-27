@@ -33,6 +33,10 @@ def test_binding_preserves_cancelled_and_all_revisions_and_blocks_reassignment(c
                 bind_task(repo, project, cohort, 'case-01', task_id)
             run = queue.enqueue(task_id, 'pilot-binding-first')
             queue.cancel_unstarted(task_id, run['run_id'])
+            conn.execute('''UPDATE platform.task SET target_config=target_config ||
+                '{"source_order_v1":{"version":1,"source_ref":"source.0",
+                  "ordinal_column":"source_position","direction":"ASC",
+                  "semantics":"LOGICAL_CSV_RECORD_POSITION"}}'::jsonb WHERE task_id=%s''', (task_id,))
             second = queue.enqueue(task_id, 'pilot-binding-second')
             # A response-loss replay remains valid after execution preparation begins.
             assert bind_task(repo, project, cohort, 'case-00', task_id) == first
@@ -44,6 +48,9 @@ def test_binding_preserves_cancelled_and_all_revisions_and_blocks_reassignment(c
             assert saved['cases'][0]['attempt_order_verified'] is True
             assert [str(row['run_id']) for row in saved['cases'][0]['runs']] == [str(run['run_id']), str(second['run_id'])]
             assert [row['attempt_ordinal'] for row in saved['cases'][0]['runs']] == [1, 2]
+            assert [row['source_order_scope'] for row in saved['cases'][0]['runs']] == [
+                'UNCHANGED_NOT_ACCEPTANCE_PROOF', 'CHANGED_REQUIRES_PROTOCOL_REVIEW']
+            assert all(not row['cohort_acceptance_verified'] for row in saved['cases'][0]['runs'])
             assert queue.enqueue(task_id, 'pilot-binding-second')['run_id'] == second['run_id']
             assert conn.execute('SELECT count(*) n FROM platform.pilot_case_attempt WHERE cohort_id=%s',
                                 (cohort,)).fetchone()['n'] == 2

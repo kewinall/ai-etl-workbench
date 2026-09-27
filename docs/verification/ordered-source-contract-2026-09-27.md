@@ -484,3 +484,24 @@ visual review, extension-aware evaluation, human baseline measurement, complete 
 regression, persistent-worker/restart and backup/restore verification remain open.
 Knowledge-workspace synchronization remains unresolved; this repository record
 does not claim that synchronization has occurred.
+
+## Cohort scope visibility
+
+Live read-only measurement after release reports 20/20 currently downloadable
+cases but 19/20 matched frozen scenario evidence. First-pass rate and human
+active time remain null. These are different measures, not a 100% first-pass
+or frozen-protocol success claim.
+
+Added historical Run annotations comparing source_order_v1 against the first
+authoritatively numbered attempt. Adding, removing or changing that contract is
+marked CHANGED_REQUIRES_PROTOCOL_REVIEW; unchanged contracts are explicitly not
+acceptance proof. Missing authoritative attempt order fails closed. No frozen
+definition, result, approval or metric is rewritten. The website displays these
+annotations beside each historical Run.
+
+Verified with isolated PostgreSQL binding/enqueue/history coverage and the full
+suite: 1402 passed, 48 skipped, one existing deprecation warning, 28.72 seconds.
+Frontend production build passed. An initial review caught the nested snapshot
+path requirement; the corrected target_config lookup is covered by the actual
+database integration test, not only a helper test. New UI annotation is not yet
+deployed or browser-accepted; that remains the next verification step.
