@@ -1,0 +1,54 @@
+# Synthetic UI acceptance only. No Pilot volumes, host credentials or execution workers.
+name: ai-etl-ui-regression
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: workbench
+      POSTGRES_DB: workbench
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes: [ui-test-database:/var/lib/postgresql/data]
+    networks: [test-only]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U workbench -d workbench']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  migrate:
+    image: ai-etl-workbench-api:dev
+    environment: &test-env
+      DATABASE_URL: postgresql://workbench@postgres:5432/workbench
+      DATABASE_HOST: postgres
+      DATABASE_NAME: workbench
+      # Public test-only key. Never use this environment for real secrets.
+      PLATFORM_SETTINGS_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      WORKBENCH_EXECUTION_ENABLED: 'false'
+      WORKBENCH_SA_DISPATCH_ENABLED: 'false'
+      WORKBENCH_DEVELOPER_DISPATCH_ENABLED: 'false'
+      WORKBENCH_QA_DISPATCH_ENABLED: 'false'
+    command: [python, -m, app.migrations]
+    networks: [test-only]
+    depends_on:
+      postgres: {condition: service_healthy}
+  api:
+    image: ai-etl-workbench-api:dev
+    environment: *test-env
+    networks: [test-only]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/api/ready', timeout=3)"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+  web:
+    image: ai-etl-workbench-web:latest
+    ports: ['127.0.0.1:5195:8080']
+    networks: [test-only, browser-only]
+    depends_on:
+      api: {condition: service_healthy}
+networks:
+  test-only: {internal: true}
+  browser-only: {}
+volumes:
+  ui-test-database:
