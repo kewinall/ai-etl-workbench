@@ -5,6 +5,23 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### NULL 分組案正式交付（2026-09-27）
+
+第 5 案首次 SA 要求補明輸出契約及 nullable 與 COUNT_ROWS 的差別；新 revision
+明定 category VARCHAR(32)／row_count BIGINT、DDL 允許 NULL 但計數值非 NULL、
+SQL_NULLS 同組、保留重複列計數、空來源無虛構組。樣本與固定答案未變。
+命名契約包含 $metric.row_count。真實 SA／Developer 通過，核准規格前核對
+COUNT_ROWS、column=null、無篩選／去重、APPEND 與輸出順序。
+
+答案 definition／checksum 與已登錄集合一致。單次真實 Hop 比對預期 2／實際
+2 組、缺少 0／額外 0，涵蓋 NULL 組計數 2、A 組計數 1，另存受控來源證據。
+單次真實 QA PASS，隔離可攜驗證 PASS，正式 RELEASE_READY。下載指紋符合
+交付 API、六項 allowlist 與內容檢查通過；未重跑原目標，初次缺口歷史保留。
+
+正式集合目前 5／20 案完成上述執行與交付核對，僅正常成功類五案。
+缺口補正、語意故障攔截、執行失敗復原等 15 案仍待完成；成效、人工基準、
+UI 補充回歸及第 7 階段尚未驗收，不以五案替代完整目標。
+
 ### 零列案正式交付（2026-09-27）
 
 Worker 已以目前程式重建，沿用 Apache Hop 2.12.0 及相同指紋 JDBC；驅動從
