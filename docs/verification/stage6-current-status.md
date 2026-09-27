@@ -3,6 +3,26 @@
 狀態：實作中，尚未通過 20 案例驗收。第 5 階段見
 [已列功能回歸](stage5-current-status.md)。
 
+## 最新進度：Developer 診斷與首案 Hop
+
+已補安全失敗代碼／階段保存；若已收到且驗證過綁定的 provider trace，保存
+用量與 checksum，標記 RECEIVED_NOT_ACCEPTED，不保存失敗模型文字或例外
+原文。網站可顯示失敗階段，舊 unknown 紀錄明確顯示未保存、無法追溯。
+不回填舊原因，不重播同一 invocation。隔離完整回歸 1150 passed／46 skipped／
+1 warning（25.34 秒），build 通過；已部署並以真實 UI 檢視舊紀錄。
+
+另確認首案命名契約缺兩個聚合輸出，依 compiler 規則無法涵蓋規格；尚不能
+證明這就是前次 unknown 的原始原因。已建立命名第 2 版及 Run 第 3 次準備，
+補入 $metric.total_amount／$metric.row_count；來源、門檻及固定答案不變。
+新 SA READY_FOR_REVIEW，Developer 真實提案通過程式驗證，規格第 1 版保存。
+已確認單一 amount GE 10、category 分組、SUM／COUNT_ROWS、輸出順序與型別。
+
+規格與從固定目錄核對的答案已核准，既有 Worker 主要執行程式四檔與現行
+source SHA-256 一致。單次 Hop 在新受控目標執行完成，Vertica 實測
+EXACT_MULTISET MATCH：預期 2／實際 2、缺少 0／額外 0，來源核對為
+BOUND_PLATFORM_TARGET。QA 已授權一次真實審查，結果另核對；尚未 Release。
+這仍是首案第 3 次準備的結果，不可回算首次成功或宣稱 20 案完成。
+
 ## 已實作的前置能力
 
 ### 最新：正式案例準備與首次嘗試次序

@@ -86,7 +86,8 @@ def test_developer_single_consumption_atomic_save(context, outcome, monkeypatch,
                     'tool_execution_count':0, 'ai_credits':0.25, 'output_tokens':123})
             before = conn.execute('SELECT count(*) n FROM platform.specification WHERE task_id=%s', (task,)).fetchone()['n']
             if outcome == 'unknown':
-                journal.hold_uncertain(task, identity, token)
+                journal.hold_uncertain(task, identity, token, code='DEVELOPER_SPECIFICATION_INVALID',
+                                       stage='RESULT_PERSISTENCE', output=proposal, trace=trace)
             else:
                 if outcome == 'stale':
                     conn.execute("UPDATE platform.task SET requirement_text=requirement_text||' changed' WHERE task_id=%s", (task,))
@@ -105,6 +106,12 @@ def test_developer_single_consumption_atomic_save(context, outcome, monkeypatch,
             if outcome != 'unknown':
                 assert history.json()['invocation']['usage']['ai_credits'] == 0.25
                 assert 'prompt' not in history.json()['invocation']
+            else:
+                item = history.json()['invocation']
+                assert item['error_code'] == 'DEVELOPER_SPECIFICATION_INVALID'
+                assert item['failure_stage'] == 'RESULT_PERSISTENCE'
+                assert item['usage']['ai_credits'] == 0.25
+                assert item['proposal'] is None and item['specification'] is None
             for sql in ('UPDATE platform.agent_invocation SET status=status WHERE invocation_id=%s',
                         'DELETE FROM platform.agent_invocation WHERE invocation_id=%s',
                         'DELETE FROM platform.developer_dispatch_claim WHERE invocation_id=%s'):

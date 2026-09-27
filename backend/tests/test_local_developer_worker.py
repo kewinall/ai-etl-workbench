@@ -39,3 +39,24 @@ def test_one_call_no_retry_and_save_or_unknown(failure):
 def test_error_details_masked():
     assert public_error(ValueError('private database URI')) == 'LOCAL_DEVELOPER_REQUEST_FAILED'
     assert public_error(ValueError('DEVELOPER_DISPATCH_DISABLED')) == 'DEVELOPER_DISPATCH_DISABLED'
+
+
+@pytest.mark.parametrize('code', ['DEVELOPER_SPECIFICATION_INVALID', 'private URI'])
+def test_failed_persistence_retains_safe_stage_and_returned_trace_without_retry(code):
+    messages = []
+    def transport(data):
+        messages.append(data)
+        if data['action'] == 'claim':
+            return dict(status='DISPATCH_RESERVED', invocation_id='i', claim_token='t',
+                        model='copilot/test', prompt_version=2, payload={})
+        if data['action'] == 'check': return {'status':'CLAIM_ACTIVE'}
+        if data['action'] == 'finish': raise ValueError(code)
+        return {'status':'DEVELOPER_OUTCOME_UNKNOWN'}
+    completion = Mock(return_value=({'version':1}, {'usage': {'cli_sessions':1}}))
+    result = run_once('t','r', transport=transport, completion=completion)
+    assert completion.call_count == 1
+    assert result['failure_stage'] == 'RESULT_PERSISTENCE'
+    assert result['error_code'] == (code if code.startswith('DEVELOPER_') else 'DEVELOPER_OUTCOME_UNKNOWN')
+    failure = messages[-1]
+    assert failure['action'] == 'uncertain' and failure['trace']['usage']['cli_sessions'] == 1
+    assert 'private URI' not in str(failure)

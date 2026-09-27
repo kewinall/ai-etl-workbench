@@ -46,6 +46,10 @@ export function DeveloperInvocation({taskId, runId}: {taskId: string; runId: str
         : item.status === 'STALE_RESULT_NEEDS_REVIEW' ? '上游版本已變更，結果僅保留歷史'
         : '呼叫結果不明，須人工核對，不會自動重試'}</p>
       {!data.matches_current && <p>此結果不符合目前可派發版本，不能據此授權新的執行。</p>}
+      {item.status === 'DEVELOPER_OUTCOME_UNKNOWN' && <p role="status">
+        失敗階段：{({CLAIM_CHECK:'呼叫前檢查',MODEL_CALL:'模型呼叫或回應解析',RESULT_CHECK:'回應後版本檢查',RESULT_PERSISTENCE:'規格驗證或結果保存'} as Record<string,string>)[item.failure_stage] || '舊紀錄未保存，無法追溯'}。
+        診斷代碼：{item.error_code || '未記錄'}。這不是可執行規格；不會重播此呼叫。
+      </p>}
       {item.proposal && <><p>{item.proposal.summary}</p><p>引用證據：{item.proposal.evidence_ids?.join('、')}</p></>}
       {item.specification && <p>規格版本 {item.specification.version} 已保存。請在下方「規格」區重新載入並檢視後核准。</p>}
       <p>輸出 Token：{item.usage?.output_tokens ?? '不可用'}；AI credits：{item.usage?.ai_credits ?? '不可用'}；Premium requests：{item.usage?.premium_requests ?? '不可用'}。缺值不當作零，不估算費用。</p>

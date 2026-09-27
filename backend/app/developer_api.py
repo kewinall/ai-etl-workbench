@@ -39,6 +39,8 @@ def read(queue, task_id, run_id):
                 raise ValueError('DEVELOPER_HISTORY_INTEGRITY_ERROR')
             output = row.get('output_json') or {}
             trace = None
+            if row['status'] == 'DEVELOPER_OUTCOME_UNKNOWN':
+                trace = output.get('failure_trace')
             if row['status'] in ('VALIDATED_NOT_APPROVED', 'STALE_RESULT_NEEDS_REVIEW'):
                 if digest(output['proposal']) != output['proposal_checksum']:
                     raise ValueError('DEVELOPER_HISTORY_INTEGRITY_ERROR')
@@ -47,6 +49,7 @@ def read(queue, task_id, run_id):
             record.update(invocation_id=str(row['invocation_id']), proposal=output.get('proposal'),
                           specification=output.get('specification'), usage=trace['usage'] if trace else None,
                           duration_ms=trace['duration_ms'] if trace else None)
+            record.update(error_code=output.get('error_code'), failure_stage=output.get('failure_stage'))
         material = developer_material(context or {'version': 1})
         return {'invocation':record, 'context':context, 'model':model,
                 'matches_current': bool(context and (not row or context == row['input_json']['context'])),

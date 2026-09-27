@@ -126,14 +126,26 @@ class DeveloperJournal:
                              {'invocation_id': str(invocation_id), 'execution_authorized': False})
         return {'status': status, 'specification': stored, 'execution_authorized': False, 'release_ready': False}
 
-    def hold_uncertain(self, task_id, invocation_id, token):
+    def hold_uncertain(self, task_id, invocation_id, token, *, code=None, stage=None, output=None, trace=None):
+        from .developer_failure import failure_summary
         with self.queue.conn() as conn:
             self.queue.locked_task(conn, task_id)
+            summary = failure_summary(code, stage)
+            record = conn.execute('SELECT * FROM platform.agent_invocation WHERE task_id=%s AND invocation_id=%s',
+                                  (task_id, invocation_id)).fetchone()
+            safe_trace = None
+            if record and isinstance(output, dict) and isinstance(trace, dict):
+                try: safe_trace = checked_trace(trace, record, output)
+                except (ValueError, KeyError, TypeError): pass
+            # Keep verified usage/checksum only, never failed model text or raw errors.
+            if safe_trace: safe_trace['status'] = 'RECEIVED_NOT_ACCEPTED'
+            summary['failure_trace'] = safe_trace
             # A matching consumed claim may expire while the provider is running.
             row = conn.execute("""UPDATE platform.agent_invocation a SET status='DEVELOPER_OUTCOME_UNKNOWN',output_json=%s
                 WHERE a.task_id=%s AND a.invocation_id=%s AND a.role='pilot_developer' AND a.status='DEVELOPER_RESERVED'
                 AND EXISTS(SELECT 1 FROM platform.developer_dispatch_claim c WHERE c.invocation_id=a.invocation_id AND c.claim_token=%s)
-                RETURNING a.run_id""", (Jsonb({'error_code': 'DEVELOPER_OUTCOME_UNKNOWN', 'automatic_retry': False}), task_id, invocation_id, token)).fetchone()
+                RETURNING a.run_id""", (Jsonb(summary), task_id, invocation_id, token)).fetchone()
             if not row:
                 raise ValueError('DEVELOPER_RESULT_NOT_WRITABLE')
-            self.queue.event(conn, row['run_id'], 'DEVELOPER_OUTCOME_UNKNOWN', 'SPEC_GENERATION', {'automatic_retry': False})
+            self.queue.event(conn, row['run_id'], 'DEVELOPER_OUTCOME_UNKNOWN', 'SPEC_GENERATION',
+                             {key:summary[key] for key in ('error_code', 'failure_stage', 'automatic_retry')})

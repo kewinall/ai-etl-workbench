@@ -5,14 +5,17 @@ import sys
 from uuid import UUID
 from .run_queue import RunQueue
 from .developer_journal import DeveloperJournal
+from .developer_failure import safe_code, FAILURE_CODES
 
 PUBLIC_ERRORS = frozenset({'DEVELOPER_DISPATCH_DISABLED', 'DEVELOPER_NATIVE_PROFILE_REQUIRED',
     'DEVELOPER_CONTEXT_VERSION_CHANGED', 'DEVELOPER_DISPATCH_ALREADY_CONSUMED',
     'DEVELOPER_NOT_DISPATCHABLE', 'DEVELOPER_DISPATCH_CLAIM_EXPIRED_OR_LOST',
-    'DEVELOPER_CLAIM_SCOPE_MISMATCH'})
+    'DEVELOPER_CLAIM_SCOPE_MISMATCH'}) | FAILURE_CODES
 
 
 def public_error(error):
+    code = safe_code(error)
+    if code != 'DEVELOPER_OUTCOME_UNKNOWN': return code
     return str(error) if isinstance(error, ValueError) and str(error) in PUBLIC_ERRORS else 'LOCAL_DEVELOPER_REQUEST_FAILED'
 
 
@@ -40,7 +43,8 @@ def handle(queue, data):
         return {'status':'CLAIM_ACTIVE'}
     if action == 'finish': return journal.finish(task, invocation, token, data['proposal'], data['trace'])
     if action == 'uncertain':
-        journal.hold_uncertain(task, invocation, token)
+        journal.hold_uncertain(task, invocation, token, code=data.get('error_code'),
+                               stage=data.get('failure_stage'), output=data.get('proposal'), trace=data.get('trace'))
         return {'status':'DEVELOPER_OUTCOME_UNKNOWN'}
     raise ValueError('UNKNOWN_LOCAL_DEVELOPER_ACTION')
 

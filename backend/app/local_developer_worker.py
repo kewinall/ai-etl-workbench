@@ -5,6 +5,7 @@ import subprocess
 from .copilot_gateway import complete_copilot
 from .local_developer_bridge import PUBLIC_ERRORS
 from .sa_contract import digest
+from .developer_failure import safe_code
 
 
 def bridge(data):
@@ -28,18 +29,25 @@ def run_once(task_id, run_id, *, transport=bridge, completion=complete_copilot):
     def check():
         if transport({**identity, 'action':'check'})['status'] != 'CLAIM_ACTIVE':
             raise ValueError('DEVELOPER_CLAIM_LOST')
+    stage, proposal, trace = 'CLAIM_CHECK', None, None
     try:
         check()
+        stage = 'MODEL_CALL'
         proposal, trace = completion(record['payload'], record['model'], before_call=check)
+        stage = 'RESULT_CHECK'
         check()
         trace = {**trace, 'prompt_version':record['prompt_version'], 'status':'VALIDATED_NOT_APPROVED',
                  'output_checksum':digest(proposal)}
         # Server revalidates native trace binding, schema, semantics and current versions.
+        stage = 'RESULT_PERSISTENCE'
         return transport({**identity, 'action':'finish', 'proposal':proposal, 'trace':trace})
-    except Exception:
-        try: transport({**identity, 'action':'uncertain'})
+    except Exception as error:
+        code = safe_code(error)
+        try: transport({**identity, 'action':'uncertain', 'error_code':code, 'failure_stage':stage,
+                        'proposal':proposal, 'trace':trace})
         except Exception: pass
-        return {'status':'DEVELOPER_OUTCOME_UNKNOWN', 'invocation_id':record['invocation_id']}
+        return {'status':'DEVELOPER_OUTCOME_UNKNOWN', 'invocation_id':record['invocation_id'],
+                'error_code':code, 'failure_stage':stage}
 
 
 def main():
