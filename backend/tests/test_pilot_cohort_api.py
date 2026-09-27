@@ -44,3 +44,20 @@ def test_binding_conflict_and_safe_failure(client_repo, monkeypatch):
     monkeypatch.setattr('app.pilot_cohort.bind_task', fail)
     response = client.post(url, json={'task_id': 'synthetic-task'})
     assert response.status_code == 503 and 'synthetic-secret' not in response.text
+
+
+def test_template_and_synthetic_download_require_project(client_repo):
+    from io import BytesIO
+    from zipfile import ZipFile
+    client, _ = client_repo
+    assert client.get(f'/api/projects/{uuid4()}/pilot-cohort-template').status_code == 404
+    project = client.post('/api/projects', json={'project_name': 'Template preview'}).json()
+    url = f"/api/projects/{project['project_id']}/pilot-cohort-template"
+    response = client.get(url)
+    assert response.status_code == 200 and len(response.json()['plan']['cases']) == 20
+    assert response.json()['execution_verified'] is False
+    download = client.get(url+'/download')
+    assert download.status_code == 200 and download.headers['content-type'] == 'application/zip'
+    with ZipFile(BytesIO(download.content)) as archive:
+        assert 'plan.json' in archive.namelist()
+        assert 'Not a Release' in archive.read('README.txt').decode()

@@ -5,6 +5,7 @@ from uuid import UUID
 import re
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from psycopg.errors import UniqueViolation
 from .pilot_cohort import PilotCohortPlan, PilotTaskBinding, PilotEnrollmentConflict
@@ -96,6 +97,23 @@ def create_project_router(repo) -> APIRouter:
         except Exception:
             raise HTTPException(503, detail={'code': 'PILOT_REGISTRATION_UNAVAILABLE',
                 'message': '案例登錄未確認完成；可重送相同計畫，不會重複登錄。'}) from None
+
+    @router.get('/{project_id}/pilot-cohort-template')
+    def cohort_template(project_id: UUID):
+        from .pilot_fixture_catalog import template
+        from .pilot_cohort import fingerprint
+        get_project(project_id)
+        plan = template()
+        return {'project_id': str(project_id), 'plan': plan.model_dump(),
+                'plan_checksum': fingerprint(plan), 'execution_verified': False}
+
+    @router.get('/{project_id}/pilot-cohort-template/download')
+    def cohort_test_bundle(project_id: UUID):
+        from .pilot_fixture_catalog import bundle
+        get_project(project_id)
+        return Response(bundle(), media_type='application/zip', headers={
+            'Content-Disposition': 'attachment; filename="pilot-standard-v1-test-data.zip"',
+            'Cache-Control': 'no-store'})
 
     @router.get('/{project_id}/pilot-cohorts')
     def list_cohorts(project_id: UUID):

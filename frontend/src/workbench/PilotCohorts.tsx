@@ -8,6 +8,7 @@ export function PilotCohorts({projectId,navigate}:{projectId:string;navigate:(pa
   const [data,setData]=useState<any>(null),[tasks,setTasks]=useState<any[]>([]);
   const [error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
   const [selection,setSelection]=useState<Record<string,string>>({}),[attempt,retry]=useState(0);
+  const [preview,setPreview]=useState<any>(null),[confirmed,setConfirmed]=useState(false);
   const latch=useRef(new OperationLatch());
   useEffect(()=>{
     let live=true;setData(null);setError('');setSelection({});setMessage('');
@@ -29,10 +30,41 @@ export function PilotCohorts({projectId,navigate}:{projectId:string;navigate:(pa
       setData(updated);setMessage('案例已綁定並重新讀取；這不代表執行或驗收通過。');
     }catch(e:any){setMessage(e.message)}finally{latch.current.release();setBusy(false)}
   };
+  const previewTemplate=async()=>{
+    if(!latch.current.acquire())return;
+    setBusy(true);setMessage('');setConfirmed(false);
+    try{
+      const value=await request(`/api/projects/${projectId}/pilot-cohort-template`);
+      if(value.project_id!==projectId||value.plan?.cases?.length!==20||!value.plan_checksum)throw Error('標準案例回應不完整');
+      setPreview(value);
+    }catch(e:any){setMessage(e.message)}finally{setBusy(false);latch.current.release()}
+  };
+  const registerTemplate=async()=>{
+    if(!preview||!confirmed||!latch.current.acquire())return;
+    setBusy(true);setMessage('');
+    try{
+      await request(`/api/projects/${projectId}/pilot-cohorts`,jsonBody('POST',preview.plan));
+      const updated=await request(`/api/projects/${projectId}/pilot-cohorts`);
+      if(updated.project_id!==projectId||!Array.isArray(updated.cohorts))throw Error('登錄後回讀資料不完整');
+      setData(updated);setPreview(null);setConfirmed(false);
+      setMessage('20 案已登錄並重新讀取；尚未建立 Task、執行模型或 ETL。');
+    }catch(e:any){setMessage(e.message)}finally{setBusy(false);latch.current.release()}
+  };
   return <section className="pilot-cohorts" aria-label="正式 Pilot 案例集合">
     <h3>正式比較案例</h3>
     <p>登錄後分母固定 20 案。只能綁定同專案、尚無 Run 的 Task；綁定後不能改選，所有失敗與取消版本都保留。樣本指紋尚須逐案驗證。</p>
     <button disabled={busy} onClick={()=>retry(n=>n+1)}>重新讀取案例集合</button>
+    <button disabled={busy} onClick={previewTemplate}>預覽標準 20 案</button>
+    {preview&&<section aria-label="標準案例登錄預覽">
+      <h4>登錄前確認：{preview.plan.name}</h4>
+      <p>包含四類各 5 案；樣本與修正後答案固定指紋。下載的是合成測試資料，不是 Release。登錄不會自動建立 Task 或執行故障。</p>
+      <a href={`/api/projects/${projectId}/pilot-cohort-template/download`}>下載合成樣本與標準答案 ZIP</a>
+      <p>計畫指紋：<code>{preview.plan_checksum}</code></p>
+      <ol>{preview.plan.cases.map((item:any)=><li key={item.case_key}><strong>{item.title}</strong><p>{item.acceptance}</p></li>)}</ol>
+      <label><input type="checkbox" disabled={busy} checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>我已檢視 20 案；同意固定此集合，失敗與未執行案例不得移除</label>
+      <button disabled={busy||!confirmed} onClick={registerTemplate}>確認登錄此 20 案</button>
+      <button disabled={busy} onClick={()=>{setPreview(null);setConfirmed(false)}}>關閉登錄預覽</button>
+    </section>}
     {error?<p role="alert">{error}</p>:!data?<p role="status">正在讀取案例集合…</p>:<>
       {!data.cohorts.length&&<p>尚未登錄比較集合。20 案樣本與答案須先固定指紋；現有歷史 Run 不會自動當成正式比較案例。</p>}
       {data.cohorts.map((cohort:any)=><article key={cohort.cohort_id}>
