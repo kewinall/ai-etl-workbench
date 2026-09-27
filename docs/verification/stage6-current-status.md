@@ -5,6 +5,20 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 第十三案前置：真實 SA 矛盾格式攔截（2026-09-27）
+
+Join 案首次原生 SA 在 RESULT_PERSISTENCE 被拒絕，安全碼
+SA_CANNOT_OVERRIDE_GATE；授權時保存的 deterministic_gate 為 CHECKED 且無
+issue，因此依驗證分支可確認模型輸出 READY_FOR_REVIEW 卻帶有未解決 issues。
+原始文字未保存，不推測其具體問題內容；本次用量及耗時已成功驗證保存，
+零工具、零自動重試、無 ETL 寫入。未知結果不轉成成功。
+
+SA prompt v4 明示 READY 必須 issues=[]、未解決問題必須 NEEDS_INPUT；
+說明或已接受限制應放 summary，不得刪除真實問題來取得 READY。驗證器沒有
+放寬。隔離完整回歸 1214 passed／46 skipped／1 warning（29.08s），exit 0。
+API／Worker 已同版建置部署，部署前無待領取／活躍工作。另建新版重新審查，
+正式集合仍 12／20；本段不是第十三案語意植錯或交付通過證據。
+
 ### 第十二案：日期迄日語意植錯與修正交付（2026-09-27）
 
 正式 semantic-date-boundaries 已完成。在真實 Developer 提案副本把迄日

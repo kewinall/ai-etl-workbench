@@ -54,6 +54,15 @@ def test_missing_input_requires_issue_evidence():
     assert validate_sa_review(payload, context)['status'] == 'NEEDS_INPUT'
 
 
+def test_ready_with_unresolved_issue_is_rejected_not_silently_corrected():
+    context = build_sa_context(run())
+    payload = response(context)
+    payload['issues'] = [dict(issue_type='UNSAFE',message='Synthetic unresolved issue',evidence_ids=['requirement'])]
+    with pytest.raises(ValueError, match='SA_CANNOT_OVERRIDE_GATE'):
+        validate_sa_review(payload,context)
+    assert payload['status']=='READY_FOR_REVIEW' and len(payload['issues'])==1
+
+
 def test_no_sql_or_execution_fields_accepted():
     context = build_sa_context(run())
     with pytest.raises(ValueError):
