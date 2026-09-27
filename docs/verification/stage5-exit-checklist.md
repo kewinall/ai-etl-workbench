@@ -58,6 +58,11 @@ run_count 0。未授權模型、未執行 Hop 或建立 Vertica 表；保留該 
 
 ## 後續階段邊界
 
+成果頁追加實測：Default Project 的空案例明確顯示尚無 Task，不顯示成功率。
+390px 下專案選單原右緣約 404px，長名稱撐出容器；限制 select 最小／最大寬度
+後，build／部署通過，右緣約 358px，落在 viewport 內。讀取失敗分支仍未實測。
+核對 project_api 只有 GET／POST／PUT，沒有 DELETE；不可宣稱專案刪除已支援。
+
 設定中心窄版發現六個分類按鈕文字完全空白；DOM 確認 font-size 為 0px，原因
 是舊 styles.css 的全域 nav button 響應式規則。限縮為 aside nav button 後，
 build／部署通過，390px 真實截圖可見全部分類文字，computed font-size 均為 13px。

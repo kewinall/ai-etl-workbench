@@ -28,6 +28,8 @@
 @media(max-width:1000px){.wb-project-list{max-height:260px;display:block}.wb-project-list>button{width:100%}}
 .wb-project-home{padding:24px;min-width:0}
 .wb-project-home>label{display:grid;gap:8px;max-width:540px;margin:20px 0}
+.wb-project-home>label{min-width:0}
+.wb-project-home>label select{min-width:0;width:100%;max-width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;color:#172337;font:inherit}
 .wb-project-home-list{display:grid;gap:12px}
 .wb-project-home-list article{display:flex;align-items:center;justify-content:space-between;gap:20px;border:1px solid #dbe3ef;border-radius:10px;padding:18px;min-width:0}
 .wb-project-home-list article>div{min-width:0;overflow-wrap:anywhere}
