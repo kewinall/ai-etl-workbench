@@ -27,21 +27,21 @@ def test_enrollment_must_be_unique_same_project(rows):
 def test_claimed_failure_is_not_retried(monkeypatch):
     monkeypatch.setenv('WORKBENCH_SYNTHETIC_FAILURE_PROBE','frozen-cohort-missing-column-v1')
     conn = Mock()
-    conn.execute.return_value.fetchone.return_value = {'specification_id':'spec'}
+    conn.execute.return_value.fetchone.return_value = {'specification_id':'spec','run_id':'run'}
     @contextmanager
     def connection():
         yield conn
     queue = Mock(); queue.conn = connection
     monkeypatch.setattr(probe,'offer',Mock(return_value={}))
     monkeypatch.setattr(probe,'enrolled_scope',Mock(return_value={}))
-    request = {'request_id':'request'}
+    request = {'request_id':'request','task_id':'task','claim_token':'token'}
     claimant = Mock(return_value=request)
     prepare = Mock(side_effect=ValueError('stop'))
-    finish = Mock()
+    finish = Mock(wraps=probe.finish)
     monkeypatch.setattr(probe,'claim',claimant)
     monkeypatch.setattr(probe,'prepare_new_target',prepare)
     monkeypatch.setattr(probe,'finish',finish)
     with pytest.raises(ValueError,match='stop'):
         probe.run(queue,Mock(),'task','run','binding')
     assert claimant.call_count == prepare.call_count == 1
-    finish.assert_called_once_with(queue,request,'NEEDS_REVIEW','RECOVERY_PROBE_REQUIRES_EVIDENCE_REVIEW')
+    finish.assert_called_once_with(queue,request,'NEEDS_REVIEW','HOP_PREPARATION_OR_COMPARISON_FAILED')

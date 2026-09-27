@@ -5,6 +5,26 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 第十六案：真實缺欄位失敗與新目標復原（2026-09-27）
+
+recovery-filter-aggregate 經 SA v5／Developer v4 及規格、標準答案核准，在
+全新、同專案已登錄空目標 rename category，原 HPL 不變且只執行一次。
+Vertica 25.3.0-2 真實 Hop exit 1／errors 1，COLUMN_NOT_FOUND 診斷引用
+加密 Log 第 18／25／45 行；獨立連線確認 0 列與改名後欄位，保留原失敗表。
+人工代理核對後 CLOSED_WITHOUT_RETRY，另建新目標與 revision，沒有重跑原表。
+
+本次亦發現 probe 收尾使用不在 hop_dispatch.finish allowlist 的碼，導致
+Hop 與觀察已保存、CLI 卻回錯且派發仍 CLAIMED。修正為既有合法狀態碼，
+測試改為包裝真實 finish 驗證其契約；以原請求與已保存失敗狀態只補收尾，
+沒有重寫失敗結果或重跑 ETL。修正完整回歸 1236 passed／46 skipped／
+1 warning（26.76s），exit 0；修正版 probe 尚待下一次 worker 建置。
+
+新 revision 重新 SA／Developer 核准，真實 Hop 結果 EXACT_MULTISET 2／2
+MATCH（A:40,3；B:45,2），BOUND_PLATFORM_TARGET；QA v8 PASS，候選包隔離
+重播 PASS。正式 RELEASE_READY，下載指紋、六個 allowlist 成員及內容檢查
+通過。正式交付 16／20；本輪未新增瀏覽器復原頁驗證，仍需後續網站回歸、
+其餘四案、量測報告、第七階段與 knowledge-workspace 同步。
+
 ### 執行復原入口：單次領取與所有權核對（2026-09-27）
 
 新增 opt-in CLI pilot_recovery_probe（不是一般 API），需明確啟用

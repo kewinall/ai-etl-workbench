@@ -62,6 +62,7 @@ def run(queue, repo, task_id, run_id, binding):
     request = claim(queue,task_id,run_id)
     if not request:
         raise ValueError('RECOVERY_ALREADY_CLAIMED')
+    code = 'HOP_PREPARATION_OR_COMPARISON_FAILED'
     try:
         snapshot = prepare_new_target(queue,repo,request)
         with queue.conn() as conn:
@@ -94,6 +95,7 @@ def run(queue, repo, task_id, run_id, binding):
                  'original_hpl_unchanged':True})
         result = execute_once(queue,task_id,run_id,request['specification_id'],
                               request['authorization_id'],vertica_executor(repo,snapshot))
+        code = 'HOP_FAILED_OR_UNKNOWN'
         with database(repo,snapshot) as db:
             count, columns = observe(db,table)
         terminal = result['status'] in ('HOP_EXECUTION_FAILED','HOP_EXECUTED_QA_REQUIRED')
@@ -106,7 +108,7 @@ def run(queue, repo, task_id, run_id, binding):
         return {**evidence,'checksum':digest(evidence),
                 'expected_failure_observed':result['status']=='HOP_EXECUTION_FAILED' and count==0}
     finally:
-        finish(queue,request,'NEEDS_REVIEW','RECOVERY_PROBE_REQUIRES_EVIDENCE_REVIEW')
+        finish(queue,request,'NEEDS_REVIEW',code)
 
 
 def main():
