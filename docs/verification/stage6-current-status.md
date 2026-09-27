@@ -5,6 +5,20 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 第十四案：零列門檻植錯與修正交付（2026-09-27）
+
+正式 semantic-empty-result 完成。將真實 Developer 提案副本的 GT 100 改為
+GT 20；validate／compile-preview／save 全部 INVALID，回報 filter 節點與
+filters.0.constant.value 的預期 100／實際 20。未產生 HPL、未新增規格、
+未寫入；重複保存只有一筆拒絕事件。唯讀網站 1 passed（1.7s），歷史差異、
+390／768／1440px 及返回均通過，查看沒有觸發變更。
+
+修訂後重新 SA v4／Developer v4，真實 Hop → Vertica 精確 0／0 MATCH，
+來源 BOUND_PLATFORM_TARGET；QA prompt v8 引用執行、結果來源與節點證據後
+PASS，並非僅憑零筆判成功。隔離候選包重播 PASS，正式 RELEASE_READY；
+下載指紋一致，六個 allowlist 成員且內容檢查通過，原目標沒有重播。
+正式集合 14／20；仍缺 NULL 聚合語意一案、執行復原五案及後續量測／維運。
+
 ### 第十三案：LEFT／INNER 植錯與修正交付（2026-09-27）
 
 正式 semantic-left-join 完成。在真實 Developer 提案副本將 LEFT 改為
