@@ -50,6 +50,17 @@ ETL、改寫核准或放寬校驗。缺失不能當成零。完成後停止隔�
 
 ## 驗證範圍
 
+### 全卷檔案比對
+
+`python -m app.recovery_files --source /source --restored /restored` 要求兩側
+皆為 readonly mounts，逐檔 SHA-256 比對相對名稱、內容與空目錄，只輸出
+數量，不輸出檔名、內容或個別機密檔案的雜湊。相同根目錄、symlink、特殊
+檔案、無法讀取目錄、讀取中變動均拒絕，不跟隨連結離開指定範圍。
+使用 network-none helper、兩個已確認來源不同的 volumes 與 readonly root。
+工具不建立或刪除備份，不驗證 modes、ACL、owner、timestamp 或硬連結關係。
+唯讀掛載不能阻止其他程序改寫來源；一致性備份仍須另行協調停寫與 DB 時點。
+兩側內容一致只證明本次掃描結果，不是跨檔案的原子快照或異機復原證據。
+
 在上述 CLI 加上 `--http`，可在原隔離檢查通過後自動啟動短生命週期的
 Uvicorn loopback TCP server，完成 HTTP 檢查並關閉。它使用實際 `app.main`，
 四項派發旗標固定 false、不啟動 Worker，僅允許量測與 Release download 的
