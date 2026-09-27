@@ -54,6 +54,17 @@ test('正式集合量測與逐案 gate 一致，保留分母且無寫入',async(
   }
   await page.goto(`/#/projects/${project}/evaluation`);
   const inventory=await (await request.get(`/api/projects/${project}/pilot-cohorts`)).json();
+  const effortCohort=inventory.cohorts[0],effortCase=effortCohort.cases[0];
+  const effortPath=`/api/projects/${project}/pilot-cohorts/${effortCohort.cohort_id}/cases/${effortCase.case_key}/effort`;
+  const effortBefore=await (await request.get(effortPath)).json();
+  const effortDetails=page.locator('details').filter({has:page.locator('summary',{hasText:`${effortCase.ordinal}. ${effortCase.definition.title}`})});
+  await effortDetails.locator('summary').click();
+  const effortRegion=effortDetails.getByRole('region',{name:`案例 ${effortCase.case_key} 操作時間`,exact:true});
+  await effortRegion.getByRole('button',{name:'查看／重新讀取計時紀錄',exact:true}).click();
+  await expect(effortRegion).toContainText('未驗證身分');
+  await expect(effortRegion.getByRole('button',{name:'開始操作區間',exact:true})).toBeDisabled();
+  expect((await (await request.get(effortPath)).json()).events).toEqual(effortBefore.events);
+  await effortDetails.locator('summary').click();
   const changed=inventory.cohorts.flatMap((c:any)=>c.cases).filter((c:any)=>
     c.runs.some((r:any)=>r.source_order_scope==='CHANGED_REQUIRES_PROTOCOL_REVIEW'));
   for(const item of changed){

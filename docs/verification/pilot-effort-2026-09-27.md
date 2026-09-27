@@ -176,3 +176,21 @@ START／STOP／START／ABANDON，真人小計 null、無 open session、comparis
 
 此結果完成短區間操作的隔離真實整合，不等於正式部署、真人基準、完整
 活動覆蓋或整體第 6／7 階段完成；上述崩潰／跨裝置等限制仍未解決。
+
+## 正式 Pilot 部署與唯讀回歸
+
+部署前確認 active leases 0、待派／執行中 Hop 0、資料庫停在 migration 053。
+建立私有 custom-format PostgreSQL 備份（1,370,878 bytes），SHA-256
+`f5aae12cd99a5d77717a325e2d8892afe13472549d1ff016bee656d50bf02672`，
+pg_restore 目錄可讀、438 項。備份保存在本機既有私有備份目錄，不入 Git；
+目錄可讀不等於已完成還原演練，第 7 階段仍須實際驗證。
+
+以新版映像重新建立 migration 容器，正常套用 054/055，exit 0。更新 API、
+control-worker、web，保留既有派發設定，沒有啟動模型／Hop 工作。
+部署後 PostgreSQL 回讀：最新 migration 055、計時事件 0、active leases 0。
+
+正式 20 案唯讀 Playwright 回歸通過：1 passed（9.0 秒）。逐案 release
+gate／凍結情境證據、用量缺值、歷史順序範圍、三種寬度、返回操作保持一致；
+另從計時頁讀取實際 API，開始按鈕未確認前停用，身分限制明示，讀取前後
+事件不變。無瀏覽器寫入與 page error。正式計時 UI 已部署，但尚無真人
+量測，成果彙整與完整人工基準驗收仍未完成，既列連續性限制不因此消失。
