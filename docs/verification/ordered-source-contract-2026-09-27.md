@@ -360,3 +360,23 @@ and ORDER BY rules are readable, and all version fingerprints are visible.
 No workbook content was rewritten by the independent tool. Native Microsoft
 Excel behavior was not tested. This closes synthetic ordered-candidate visual
 inspection only, not formal run, released workbook or portable replay acceptance.
+
+## Deployment checkpoint
+
+Built API, web and pilot-hop-worker images from commit 7134887. Before update,
+two checks confirmed no active Task leases or queued/claimed Hop dispatches.
+Historical unknown model outcomes remain untouched and were not retried.
+Updated only API/control-worker/web with existing dispatch settings; no database
+rebuild, migration, orphan removal or ETL execution was requested.
+
+Running API module SHA-256 values match the local source:
+- specification_api: 2343b8fe1ca2513a838ca03077a10d66c896e5511f0fe8b849b82a77894b2a04
+- sdm_specification: ea49d71b4a57fde20a1fee2f7c25203d18acef2bbd2ccf95ea4e006b748f5eee
+- qa_gateway: cab326fea61eee308949dc7fe5549236e026065365513135cfa60a8fcc979dcb
+
+QA prompt reports V10. Health reports runtime_ready=true and 65 control tables.
+Initial diagnostic used an incorrect module path; the subsequent check used
+actual imported module locations. /api/openapi.json is not exposed and returned
+404; this was not treated as schema acceptance. Deployed-site intercepted-write
+browser regression passed (one test, 5.1 seconds). No revised formal case,
+provider call, Vertica write or portable replay occurred in this checkpoint.
