@@ -2,7 +2,7 @@
 from typing import Literal
 from urllib.parse import urlsplit
 import re
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRoute
@@ -11,6 +11,9 @@ from .model_gateway import complete_json, public_profile, GatewayError
 from .platform_harness import encrypt_secret
 
 ROLES = ('requirement_gate', 'file_understanding', 'etl_specification', 'qa_review')
+
+class ProfileConflict(ValueError):
+    pass
 
 
 class PrivateValidationRoute(APIRoute):
@@ -74,7 +77,7 @@ def create_ai_profile_router(repo, *, complete=complete_json):
         return repo.ai_profiles()
 
     @router.put('/{profile_id}')
-    def save_profile(profile_id: str, value: ProfileInput):
+    def save_profile(profile_id: str, value: ProfileInput, x_settings_version: str | None = Header(default=None)):
         if not re.fullmatch(r'[a-zA-Z0-9_-]{2,80}', profile_id):
             raise HTTPException(422, 'Profile ID 格式不合法')
         if value.provider_type == 'LITELLM_BEDROCK' and value.endpoint:
@@ -82,7 +85,12 @@ def create_ai_profile_router(repo, *, complete=complete_json):
         if value.provider_type == 'LOCAL_COPILOT' and (value.endpoint or value.region):
             raise HTTPException(422, '本機 Copilot 使用 Windows 登入，不接受 Endpoint 或 AWS Region')
         try:
-            return public_profile(repo.upsert_ai_profile({**value.model_dump(), 'profile_id': profile_id}))
+            data={**value.model_dump(), 'profile_id': profile_id}
+            if x_settings_version is not None:
+                data['_expected_version']=x_settings_version
+            return public_profile(repo.upsert_ai_profile(data))
+        except ProfileConflict as exc:
+            raise HTTPException(409, str(exc)) from None
         except Exception:
             raise HTTPException(503, 'AI Profile 儲存失敗，請檢查平台資料庫') from None
 

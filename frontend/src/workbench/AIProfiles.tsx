@@ -26,7 +26,9 @@ function ProfileEditor({profile, onSaved, onDirty, onBusy}: {profile: any; onSav
     let profileSaved = false;
     try {
       const {display_name, provider_type, endpoint, region, model_routes, enabled} = draft;
-      await request(`/api/settings/ai-profiles/${profile.profile_id}`, jsonBody('PUT', {display_name, provider_type, endpoint: endpoint || null, region: region || null, model_routes, enabled}));
+      if(!profile.updated_at)throw new Error('缺少設定版本，請重新載入後再儲存');
+      const options=jsonBody('PUT', {display_name, provider_type, endpoint: endpoint || null, region: region || null, model_routes, enabled});
+      await request(`/api/settings/ai-profiles/${profile.profile_id}`, {...options,headers:{...options.headers,'X-Settings-Version':profile.updated_at}});
       profileSaved = true;
       if (secret) {
         await request(`/api/settings/ai-profiles/${profile.profile_id}/secret`, jsonBody('POST', {secret_value: secret}));

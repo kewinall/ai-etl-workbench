@@ -37,6 +37,16 @@ def test_profile_update_sanitizes_response_and_preserves_secret():
     assert 'secret_ref' not in response.json()
     assert repo.profile['model_routes']['qa_review'] == 'bedrock/test'
 
+def test_profile_conflict_returns_409_without_internal_details():
+    from app.ai_profile_api import ProfileConflict
+    class ConflictRepo(Repo):
+        def upsert_ai_profile(self,data):
+            assert data['_expected_version']=='stale'
+            raise ProfileConflict('AI Profile 已被更新')
+    response=client(ConflictRepo()).put('/api/settings/ai-profiles/test-ai',json=payload(),headers={'X-Settings-Version':'stale'})
+    assert response.status_code==409
+    assert response.json()['detail']=='AI Profile 已被更新'
+
 
 @pytest.mark.parametrize('extra', [
     {'provider_type': 'unsupported'}, {'display_name': ''},

@@ -260,7 +260,14 @@ class PostgresRepository:
   with self.conn() as c:r=c.execute("select profile_id,display_name,provider_type,endpoint,region,model_routes,enabled,secret_ref,updated_at from platform.ai_provider_profile where profile_id=%s",(profile_id,)).fetchone()
   return dict(r) if r else None
  def upsert_ai_profile(self,data):
-  with self.conn() as c:c.execute("insert into platform.ai_provider_profile(profile_id,display_name,provider_type,endpoint,region,model_routes,enabled,secret_ref,updated_at) values(%s,%s,%s,%s,%s,%s,%s,%s,now()) on conflict(profile_id) do update set display_name=excluded.display_name,provider_type=excluded.provider_type,endpoint=excluded.endpoint,region=excluded.region,model_routes=excluded.model_routes,enabled=excluded.enabled,secret_ref=coalesce(excluded.secret_ref,platform.ai_provider_profile.secret_ref),updated_at=now()",(data['profile_id'],data['display_name'],data.get('provider_type','LITELLM_BEDROCK'),data.get('endpoint'),data.get('region'),json.dumps(data.get('model_routes') or {}),data.get('enabled',True),data.get('secret_ref')))
+  from .ai_profile_api import ProfileConflict
+  with self.conn() as c:
+   c.execute('select pg_advisory_xact_lock(271828,3)')
+   row=c.execute('select updated_at from platform.ai_provider_profile where profile_id=%s for update',(data['profile_id'],)).fetchone()
+   version=row['updated_at'].isoformat() if row else 'missing'
+   if '_expected_version' in data and data['_expected_version']!=version:
+    raise ProfileConflict('AI Profile 已被更新，草稿未覆蓋伺服器。請重新讀取後比對再儲存。')
+   c.execute("insert into platform.ai_provider_profile(profile_id,display_name,provider_type,endpoint,region,model_routes,enabled,secret_ref,updated_at) values(%s,%s,%s,%s,%s,%s,%s,%s,clock_timestamp()) on conflict(profile_id) do update set display_name=excluded.display_name,provider_type=excluded.provider_type,endpoint=excluded.endpoint,region=excluded.region,model_routes=excluded.model_routes,enabled=excluded.enabled,secret_ref=coalesce(excluded.secret_ref,platform.ai_provider_profile.secret_ref),updated_at=clock_timestamp()",(data['profile_id'],data['display_name'],data.get('provider_type','LITELLM_BEDROCK'),data.get('endpoint'),data.get('region'),json.dumps(data.get('model_routes') or {}),data.get('enabled',True),data.get('secret_ref')))
   return self.ai_profile(data['profile_id'])
  def save_secret(self,secret_ref,cipher,nonce):
   with self.conn() as c:c.execute("insert into platform.secret_vault_entry(secret_ref,cipher_text,nonce,updated_at) values(%s,%s,%s,now()) on conflict(secret_ref) do update set cipher_text=excluded.cipher_text,nonce=excluded.nonce,updated_at=now()",(secret_ref,cipher,nonce))
