@@ -5,6 +5,21 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 缺漏寫入模式案正式交付（2026-09-27）
+
+第 6 案原始 Gate 已實測 NEEDS_INPUT，精確指出 requirements_v1.write_mode
+缺少，write_started=false。此次回讀原紀錄後建立子 revision，明確 APPEND，
+並補足型別／NULL／metric 命名語意；來源指紋與固定答案不变。新 Gate
+CHECKED，SA READY_FOR_REVIEW，Developer 規格核對 GE 10、SUM／COUNT_ROWS
+及輸出順序後核准。不是覆寫原版或從中途跳過 Gate。
+
+真實 Hop 單次執行 MATCH 2／2、缺少 0／額外 0，另存 BOUND_PLATFORM_TARGET。
+真實 QA PASS、隔離可攜驗證 PASS，正式 RELEASE_READY。下載 ZIP 指紋與
+API 相符，六項 allowlist 及內容檢查通過。回讀父版為 SUPERSEDED_BY_REVISION，
+原 NEEDS_INPUT 與未寫入狀態均保留，補正 lineage 可追溯。
+正式集合目前 6／20 案完成，包含第一個完整缺口補正情境；其餘 14 案及
+成效／人工基準／UI 補充回歸／第 7 階段仍未完成。
+
 ### NULL 分組案正式交付（2026-09-27）
 
 第 5 案首次 SA 要求補明輸出契約及 nullable 與 COUNT_ROWS 的差別；新 revision
