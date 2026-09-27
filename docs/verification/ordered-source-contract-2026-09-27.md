@@ -424,3 +424,19 @@ and subsequent API readback both confirm the saved approval. The control worker
 completed REQUIREMENT_GATE with CHECKED, zero issues and six fully checked CSV
 records. write_started remains false. Next is the explicit SA authorization
 and one real model invocation; no model or Vertica write occurred here.
+
+## Formal SA and naming handoff
+
+One genuine LOCAL_COPILOT invocation used the configured gpt-5.4 route, prompt
+V6 and the checksum-bound source-order context. Result: READY_FOR_REVIEW with
+zero issues, including an explicit source_order.conditions citation. Recorded
+duration: 13,844 ms. Reported usage: one CLI session, one premium request,
+5.4615 AI credits, zero retries and zero tool executions. Token counts remain
+unavailable (PARTIAL), not zero; no currency cost is inferred.
+
+Reviewed and approved that exact SA handoff under the operator's authorization.
+Created and read back confirmed Naming Contract V2, retaining the four physical
+source fields and adding only the generated source_position BIGINT mapping.
+Historical naming remains stored. No Developer call, Hop dispatch, Vertica
+write or release approval occurred. Next: validate the current Developer offer,
+run one genuine proposal, and check the V3 specification/DDL before execution.
