@@ -40,7 +40,8 @@ volume，不停止 PostgreSQL。若程序一直在處理請求，命令可能持
 連線 DB 寫入。CheckOnly 只表示當下預檢，不代表後續工作不會改變。
 本工具不提供一致性備份認證，也不停止共享 Docker／WSL。
 恢復核心服務使用下面的 start-pilot；control-worker 不會自動啟動，應確認
-需恢復既有控制工作後，手動啟動同一個容器，不啟用新的 execution profile。
+需恢復既有控制工作後，加上 `-IncludeControlWorker` 啟動同一個容器，
+不啟用新的 execution profile。
 
 ## 手動恢復既有核心服務
 
@@ -57,11 +58,33 @@ postgres/api/web 呼叫 Docker start，最後檢查網站 `/api/ready`。
 此工具未提供 WSL holder，因此不保證 WSL／Windows 重啟後持續服務。
 也不代表整套 Worker 已運行。readiness 失敗時保留現況供診斷，不做自動回滾。
 
+## 手動 WSL 保活 session
+
+`pwsh -File scripts/pilot-session.ps1 -Action Start` 會在隱藏視窗啟動本平台
+專屬 WSL holder，再恢復既有 postgres/api/web/control-worker。保活程序
+只等待停止旗標，不接資料庫、不執行 Docker、不派發模型或 Hop。
+網站 readiness 失敗時不自動重新建立 holder，應先查核 Status 與服務。
+
+`pwsh -File scripts/pilot-session.ps1 -Action Status` 核對 Linux file lock、
+boot ID、PID 的啟動時間與 session token；不是只根據 PID 檔說它還活著。
+重複 Start 沿用有效 owner，程序死亡回 LOST，新 session 使用新 token。
+不能以 PID 數字重用或舊停止旗標去停止新 owner。
+
+`pwsh -File scripts/pilot-session.ps1 -Action Stop` 先執行安全停止服務，
+通過後才向同一 owner 發出正常退出請求，再驗證 lock 已釋放、狀態 STOPPED。
+不使用強制 kill，不關閉共享 WSL 或 Docker；若正在工作，既有停止檢查會阻擋。
+
+Linux 狀態在 `/run/ai-etl-workbench-holder`（owner-only 0700）；啟動紀錄在
+未加入 Git 的 `runtime-temp/wsl-holder`。保活沒有四小時等固定逾時，仍需
+WSL 及 Windows 本身持續運行。這是可手動選用的 session，不是 Windows
+登入自啟、主機重開恢復、故障監督或長時間 SLA；沒有安裝排程或改 .wslconfig。
+
 ## 尚未完成
 
-完整安全啟停、持久 WSL holder、崩潰後 owner 身分辨識與排程模式尚未完成。
-不能把本頁或舊入口的安全阻擋當作持久服務驗收。Windows 登入自啟或手動
-啟動模式仍待操作者決定；目前沒有安裝 Windows 排程或改全域 WSL 設定。
+正常停啟及手動 WSL holder 已有實測，完整宿主機生命週期、Worker 寫入中斷、
+Windows 登入自啟／重開恢復及長時間穩定性仍未完成。不能把 session 存活
+當作上述完整驗收。手動入口不代表替操作者選定登入排程；目前沒有安裝
+Windows 排程或改全域 WSL 設定。
 維護時採已驗證的個別操作、先檢查工作再停止，並記錄部署及 readiness 結果。
 
 ## 協調式私有備份（單一操作者維護窗口）

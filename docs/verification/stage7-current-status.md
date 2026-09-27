@@ -2,6 +2,32 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 2026-09-28：手動 WSL 保活及 owner 身分實測
+
+新增 `app/wsl_holder.py`（stdlib、WSL Python 3.9 實跑）及
+`scripts/pilot-session.ps1` Start／Status／Stop。保活無固定逾時，不執行
+資料库／模型／Hop；以 Linux flock、boot ID、PID start ticks、隨機 session
+token 驗證 owner。舊 token 只能寫自己的停止旗標，不會 kill PID 或重用 owner。
+狀態目錄須 owner-only 0700；重複 owner、symlink／公開狀態目錄均拒絕。
+
+Linux 真實子程序測試 **5 passed（3.57 秒）**：重複拒絕、正常退出、真實
+kill 後 LOST、新 owner 不接受舊 token、PID 啟動時間不符及目錄限制。
+該 kill 只針對隔離合成 holder，不是正式 Worker 或 ETL 中斷驗收。
+PowerShell 啟停／備份預檢含可選控制 Worker恢復 **28 passed（8.82 秒）**。
+
+正式啟動命令結束後，另一個命令回讀同一 owner RUNNING；再次 Start
+token／PID／start ticks 均不變。實際 session Stop 先正常停止本平台服務，
+再回讀 holder STOPPED；重新 Start 取得新 owner，原核心服務恢復 ready。
+補測既有 control-worker 單獨正常停止後，session Start 能恢復同一個容器，
+holder 保持同一 owner。沒有啟動模型／Hop Worker，未安裝 Windows 排程。
+Run 305、events 2,861、歷史 deliveries 24 不變。新 holder 留在運行供手動使用。
+恢復後正式指南／集合量測／逐案報告唯讀瀏覽器回歸
+**3 passed（18.8 秒）**，逐案 gate 與頁面證據一致，無新增事件。
+
+這驗證命令結束後存活、正常停止／重開 session 及 owner 防重用，不代表
+Windows 登出／重開、WSL 被 shutdown、長時間 SLA 或 Worker 部分寫入中斷。
+手動模式可用，但不替使用者選定 Windows 登入自啟策略；第 7 階段仍未完成。
+
 ## 2026-09-28：同一維護窗口備份與新副本真實 HTTP 還原
 
 新增 `scripts/backup-pilot.ps1`，串接已驗證安全停止、DB custom dump、四個

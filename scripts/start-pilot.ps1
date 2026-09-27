@@ -1,4 +1,4 @@
-param([switch]$CheckOnly)
+param([switch]$CheckOnly, [switch]$IncludeControlWorker)
 $ErrorActionPreference = 'Stop'
 # Resume an installed Pilot, never provision or silently change execution flags.
 function Invoke-PilotDocker {
@@ -8,6 +8,7 @@ function Invoke-PilotDocker {
     return $result
 }
 $services = @('postgres', 'api', 'web')
+if ($IncludeControlWorker) { $services += 'control-worker' }
 $containers = @()
 # Validate all identities before starting any service. Same-project test containers
 # must never be selected by a broad label filter.
@@ -45,4 +46,4 @@ for ($attempt = 0; $attempt -lt 20; $attempt++) {
 if (-not $ready) {
     throw 'Pilot started but readiness failed. Inspect services; no rebuild, rollback or ETL retry was performed.'
 }
-Write-Output 'Pilot ready: http://127.0.0.1:5183. Only existing postgres/api/web were resumed. Workers and dispatch settings were not changed. This does not keep WSL alive or configure Windows startup.'
+Write-Output ('Pilot ready: http://127.0.0.1:5183. Existing services checked: ' + ($services -join ', ') + '. Model/Hop workers and dispatch settings were not changed. This command alone does not keep WSL alive or configure Windows startup.')
