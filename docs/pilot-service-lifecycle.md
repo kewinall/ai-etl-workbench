@@ -19,6 +19,29 @@ WSL shutdown、Docker daemon stop 或 remove-orphans，其他專案也在使用�
 5. 僅停止本平台的 API／control-worker／web，保留 DB／volumes／檔案；
    若需停止 DB，確認平台讀写者已停止。不要對共享環境做全域停止。
 
+## 安全停止既有服務
+
+執行 `pwsh -File scripts/stop-pilot.ps1 -CheckOnly` 進行唯讀預檢。
+需能查詢 Windows 程序、WSL 與 Docker；任何查詢失敗均拒絕停止。
+工具要求原生模型/Hop Worker 不存在，也拒絕同 Compose project 下運行的
+非核心容器。不得為了通過檢查而修改標籤或只刪 PID 檔。
+
+`pwsh -File scripts/stop-pilot.ps1` 核對後，依序正常停止 control-worker、
+web、api，使用無限 graceful wait，不設定到期 SIGKILL，不刪除任何檔案或
+volume，不停止 PostgreSQL。若程序一直在處理請求，命令可能持續等待；
+查明真實處理狀態，不另外啟動第二次停止或強制 kill。
+
+預檢與停止後均查核 Run lease／queued/running Run、queued/claimed Hop、
+保留中模型呼叫及執行中 portability check。停止後若發現新待處理工作，
+回報失敗並保留停止現況，交由操作者檢查，不取消、清除或重跑工作。
+結果不明的既有歷史仍保留，不代表那些失敗已解決。
+
+這不是持久的 admission lock：維護期間不得從其他终端啟動 Worker 或直接
+連線 DB 寫入。CheckOnly 只表示當下預檢，不代表後續工作不會改變。
+本工具不提供一致性備份認證，也不停止共享 Docker／WSL。
+恢復核心服務使用下面的 start-pilot；control-worker 不會自動啟動，應確認
+需恢復既有控制工作後，手動啟動同一個容器，不啟用新的 execution profile。
+
 ## 手動恢復既有核心服務
 
 在專案根目錄執行 `pwsh -File scripts/start-pilot.ps1 -CheckOnly`，唯讀核對

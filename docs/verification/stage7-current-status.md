@@ -2,6 +2,30 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 2026-09-28：安全停止與正式服務恢復驗收
+
+新增 `scripts/stop-pilot.ps1`：精確名稱及標籤查核、Windows 原生 Worker
+程序查核、額外同 project 容器阻擋、實際 DB 待處理狀態預檢。
+僅以 `docker stop --timeout -1` 依序正常停止 control-worker/web/api；
+不依賴預設逾時強制終止，DB 與全部 volumes 不停止、不刪除。
+停止後再次查核程序及佇列，期間新增工作會令工具報錯並保留現況。
+
+PowerShell 替身回歸涵蓋四類待處理工作、身分不符、paused、程序不透明、
+DB 錯誤、停止錯誤、額外容器與停止後才出现待處理工作；與啟動及舊入口
+合計 **22 passed（6.55 秒）**。這些案例不冒充真實並行故障驗收。
+
+正式 CheckOnly 通過後實際執行 stop-pilot 成功，再執行 start-pilot 恢復
+API/web，最後手動恢復驗收前同一個 control-worker。正式 DB 持續運行，
+無模型／Hop 呼叫；前後皆 Run 305、events 2,861、歷史 deliveries 24。
+API 恢復 healthy、網站 ready。這證明核心服務停止後可以恢復，不代表
+資料庫冷啟動、Windows／WSL reboot 或 in-flight 寫入中斷已驗收。
+
+恢復後正式指南、固定集合量測、逐案報告唯讀瀏覽器回歸
+**3 passed（18.2 秒）**，逐案 API 與頁面一致，既有事件不變。
+
+沒有持久 admission fence，維護時仍須禁止其他终端啟動 Worker／直連寫入。
+因此尚不宣稱自動一致性備份、安全停止整個宿主機或第 7 階段完成。
+
 ## 2026-09-28：既有核心服務手動恢復工具
 
 新增 `scripts/start-pilot.ps1`，僅支援已部署 postgres/api/web 三個精確名稱，
