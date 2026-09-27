@@ -3,9 +3,11 @@ import {test,expect} from '@playwright/test';
 test('跨分類保存不覆寫草稿，失敗保留輸入並可取消（合成 API）',async({page})=>{
   const values:any={ai_provider_model_strategy:{default_profile:'nova-default'},data_connections_targets:{etl_qa:{connection_id:'test-vertica',host:'synthetic-host',port:5433,database:'test',user:'test'}},validation_release_policy:{sample_rows:5,require_naming_contract:true},execution_tool_paths:{}};
   let release!:()=>void;const pending=new Promise<void>(resolve=>{release=resolve});
-  await page.route('**/api/settings/groups',route=>route.fulfill({json:{values}}));
+  const versions:any=Object.fromEntries(Object.keys(values).map(key=>[key,'2026-09-27T00:00:00+00:00']));
+  await page.route('**/api/settings/groups',route=>route.fulfill({json:{values,versions}}));
   await page.route('**/api/settings/groups/validation_release_policy',async route=>{
-    await pending;values.validation_release_policy=route.request().postDataJSON();await route.fulfill({json:{ok:true}});
+    expect(route.request().headers()['x-settings-version']).toBe(versions.validation_release_policy);
+    await pending;values.validation_release_policy=route.request().postDataJSON();versions.validation_release_policy='2026-09-27T00:01:00+00:00';await route.fulfill({json:{ok:true}});
   });
   await page.route('**/api/settings/groups/data_connections_targets',route=>route.fulfill({status:503,json:{detail:'合成測試：暫時無法儲存'}}));
   await page.goto('/#/system');

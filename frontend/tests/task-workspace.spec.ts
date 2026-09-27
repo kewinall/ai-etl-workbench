@@ -37,7 +37,7 @@ test('六頁籤：合成舊產物顯示／下載契約、鍵盤、深連結與�
   await page.getByRole('tab', {name: '執行與 QA', exact: true}).click();
   await expect(page.getByText('SYNTHETIC_HOP_LOG_NOT_EXECUTED', {exact: true})).toBeVisible();
   await page.getByRole('tab', {name: '交付', exact: true}).click();
-  await expect(page.getByText('尚無經新版完整 QA 與人工核准的 Release', {exact: false})).toBeVisible();
+  await expect(page.getByText('尚無準備版本。請先到需求與規格建立版本並確認規格。', {exact: true})).toBeVisible();
   await expect(page.getByRole('link', {name: /Release ZIP/})).toHaveCount(0);
   // A legacy successful Task must not bypass the server-side Pilot release gate.
   const blockedBuild = await request.post(`/api/tasks/${task.id}/release`);

@@ -56,7 +56,7 @@ test('專案新增、編輯、取消、重載與 Task 導覽', async ({page, req
   await page.getByRole('textbox', {name:'需求描述', exact: true}).fill('這是合成 CSV 上傳與專案歸屬驗收，不執行資料庫寫入');
   await Promise.all([
     page.waitForResponse(r => r.url().endsWith('/api/task-sources/upload') && r.request().method() === 'POST'),
-    page.locator('input[type="file"]').setInputFiles({name: 'synthetic.csv', mimeType: 'text/csv', buffer: Buffer.from('customer_id,amount\n001,12.50\n')})
+    page.getByRole('button',{name:'選擇並上傳檔案',exact:true}).setInputFiles({name: 'synthetic.csv', mimeType: 'text/csv', buffer: Buffer.from('customer_id,amount\n001,12.50\n')})
   ]);
   const created = page.waitForResponse(r => r.url().endsWith('/api/tasks') && r.request().method() === 'POST');
   await page.getByRole('button', {name: '建立 Task', exact: true}).click();
@@ -92,7 +92,7 @@ test('歷史 Task 保留建立內容、節點、Job 頁面及返回路徑', asyn
   await page.reload();
   await expect(page.getByRole('tab', {name: '需求與規格', exact: true})).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('tab', {name: '產物與流程', exact: true}).click();
-  await expect(page.getByRole('heading', {name: '節點狀態', exact: true})).toBeVisible();
+  await expect(page.getByRole('heading', {name: '舊版節點狀態', exact: true})).toBeVisible();
   await expect(page.locator('button.nodebutton')).toHaveCount(8);
   await page.getByRole('button', {name: /Rule Router/}).click();
   await expect(page.getByRole('heading', {name: 'Rule Router 詳細資訊', exact: true})).toBeVisible();
@@ -100,9 +100,9 @@ test('歷史 Task 保留建立內容、節點、Job 頁面及返回路徑', asyn
   await page.getByRole('button', {name: '關閉節點詳情', exact: true}).click();
   await expect(page.getByRole('heading', {name: '所有 SQL', exact: true})).toBeVisible();
   await page.getByRole('tab', {name: '執行與 QA', exact: true}).click();
-  await expect(page.getByRole('heading', {name: 'Apache Hop Log', exact: true})).toBeVisible();
+  await expect(page.getByRole('heading', {name: '舊版 Apache Hop Log', exact: true})).toBeVisible();
   await page.getByRole('tab', {name: '交付', exact: true}).click();
-  await expect(page.getByText(/尚無經新版完整 QA 與人工核准的 Release/)).toBeVisible();
+  await expect(page.getByText('尚無準備版本。請先到需求與規格建立版本並確認規格。',{exact:true})).toBeVisible();
   await expect(page.getByRole('link', {name: /Release ZIP/})).toHaveCount(0);
   await page.goBack();
   await expect(page.getByRole('tab', {name: '執行與 QA', exact: true})).toHaveAttribute('aria-selected', 'true');
