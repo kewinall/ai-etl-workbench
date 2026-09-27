@@ -2,6 +2,27 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 2026-09-28：正式 bootstrap 與 migration readiness
+
+檢視發現 `/api/ready` 只檢查 DB 可連線與 Task／Project 表存在，缺少完整
+migration ledger 核對。新增唯讀 `verify_current`：缺檔、缺 migration、額外
+版本或 checksum 不符均阻擋 readiness，不補寫 ledger 或自動修復；僅接受
+既有 migration 規則允許的 LF／CRLF／BOM 等價差異。定向 6 項測試通過。
+
+在上一輪全新封裝還原 DB／檔案卷上，用實際 image 預設 `app.bootstrap`
+entrypoint 及 password/key file 啟動 Uvicorn。新 backend 與 migrations 以
+readonly bind 掛載，root／產物 readonly，所有派發 false，無 Worker、
+無 host port、沿用 DB 的 network-none namespace，API 僅綁 loopback。
+`/api/ready` HTTP 200 且 execution_enabled=false；20 份 HTTP download 再驗
+通過、19 個原凍結情境匹配。驗證後停止隔離 API 與 DB，資料保留。
+
+這次驗證包含 bootstrap 密鑰載入、schema 版本核對與 API 啟動；trust-mode
+隔離 DB 不證明密碼認證或原 roles／ACL。沒有 init 重產金鑰或 migration 寫入。
+本次 readiness 修改尚未部署正式服務，不將 readonly bind 測試稱為正式上線。
+完整隔離 PostgreSQL 回歸 **1,475 passed、48 skipped、1 warning（30.15 秒）**，
+exit 0；skip 仍為 opt-in 原生／真實證據等檢查，沒有視為通過。下一步在確認
+無活躍工作後建置及部署 API，再以正式 readiness 與唯讀量測回歸確認。
+
 ## 2026-09-28：完全從私有封裝還原的新環境
 
 新建無外部網路、無 host port PostgreSQL 17 容器及四個全新檔案卷；

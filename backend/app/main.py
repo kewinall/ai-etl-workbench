@@ -282,6 +282,8 @@ def readiness():
    connection.execute('SELECT 1')
    ready=connection.execute("SELECT to_regclass('platform.task') AS task_table, to_regclass('platform.project') AS project_table").fetchone()
    if not all(ready.values()):raise RuntimeError('Schema not ready')
+   from .migrations import verify_current
+   verify_current(connection, ROOT/'database'/'migrations')
  except Exception:
   raise HTTPException(status_code=503,detail={'code':'PLATFORM_NOT_READY','message':'平台資料庫或 schema 尚未就緒'}) from None
  return {'status':'ready','execution_enabled':os.getenv('WORKBENCH_EXECUTION_ENABLED','true').lower()=='true'}

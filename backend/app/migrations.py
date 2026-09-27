@@ -64,6 +64,21 @@ def migrate(url: str, directory: Path) -> list[str]:
     return applied
 
 
+def verify_current(conn, directory: Path) -> None:
+    """Read-only readiness check; never adopts or repairs a migration ledger."""
+    paths = sorted(directory.glob('*.sql'))
+    if not paths:
+        raise ValueError('MIGRATION_FILES_MISSING')
+    rows = conn.execute('SELECT name, checksum FROM platform.schema_migration').fetchall()
+    recorded = {row['name']: row['checksum'] for row in rows}
+    if set(recorded) != {path.name for path in paths}:
+        raise ValueError('MIGRATION_VERSION_MISMATCH')
+    for path in paths:
+        _, equivalent = migration_fingerprints(path.read_bytes())
+        if recorded[path.name] not in equivalent:
+            raise ValueError('MIGRATION_CHECKSUM_MISMATCH')
+
+
 if __name__ == "__main__":
     import os
     parser = argparse.ArgumentParser()
