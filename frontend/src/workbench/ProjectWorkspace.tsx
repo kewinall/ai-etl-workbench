@@ -27,6 +27,7 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
   const [loadedProjectId, setLoadedProjectId] = useState<string | undefined>();
   const [message, setMessage] = useState('');
   const [query, setQuery] = useState('');
+  const [projectQuery, setProjectQuery] = useState('');
   const creating = projectId === 'new';
   const selected = projects.find(p => p.project_id === projectId);
   const dirty = !!projectId && !loading && tab !== 'history' && (
@@ -123,7 +124,9 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
       <div className="wb-heading"><h2>專案</h2><button disabled={busy} onClick={() => leave('/projects/new/settings')}>新增專案</button></div>
       {loading && <p role="status">讀取專案中…</p>}
       {projectLoadError&&<div role="alert"><p>專案清單讀取失敗：{projectLoadError}</p><button disabled={busy} onClick={()=>setProjectLoadAttempt(x=>x+1)}>重新讀取專案清單</button></div>}
-      {projects.map(p => <button key={p.project_id} disabled={busy} aria-current={p.project_id === projectId ? 'page' : undefined} onClick={() => leave(`/projects/${p.project_id}/settings`)}><strong>{p.project_name}</strong><small>{p.description || '尚無說明'}</small></button>)}
+      <label>篩選專案<input value={projectQuery} onChange={e=>setProjectQuery(e.target.value)} placeholder="名稱或說明"/></label>
+      {projects.filter(p=>p.project_id===projectId||`${p.project_name} ${p.description}`.toLowerCase().includes(projectQuery.toLowerCase())).map(p => <button key={p.project_id} disabled={busy} aria-current={p.project_id === projectId ? 'page' : undefined} onClick={() => leave(`/projects/${p.project_id}/settings`)}><strong>{p.project_name}</strong><small>{p.description || '尚無說明'}</small></button>)}
+      {projectQuery&&<p>目前專案固定保留，其餘依名稱與說明篩選；不會刪除專案。</p>}
       {!loading && !projectLoadError && !projects.length && <p>建立第一個專案以開始使用。</p>}
     </section>
     <section className="wb-project-content">
