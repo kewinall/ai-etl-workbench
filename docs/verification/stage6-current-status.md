@@ -5,6 +5,21 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 缺漏 Join 鍵值案正式交付（2026-09-27）
+
+第 8 案原版 Gate 對無 keys 的契約回覆 NEEDS_INPUT／UNSUPPORTED，未寫入。
+現行訊息定位整份 join_contract_v1，尚未細分 keys 缺漏路徑；不宣稱有更精確
+診斷。新增 revision 明定左右 customer_id 等值 LEFT JOIN、NEVER_MATCH、
+EXPAND、CASE_SENSITIVE_NO_TRIM，保留未配對左列及右值 NULL。
+新 Gate、真實 SA／Developer 通過，左右同名欄位命名限定來源，規格與固定
+答案 definition／checksum 已核對；來源 bytes 不變。
+
+單次真實 Hop MATCH 4／4，缺少 0／額外 0，來源 BOUND_PLATFORM_TARGET；
+真實 QA PASS、隔離可攜驗證 PASS、正式 RELEASE_READY。下載指紋符合 API，
+六項 allowlist 及內容檢查通過。回讀父版缺口仍在、write_started=false，
+狀態為 SUPERSEDED_BY_REVISION；沒有重跑原目標。
+正式集合目前 8／20 案完成執行與交付核對，剩餘 12 案與整體驗收仍待完成。
+
 ### 缺漏日期迄日案正式交付（2026-09-27）
 
 第 7 案原版實測 NEEDS_INPUT，指出 end_date_exclusive 缺漏，未開始寫入。
