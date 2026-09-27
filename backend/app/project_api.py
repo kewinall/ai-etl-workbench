@@ -127,6 +127,18 @@ def create_project_router(repo) -> APIRouter:
             raise HTTPException(503, detail={'code': 'PILOT_COHORTS_UNAVAILABLE',
                 'message': '案例集合暫時無法讀取，不代表沒有案例。'}) from None
 
+    @router.get('/{project_id}/pilot-measurements')
+    def pilot_measurements(project_id: UUID):
+        from .pilot_measurements import read
+        try:
+            get_project(project_id)
+            return read(repo, str(project_id))
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(503, detail={'code': 'PILOT_MEASUREMENTS_UNAVAILABLE',
+                'message': '正式案例量測暫時無法完成；不代表案例為零或全部通過。'}) from None
+
     @router.post('/{project_id}/pilot-cohorts/{cohort_id}/cases/{case_key}/task')
     def enroll_task(project_id: UUID, cohort_id: UUID, case_key: str, data: PilotTaskBinding):
         from .pilot_cohort import bind_task
