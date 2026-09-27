@@ -3,6 +3,31 @@ from uuid import uuid4
 from psycopg.types.json import Jsonb
 from fastapi import HTTPException
 from .etl_specification import validate_specification
+from .sa_contract import digest
+
+
+def record_semantic_rejection(queue, conn, run, payload, result):
+    """Persist rejected save evidence, not an executable spec or a new run.
+
+    Caller holds the Task lock, making identical rejected submissions idempotent.
+    Read-only validate/compile previews do not call this function.
+    """
+    issues = [issue for issue in result.get('issues', []) if issue.get('code') in
+              ('SPEC_TRANSFORMATION_INTENT_MISMATCH', 'SPEC_JOIN_SEMANTICS_MISMATCH', 'SPEC_DATE_RANGE_FILTER_MISMATCH')]
+    if (result.get('status') != 'INVALID' or not issues or not run.get('matches_current')
+            or run.get('write_started') is not False or run.get('state') != 'NEEDS_REVIEW'
+            or (run.get('approval') or {}).get('decision') != 'APPROVE'):
+        return
+    packet = {'version': 1, 'input_checksum': run['input_checksum'],
+              'settings_checksum': run['settings_snapshot']['checksum'],
+              'proposed_checksum': digest(payload), 'issues': issues,
+              'specification_saved': False, 'execution_authorized': False}
+    packet['attempt_checksum'] = digest(packet)
+    exists = conn.execute("""SELECT event_id FROM platform.task_run_event
+        WHERE run_id=%s AND event_type='SPECIFICATION_SEMANTIC_REJECTED'
+          AND event_context->>'attempt_checksum'=%s""", (run['run_id'], packet['attempt_checksum'])).fetchone()
+    if not exists:
+        queue.event(conn, run['run_id'], 'SPECIFICATION_SEMANTIC_REJECTED', 'SPEC_VALIDATION', packet)
 
 
 def context(queue, conn, task_id, run_id):

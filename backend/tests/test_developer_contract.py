@@ -34,3 +34,19 @@ def test_context_does_not_copy_source_paths_secrets_or_samples():
     _,run,naming=design();run['input_snapshot']['source_config'].update(path='PRIVATE_PATH',password='PRIVATE_PASSWORD',sample_rows=['PRIVATE_DATA'])
     context=build_context(run,naming,{'approval_id':uuid4(),'binding_checksum':'c'*64},{'status':'READY_FOR_REVIEW'})
     assert all(value not in str(context) for value in ('PRIVATE_PATH','PRIVATE_PASSWORD','PRIVATE_DATA'))
+
+
+def test_transformation_intent_uses_versioned_prompt_and_required_citation():
+    from test_transformation_contract import confirmed
+    from app.developer_gateway import developer_material
+    spec, run, naming = confirmed()
+    context = build_context(run,naming,{'approval_id':uuid4(),'binding_checksum':'c'*64},{'status':'READY_FOR_REVIEW'})
+    material = developer_material(context)
+    assert material['prompt_version'] == 4
+    assert 'COUNT_ROWS' in material['prompt'] and 'transformation.conditions' in material['prompt']
+    proposal = dict(version=1,context_checksum=context['context_checksum'],summary='Synthetic',
+                    evidence_ids=['requirement'],specification=spec)
+    captured = dict(context=context,run=run,naming=naming)
+    with pytest.raises(ValueError,match='TRANSFORMATION_EVIDENCE_REQUIRED'): validate_proposal(proposal,captured)
+    proposal['evidence_ids'].append('transformation.conditions')
+    assert validate_proposal(proposal,captured)['status'] == 'VALIDATED_NOT_APPROVED'

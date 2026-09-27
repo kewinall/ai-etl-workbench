@@ -26,6 +26,12 @@ def test_api_refuses_semantic_mutation_before_save_compile_or_write(context, mut
         assert any(i['code'] == 'SPEC_TRANSFORMATION_INTENT_MISMATCH' for i in result['issues'])
         assert 'hpl' not in result and 'specification_id' not in result
     assert not queue.detail(task, run['run_id'])['write_started']
+    # Duplicate rejected save records one bounded audit event, never a spec.
+    api.post(base + '/specifications', json=wrong)
+    events = [e for e in queue.detail(task, run['run_id'])['events'] if e['event_type'] == 'SPECIFICATION_SEMANTIC_REJECTED']
+    assert len(events) == 1 and events[0]['event_context']['issues']
+    assert events[0]['event_context']['specification_saved'] is False
+    assert events[0]['event_context']['input_checksum'] == run['input_checksum']
     with queue.conn() as conn:
         assert conn.execute('SELECT count(*) AS n FROM platform.specification WHERE task_id=%s', (task,)).fetchone()['n'] == 0
 

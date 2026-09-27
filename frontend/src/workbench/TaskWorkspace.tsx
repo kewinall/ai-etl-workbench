@@ -59,6 +59,13 @@ function Collaboration({taskId}: {taskId: string}) {
         <small>{time(event.created_at)} · {event.event_type} · {event.phase}</small>
         {event.event_type === 'SDM_CANDIDATE_SAVED' ? <p>候選文件：{event.event_context.sdm_id}<br/>規格 checksum：{event.event_context.specification_checksum}<br/>文件 checksum：{event.event_context.checksum}</p> : event.event_context?.specification_id && <p>規格第 {event.event_context.version} 版 · {event.event_context.specification_id}<br/>內容 checksum：{event.event_context.checksum}</p>}
         {event.event_context?.approval_id && <p>核准紀錄：{event.event_context.approval_id}。這是當時的操作紀錄；目前是否有效，請至「需求與規格」重新檢查。</p>}
+        {event.event_type === 'SPECIFICATION_SEMANTIC_REJECTED' && <section aria-label="規格語意攔截證據">
+          <p>程式驗證拒絕保存規格，未授權執行。此紀錄保留被攔截的差異，不代表修正版本已通過。</p>
+          <ul>{event.event_context.issues.map((issue: any, index: number) => <li key={index}>{issue.message} · {issue.field_path}
+            {issue.node_id && <span> · 節點 {issue.node_id}</span>}
+            {'expected' in issue && <span> · 預期 {JSON.stringify(issue.expected)}；實際 {JSON.stringify(issue.actual)}</span>}
+          </li>)}</ul><p>提案指紋：{event.event_context.proposed_checksum}</p>
+        </section>}
       </li>)}</ol> : <p>此版本尚無控制事件。</p>}
       <h4>AI 角色：SA</h4>
       {invocation ? <article className="wb-record"><p>{invocation.model} · {invocation.status}</p><p>此紀錄不等於需求已核准。模型輸出、引用及用量可在「需求與規格」選擇同一版本查閱。</p></article> : <p>此版本尚無 SA 呼叫紀錄。</p>}

@@ -28,6 +28,8 @@ def create_specification_router(queue):
                 if not naming:
                     return {'status': 'INVALID', 'issues': [{'code': 'SPEC_NAMING_MISSING', 'field_path': 'naming', 'message': '尚無此 Task 的命名契約'}], 'execution_authorized': False}
                 result = compiler(specification.model_dump(mode='json'), run, naming)
+                if persist:
+                    specification_store.record_semantic_rejection(queue, conn, run, specification.model_dump(mode='json'), result)
                 return specification_store.save(queue, conn, task_id, run_id, result) if persist else result
         except HTTPException:
             raise

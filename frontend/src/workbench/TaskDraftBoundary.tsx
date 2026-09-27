@@ -34,6 +34,10 @@ export function TaskDraftBoundary({children}:{children:(complete:()=>void)=>Reac
   },[]);
   const state=current();
   return <DraftContext.Provider value={report}>
+    <section className="panel" aria-label="新建 Task 驗證導引">
+      <p>建立 Task 不等於核准執行。建立後，請在「需求與規格」保存準備版本；初步檢查後透過「補正需求並建立新版」逐欄位確認轉換意圖，再確認輸入、命名及設計。</p>
+      <p>轉換意圖包含篩選門檻、聚合函數與輸出順序。只有文字描述、沒有結構化意圖的版本，不能視為已通過程式逐項語意比對。</p>
+    </section>
     {(state.dirty||state.busy)&&<section className="panel" aria-label="新建 Task 草稿保護">
       <p role="status">有未建立的 Task 草稿；切換模式會保留內容，重新整理仍可能丟失草稿。</p>
       {message&&<p role="alert">{state.busy?'正在上傳或建立 Task，請等待結果，不能取消或離開。':'尚未離開：新建 Task 草稿已保留，包含另一種模式。請完成建立，或先取消全部草稿。'}</p>}

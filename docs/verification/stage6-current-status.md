@@ -5,6 +5,22 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### QA 意圖交接與拒絕保存紀錄（2026-09-27）
+
+QA 新 v9／v10 context 引用獨立的已確認意圖，透過執行指紋已核對的編譯
+欄位對照驗證；修改門檻、計數、來源或輸出即拒絕。舊 context byte/checksum
+保持不變，不允許把新意圖當成舊執行的自動補充。Developer 新意圖 prompt
+單／雙來源 v4／v5，強制引用 transformation.conditions；QA prompt v8。
+
+錯誤規格保存留下 SPECIFICATION_SEMANTIC_REJECTED，包含綁定指紋與差異，
+相同提交不重複記錄；沒有規格保存或執行授權。網站協作紀錄可讀取差異，
+新建 Task 與操作指南補上意圖確認流程。預覽／查閱不寫入拒絕事件。
+
+隔離回歸 1196 passed／46 skipped／1 warning（30.70s），exit 0，網站編譯
+通過。部署前實查無 RUNNING／QUEUED Run，無待派發模型；API／網站／Hop
+Worker 同版建置，API／網站／控制 Worker 已更新，未重播原目標或模型。
+正式集合仍 10／20，接續正式語意植錯五案；新 QA 真實模型與交付驗收未完成。
+
 ### 轉換意圖與逐欄位網站 checkpoint（2026-09-27）
 
 新增選用 TransformationContractV1：原始來源限定欄位、Filter 常數、聚合

@@ -85,6 +85,8 @@ def validate_proposal(payload,captured):
         raise ValueError('DEVELOPER_EVIDENCE_INVALID')
     if context['version'] == 2 and not {'join.conditions', 'sources.csv_inputs'}.issubset(proposed.evidence_ids):
         raise ValueError('DEVELOPER_JOIN_EVIDENCE_REQUIRED')
+    if 'transformation.conditions' in valid_ids and 'transformation.conditions' not in proposed.evidence_ids:
+        raise ValueError('DEVELOPER_TRANSFORMATION_EVIDENCE_REQUIRED')
     checked=validate_specification(proposed.specification.model_dump(mode='json'),captured['run'],captured['naming'])
     if checked['status']!='VALIDATED_NOT_APPROVED':
         raise ValueError('DEVELOPER_SPECIFICATION_INVALID')

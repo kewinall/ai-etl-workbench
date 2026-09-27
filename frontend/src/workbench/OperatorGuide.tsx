@@ -25,6 +25,8 @@ export function OperatorGuide({navigate}:{navigate:(path:string)=>void}) {
         <li>缺少寫入模式、日期期間等條件時，依需求檢查結果補正並建立新版；舊版保留，新版需要重新確認。</li>
         <li>可換檔的單一 CSV 版本：上傳新檔、檢視欄位、勾選換檔確認，再保存補正。取消換檔保留原來源。</li>
         <li>規格需保存、檢查與人工核准。上游異動後不可沿用舊核准執行。</li></ol>
+      <p>在需求補正表單逐欄位新增「結構化轉換意圖」：來源欄位以 source.0／source.1 區分，明定篩選比較、常數型別、分組、COUNT_ROWS 或 COUNT_NON_NULL 及輸出順序。保存後重新確認新版；聚合指標另在命名契約確認 $metric.指標識別 的英文名稱與型別。</p>
+      <p>規格保存被語意驗證拒絕時，可在協作紀錄查看節點及預期／實際差異。查閱或編譯預覽不會新增保存失敗事件；沒有意圖契約的舊版本仍需人工逐項核對。</p>
       <p>CHECKED／PIPELINE_NOT_READY 表示初步檢查完成但後續流程尚未接通，不是 ETL 成功。MATCH 只表示特定標準答案比對相符，不是 QA 或 Release 核准。</p>
     </section>
     <section className="panel"><h3>4. 查閱歷史與處理失敗</h3>

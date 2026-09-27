@@ -33,8 +33,18 @@ PROMPT_V2 = PROMPT.replace('EtlSpecificationV1', 'EtlSpecificationV2') + (
 def developer_material(context):
     model = proposal_model(context)
     prompt = PROMPT_V2 if context['version'] == 2 else PROMPT
+    version = 3 if context['version'] == 2 else PROMPT_VERSION
+    if any(item.get('id') == 'transformation.conditions' for item in context.get('evidence', [])):
+        prompt += (' The independent transformation.conditions is confirmed input, not a proposed design. '
+                   'Cite transformation.conditions. Map source.N.original_name references via Naming Contract '
+                   '(single-source naming omits source.0.; multi-source naming retains it). Map $metric.id to '
+                   'the matching metric output English name. Preserve exact filters, constant types and values, '
+                   'aggregation functions, metric IDs, grouping, null policies and ordered outputs. '
+                   'Never replace COUNT_ROWS with COUNT_NON_NULL or alter an inclusive/exclusive boundary. '
+                   'Do not resolve a conflict by silently ignoring the confirmed contract or prose.')
+        version = 5 if context['version'] == 2 else 4
     schema = model.model_json_schema()
-    return {'prompt': prompt, 'prompt_version': 3 if context['version'] == 2 else PROMPT_VERSION,
+    return {'prompt': prompt, 'prompt_version': version,
             'prompt_checksum': digest(prompt), 'schema': schema, 'schema_checksum': digest(schema)}
 
 

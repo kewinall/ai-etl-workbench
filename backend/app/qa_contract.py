@@ -7,6 +7,7 @@ from .requirement_contract import RequirementConditionsV1
 from .csv_contract import CsvInputContractV1
 from .join_contract import JoinContractV1
 from .source_binding import source_set_checksum
+from .transformation_contract import TransformationContractV1
 
 REQUIRED_CHECKS=('specification','static_validation','hop_execution','result_comparison','result_source')
 
@@ -38,6 +39,7 @@ class QASemanticsV1(BaseModel):
     specification: EtlSpecificationV1
     nodes: list[QANodeV1]=Field(min_length=1,max_length=200)
     execution_details: QAExecutionDetailsV1 | None=None
+    transformation_intent: TransformationContractV1 | None=None
 
 
 class QAExecutionDetailsV2(BaseModel):
@@ -63,6 +65,7 @@ class QASemanticsV2(BaseModel):
     specification: EtlSpecificationV2
     nodes: list[QANodeV1]=Field(min_length=1,max_length=200)
     execution_details: QAExecutionDetailsV2
+    transformation_intent: TransformationContractV1 | None=None
 
 
 class QACheckV1(BaseModel):
@@ -116,6 +119,14 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
         if len({node['id'] for node in value['nodes']})!=len(value['nodes']):
             raise ValueError('QA_SEMANTIC_NODES_DUPLICATED')
         details=value.get('execution_details')
+        intent=value.get('transformation_intent')
+        if intent is None:
+            value.pop('transformation_intent',None)  # Preserve all historical context bytes.
+        else:
+            if not details:
+                raise ValueError('QA_TRANSFORMATION_MAPPING_REQUIRED')
+            from .qa_transformation_intent import check_intent
+            check_intent(intent,value['specification'],details['compiler_plan'])
         if details:
             plan=details['compiler_plan']
             if details.get('source_formats') is None:
@@ -165,6 +176,8 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
                        (6 if details and 'single_source_contract' in details else 3 if details else 2),semantics=value)
         if details and 'source_formats' in details:
             context['version'] = 8 if multi else 7
+        if intent is not None:
+            context['version'] = 10 if multi else 9
     return {**context,'context_checksum':digest(context)}
 
 
