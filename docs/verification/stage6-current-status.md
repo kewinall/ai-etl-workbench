@@ -5,6 +5,29 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 第十一案：篩選語意植錯與修正交付（2026-09-27）
+
+正式 semantic-filter-aggregate 已完成：獨立意圖指定 GE 10，對真實 Developer
+提案副本故意改成 GT 10。validate、compile-preview、save 全部 INVALID，
+指出 filter／filters.0.operator 與需求路徑、預期 GE／實際 GT；無 HPL、無
+新增規格、未寫入。重複保存仍只有一筆 SPECIFICATION_SEMANTIC_REJECTED。
+這是測試注入，不是聲稱 Developer 自行產生錯誤。
+
+初始 SA 額外要求明確 APPEND 重播界線，已保留 NEEDS_INPUT，補正專用目標、
+單次寫入及結果不明停止核對。植錯後再建立新 revision，重新 SA／Developer，
+保留前版拒絕紀錄。新版真實 Hop 的 2／2 結果與凍結答案精確一致，來源證據
+BOUND_PLATFORM_TARGET；QA prompt v8 真實 PASS，隔離候選包重播 PASS，正式
+RELEASE_READY。下載 ZIP 指紋吻合，僅六個 allowlist 成員，內容檢查通過。
+本機 ZIP 內容檢查不取代獨立環境的 portability 證據。
+
+新增唯讀瀏覽器回歸 semantic-evidence-readonly.spec.ts，以環境指定已保存的
+Task／Run，沒有模型／資料修改或 mock。實測 1 passed（4.4s）：歷史選擇、
+節點差異、390／768／1440px 無水平溢出、瀏覽器返回、零 mutating requests、
+歷史事件未變。預設沒有指定證據時 skip，不偽造完成。
+
+正式集合 11／20：五個正常、五個需求補正、一個語意案例。其餘四個語意與
+五個執行復原未驗收，成效基準及第七階段仍未完成。未重跑已交付原目標。
+
 ### QA 意圖交接與拒絕保存紀錄（2026-09-27）
 
 QA 新 v9／v10 context 引用獨立的已確認意圖，透過執行指紋已核對的編譯
