@@ -5,6 +5,7 @@ import {ProjectDefaults} from './ProjectDefaults';
 import {ProjectSummary} from './ProjectSummary';
 import {ProjectEvaluation} from './ProjectEvaluation';
 import {mergeProjectHistory} from './projectHistory';
+import {historyPage} from './historyPage';
 
 type Project = {project_id: string; project_name: string; description: string; default_ai_profile: string; default_connection: string; naming_rules: Record<string, any>; updated_at: string};
 type Props = {projectId?: string; tab?: string; navigate: (path: string) => void; onError: (message: string) => void};
@@ -18,6 +19,7 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
   const [tasksError,setTasksError]=useState('');
   const [tasksAttempt,setTasksAttempt]=useState(0);
   const [statusFilter,setStatusFilter]=useState('');
+  const [taskPage,setTaskPage]=useState(1);
   const [form, setForm] = useState(blank);
   const [aliases, setAliases] = useState<[string, string][]>([]);
   const [snapshot, setSnapshot] = useState<Project | null>(null);
@@ -91,6 +93,8 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
   }, [projectId, tab, tasksAttempt]);
   useEffect(()=>{setQuery('');setStatusFilter('')},[projectId]);
   const visibleTasks=tasks.filter(t=>(!statusFilter||t.display_state===statusFilter)&&`${t.name} ${t.id}`.toLowerCase().includes(query.toLowerCase()));
+  const pagedTasks=historyPage(visibleTasks,taskPage);
+  useEffect(()=>setTaskPage(1),[projectId,query,statusFilter]);
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -171,8 +175,14 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
           <label>搜尋 Task<input value={query} onChange={e => setQuery(e.target.value)} placeholder="名稱或 Task ID"/></label>
           <label>篩選最新 Run 狀態<select aria-label="篩選 Task 狀態" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} disabled={tasksLoading||!!tasksError}><option value="">全部狀態</option>{Array.from(new Set(tasks.map(t=>String(t.display_state)))).sort().map(status=><option key={status} value={status}>{status}（{tasks.filter(t=>t.display_state===status).length}）</option>)}</select></label>
           {tasksLoading?<p role="status">正在讀取歷史 Task…</p>:tasksError?<div role="alert"><p>歷史 Task 讀取失敗：{tasksError}</p><button onClick={()=>setTasksAttempt(attempt=>attempt+1)}>重新讀取歷史 Task</button></div>:<>
-            <p role="status">顯示 {visibleTasks.length} / {tasks.length} 個 Task</p>
-            {visibleTasks.map(t => <button className="wb-history-row" key={t.id} onClick={() => navigate(`/projects/${projectId}/tasks/${encodeURIComponent(t.id)}`)}><span><strong>{t.name}</strong><small>{t.id} · {t.source} → {t.target}</small><small>舊版 Task：{t.status} · 最新 Run 歷史交付：{t.latest_run?.historical_release_count??0}</small></span><span>{t.display_state} →</span></button>)}
+            <p role="status">符合 {visibleTasks.length} / {tasks.length} 個 Task；本頁顯示 {pagedTasks.start}–{pagedTasks.end} 筆</p>
+            <nav aria-label="歷史 Task 分頁" className="wb-actions">
+              <button disabled={pagedTasks.page===1} onClick={()=>setTaskPage(pagedTasks.page-1)}>上一頁 Task</button>
+              <span>第 {pagedTasks.page} / {pagedTasks.pages} 頁</span>
+              <button disabled={pagedTasks.page===pagedTasks.pages} onClick={()=>setTaskPage(pagedTasks.page+1)}>下一頁 Task</button>
+            </nav>
+            <p>每頁 25 筆；搜尋與狀態篩選涵蓋此專案全部已載入 Task，不限於目前頁面。</p>
+            {pagedTasks.rows.map(t => <button className="wb-history-row" key={t.id} onClick={() => navigate(`/projects/${projectId}/tasks/${encodeURIComponent(t.id)}`)}><span><strong>{t.name}</strong><small>{t.id} · {t.source} → {t.target}</small><small>舊版 Task：{t.status} · 最新 Run 歷史交付：{t.latest_run?.historical_release_count??0}</small></span><span>{t.display_state} →</span></button>)}
             {!tasks.length?<p>此專案尚無 Task，可使用上方「建立 Task」。</p>:!visibleTasks.length&&<p>沒有符合搜尋或狀態條件的 Task。</p>}
           </>}
         </section>}
