@@ -2,6 +2,20 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 2026-09-28：migration-aware readiness 已部署
+
+部署前查核正式控制 DB：active leases 0、pending Hop 0、Run events 2,861。
+建置 commit `e145a04` API，保留四項既有 true 派發開關，只重建 API，未重建
+DB、網站或 Worker，沒有 migration 或 Task 重跑。Compose 的 portability
+orphan 提示未以 remove-orphans 處理，既有隔離容器保留。
+
+實際映像 `sha256:fa4c043cd1299d804e1f996bf9d9721c26df90a503928887a67ff5404706d04a`，
+Docker health healthy，`/api/ready` 200、execution_enabled=true；此端點已核對
+完整 migration 檔案與 ledger。部署後 active leases／pending Hop 仍為 0，
+Run events 仍為 2,861。正式量測與成果報告唯讀 Playwright **2 passed（16.8 秒）**，
+逐案證據與歷史一致，未觸發寫入或模型。
+此段取代下方「尚未部署正式服務」的歷史狀態；完整第 7 階段仍未完成。
+
 ## 2026-09-28：正式 bootstrap 與 migration readiness
 
 檢視發現 `/api/ready` 只檢查 DB 可連線與 Task／Project 表存在，缺少完整
