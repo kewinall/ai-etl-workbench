@@ -2,6 +2,7 @@ from uuid import uuid4
 import pytest
 from test_project_api import client_repo
 from test_pilot_cohort import plan_payload
+from app.pilot_cohort import PilotEnrollmentConflict
 
 
 def test_project_scope_and_invalid_plan(client_repo, monkeypatch):
@@ -27,3 +28,19 @@ def test_errors_do_not_expose_storage_details(client_repo, monkeypatch, method, 
                               **({'json': plan_payload()} if method == 'POST' else {}))
     assert response.status_code == 503
     assert 'synthetic-secret' not in response.text and 'private.example' not in response.text
+
+
+def test_binding_conflict_and_safe_failure(client_repo, monkeypatch):
+    client, _ = client_repo
+    project = client.post('/api/projects', json={'project_name': 'Binding errors'}).json()
+    url = f"/api/projects/{project['project_id']}/pilot-cohorts/{uuid4()}/cases/case-00/task"
+    def conflict(*args): raise PilotEnrollmentConflict('已綁定')
+    monkeypatch.setattr('app.pilot_cohort.bind_task', conflict)
+    response = client.post(url, json={'task_id': 'synthetic-task'})
+    assert response.status_code == 409
+    assert response.json()['detail']['code'] == 'PILOT_ENROLLMENT_CONFLICT'
+    assert client.post(url, json={'task_id': 'synthetic-task', 'passed': True}).status_code == 422
+    def fail(*args): raise RuntimeError('synthetic-secret@private.example')
+    monkeypatch.setattr('app.pilot_cohort.bind_task', fail)
+    response = client.post(url, json={'task_id': 'synthetic-task'})
+    assert response.status_code == 503 and 'synthetic-secret' not in response.text

@@ -1,5 +1,6 @@
 import {useEffect,useState} from 'react';
 import {request} from './api';
+import {PilotCohorts} from './PilotCohorts';
 
 export function ProjectEvaluation({projectId,navigate}:{projectId:string;navigate:(path:string)=>void}) {
   const [data,setData]=useState<any>(null),[error,setError]=useState(''),[attempt,retry]=useState(0);
@@ -12,6 +13,7 @@ export function ProjectEvaluation({projectId,navigate}:{projectId:string;navigat
     return()=>{live=false};
   },[projectId,attempt]);
   return <section className="panel" aria-label="專案 Pilot 評估">
+    <PilotCohorts key={projectId} projectId={projectId} navigate={navigate}/>
     <h3>Pilot 案例與證據</h3><p>保留所有準備版本，包括失敗與取消；這是證據清單，不是已完成的成效比較。</p>
     <button onClick={()=>retry(n=>n+1)}>重新讀取評估證據</button>
     {error?<p role="alert">{error}</p>:!data?<p role="status">正在讀取評估證據…</p>:<>

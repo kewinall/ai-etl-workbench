@@ -7,7 +7,7 @@ import re
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from psycopg.errors import UniqueViolation
-from .pilot_cohort import PilotCohortPlan
+from .pilot_cohort import PilotCohortPlan, PilotTaskBinding, PilotEnrollmentConflict
 
 
 class ProjectPayload(BaseModel):
@@ -108,6 +108,20 @@ def create_project_router(repo) -> APIRouter:
         except Exception:
             raise HTTPException(503, detail={'code': 'PILOT_COHORTS_UNAVAILABLE',
                 'message': '案例集合暫時無法讀取，不代表沒有案例。'}) from None
+
+    @router.post('/{project_id}/pilot-cohorts/{cohort_id}/cases/{case_key}/task')
+    def enroll_task(project_id: UUID, cohort_id: UUID, case_key: str, data: PilotTaskBinding):
+        from .pilot_cohort import bind_task
+        try:
+            get_project(project_id)
+            return bind_task(repo, str(project_id), str(cohort_id), case_key, data.task_id)
+        except HTTPException:
+            raise
+        except PilotEnrollmentConflict as exc:
+            raise HTTPException(409, detail={'code': 'PILOT_ENROLLMENT_CONFLICT', 'message': str(exc)}) from None
+        except Exception:
+            raise HTTPException(503, detail={'code': 'PILOT_ENROLLMENT_UNAVAILABLE',
+                'message': '案例綁定未確認完成；可重送同一 Task，不會重複納入。'}) from None
 
     @router.put('/{project_id}')
     def update_project(project_id: UUID, data: ProjectPayload):

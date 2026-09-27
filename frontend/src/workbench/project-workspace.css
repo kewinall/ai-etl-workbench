@@ -40,4 +40,11 @@
 .wb-project-home-list article>div{min-width:0;overflow-wrap:anywhere}
 .wb-project-home-list h3{margin:0 0 8px}.wb-project-home-list p{margin:0 0 10px}
 .wb-project-home-list button{flex-shrink:0}
+.pilot-cohorts{padding:16px;min-width:0;overflow-wrap:anywhere;border-bottom:1px solid #cbd5e1}
+.pilot-cohorts details{margin:12px 0;padding:12px;border:1px solid #dbe3ef;border-radius:8px}
+.pilot-cohorts summary{cursor:pointer;line-height:1.6}
+.pilot-cohorts fieldset{min-inline-size:0;border:0;padding:0}
+.pilot-cohorts label{display:grid;gap:8px}
+.pilot-cohorts select{width:100%;min-width:0;max-width:100%;padding:10px;box-sizing:border-box}
+.pilot-cohorts button{white-space:normal;max-width:100%;margin:6px 0}
 @media(max-width:768px){.wb-project-home-list article{align-items:stretch;flex-direction:column}.wb-project-home{padding:16px}}

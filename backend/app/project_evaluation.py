@@ -18,6 +18,6 @@ def read(repo, project_id):
             'cases':[dict(row) for row in rows],
             'comparison_ready':False, 'human_baseline':None,
             'improvement_rate':None, 'cost':None,
-            'limitations':['案例尚未正式納入比較 cohort，不計算成功率或改善率。',
+            'limitations':['此區是全部歷史 Run 清單，不等於正式比較集合；案例綁定請看上方，尚不計算成功率或改善率。',
                            '歷史 Release 數量不代表目前證據仍有效，下載須重新通過交付核對。',
                            '人工基準與費率版本尚未提供，不以估算值冒充實測。']}
