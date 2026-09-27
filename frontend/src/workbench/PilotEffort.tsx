@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {request} from './api';
+import {PilotEffortControls} from './PilotEffortControls';
 
 export function PilotEffort({projectId,cohortId,caseKey}:{projectId:string;cohortId:string;caseKey:string}){
   const [data,setData]=useState<any>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
@@ -37,10 +38,10 @@ export function PilotEffort({projectId,cohortId,caseKey}:{projectId:string;cohor
       {!data.events.length?<p>尚無計時事件；不代表零工時。</p>:<ol>
         {data.events.map((event:any)=><li key={event.sequence}>
           #{event.sequence} · {event.action==='START'?'開始':event.action==='STOP'?'結束':'放棄'} ·
-          {event.actor==='FUNCTIONAL_TEST'?'功能測試':event.actor==='DELEGATED_AGENT'?'代理操作':'真人來源待核對'} · {event.recorded_at}
+          {event.actor==='FUNCTIONAL_TEST'?'功能測試':event.actor==='DELEGATED_AGENT'?'代理操作':'本人操作（自行聲明，未驗證身分）'} · {event.recorded_at}
         </li>)}
       </ol>}
-      <p>此區目前僅供讀取與復原檢視，尚未提供開始／結束操作，不會修改已保存紀錄。</p>
+      {data.human_recording_enabled&&<PilotEffortControls data={data} reload={load}/>}
     </>}
   </section>;
 }
