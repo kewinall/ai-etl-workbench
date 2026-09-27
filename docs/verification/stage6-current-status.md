@@ -5,6 +5,23 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 缺漏 CSV 編碼案正式交付（2026-09-27）
+
+第 10 案原版 Gate 實測 CSV 契約不合法、NEEDS_INPUT，未寫入；目前錯誤
+定位整份 CSV 契約而非 encoding 子欄位，不能宣稱精確欄位診斷已完善。
+補正 UTF-8 後建立新 revision，重新 Gate、真實 SA／Developer，確認
+COUNT_ROWS（包含 NULL 列）、SQL_NULLS 分組、不去重與輸出型別。
+
+標準答案先比對登錄 definition／checksum，再綁定核准規格。單次真實 Hop
+MATCH 2／2，NULL 組計數 2、A 組計數 1，缺少與額外均 0，來源受控綁定。
+真實 QA PASS、隔離可攜重播 PASS、正式 RELEASE_READY；下载 ZIP 指紋與
+六項 allowlist／內容檢查通過。第 9、10 案父版均回讀為已被新 revision
+取代，原 NEEDS_INPUT 與 write_started=false 保留。
+
+正式集合累計 10／20 案完成執行與交付核對。其餘語意植錯 5 案、執行失敗
+復原 5 案尚未驗收；一般数值門檻／聚合意圖的前置攔截仍須核實並補齊。
+成效基準、UI 補充回歸、第 7 階段與 Workspace 同步亦未完成。
+
 ### 缺漏日期範圍選擇案正式交付（2026-09-27）
 
 第 9 案原版 Gate 偵測 date_scope 缺漏並停止，未開始寫入。新 revision
