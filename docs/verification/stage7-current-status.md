@@ -2,6 +2,22 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 真實程序終止後的佇列恢復測試
+
+新增 `test_run_queue_process_loss.py`：隔離 PostgreSQL 合成 Task 經 enqueue／
+review 後由獨立 Python 子程序 claim，確認 claim 已提交後真正終止該程序，
+再由另一個新程序 reap／claim。測試將合成 lease 調成逾時以免等待真實時鐘；
+write_started 由測試種入，**不是實際 Hop／Vertica 寫入中斷**。
+
+兩種情境皆通過：未寫入為 LEASE_EXPIRED，可能寫入為 HOP_RESULT_UNKNOWN；
+皆 NEEDS_REVIEW、lease 清除、無法重新 claim、reap 只記一次事件，舊 owner
+不可 finish，新 request 不可繞過待核對狀態，相同 request 回原 run。
+
+定向測試 **2 passed（3.73 秒）**；完整隔離回歸 **1,447 passed、48 skipped、
+1 warning（35.93 秒）**，exit 0。隔離測試 DB 隨 Compose 停止，正式資料未動。
+仍需實際 ETL engine／資料庫副作用存在時的中斷與獨立資料核對驗證，不能以
+這項控制平面測試代替。持久啟動模式已詢問操作者，尚未新增 Windows 排程。
+
 ## 可重複復原檢查工具
 
 新增 `app.recovery_verify` 及 [執行契約](../recovery-verification.md)，将先前
