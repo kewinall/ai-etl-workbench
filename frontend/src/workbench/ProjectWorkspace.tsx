@@ -149,7 +149,16 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
       </div>
       {(creating || (selected && loadedProjectId === projectId && !loading)) && <>
         {!creating&&projectId&&<ProjectSummary key={projectId} projectId={projectId}/>}
-        <div className="wb-tabs" role="tablist" aria-label="專案頁籤">
+        <div className="wb-tabs" role="tablist" aria-label="專案頁籤" onKeyDown={event=>{
+          if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+          event.preventDefault();
+          if(busyRef.current||dirtyRef.current){setMessage('請先完成儲存或取消專案修改，再切換頁籤。');return}
+          const tabs=Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]:not(:disabled)'));
+          const current=tabs.indexOf(event.target as HTMLButtonElement);
+          if(current<0||!tabs.length)return;
+          const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+          tabs[next].focus();tabs[next].click();
+        }}>
           <button role="tab" aria-selected={tab === 'settings'} disabled={busy} onClick={() => navigate(`/projects/${projectId}/settings`)}>設定</button>
           <button role="tab" aria-selected={tab === 'history'} disabled={creating || busy} onClick={() => leave(`/projects/${projectId}/history`)}>歷史 Task</button>
           <button role="tab" aria-selected={tab === 'evaluation'} disabled={creating || busy} onClick={() => leave(`/projects/${projectId}/evaluation`)}>Pilot 評估</button>
