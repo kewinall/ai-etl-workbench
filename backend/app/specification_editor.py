@@ -12,6 +12,8 @@ def editor_context(run, naming):
     columns = naming['contract_json'].get('columns') or []
     source = []
     metrics = []
+    generated = []
+    order = target.get('source_order_v1')
     fields = (run['input_snapshot'].get('source_config') or {}).get('sources') or []
     originals = [f['name'] for f in fields[0].get('fields', [])] if len(fields) == 1 else []
     multi = len(fields) == 2
@@ -26,6 +28,9 @@ def editor_context(run, naming):
         name = column.get('source_name', '')
         if name in originals:
             continue
+        if name=='$source_order.source.0' and order:
+            generated.append({'source_name':name,'name':column['english_name'],'data_type':column['vertica_type']})
+            continue
         if not name.startswith('$metric.') or not re.fullmatch(IDENTIFIER, name[8:]):
             return {**blocked, 'issues': [{'code': 'SPEC_EDITOR_NAMING_UNSUPPORTED', 'message': '命名契約含非來源、非聚合的欄位，請先補正。'}]}
         metrics.append({'id': name[8:], 'output_column': column['english_name'], 'data_type': column['vertica_type']})
@@ -39,9 +44,11 @@ def editor_context(run, naming):
         binding.pop('source_ref')
         binding.update(version=2,source_refs=['source.0','source.1'],
                        joins=deepcopy((target.get('join_contract_v1') or {}).get('joins', [])))
+    elif order:
+        binding.update(version=3,source_order=deepcopy(order))
     # Probe existing invariant validator; this is not returned as a proposed design.
     # Metric coverage alone is expected to be incomplete until the user specifies it.
-    probe = validate_specification({**binding, 'filters': [], 'aggregation': None, 'output_columns': [c['name'] for c in source]}, run, naming)
+    probe = validate_specification({**binding, 'filters': [], 'aggregation': None, 'output_columns': [c['name'] for c in source+generated]}, run, naming)
     # The empty probe is not a proposal. Intent differences are expected until
     # the operator enters the design; actual validate/save still enforce them.
     issues = [issue for issue in probe['issues'] if issue['code'] not in
@@ -49,4 +56,5 @@ def editor_context(run, naming):
     if issues:
         return {**blocked, 'issues': issues}
     return {'status': 'EDITOR_CONTEXT_READY', 'binding': binding, 'source_columns': source, 'metric_columns': metrics,
+            **({'generated_columns':generated} if order else {}),
             'execution_authorized': False, 'issues': []}

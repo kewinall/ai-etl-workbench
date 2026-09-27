@@ -1,5 +1,6 @@
 import {useState} from 'react';
 import {JoinSummary} from './JoinSummary';
+import {SourceOrderSummary} from './SourceOrder';
 import {request, jsonBody} from './api';
 
 export function SpecificationEditor({base, initial, onSaved, onCancel}: {base: string; initial?: any; onSaved: () => Promise<void>; onCancel: () => void}) {
@@ -16,10 +17,11 @@ export function SpecificationEditor({base, initial, onSaved, onCancel}: {base: s
   const action = async (work: () => Promise<void>) => {setBusy(true); setError(''); setIssues([]); try {await work()} catch (e: any) {setError(e.message)} finally {setBusy(false)}};
   const options = context?.source_columns || [];
   const hasMetrics = !!context?.metric_columns?.length;
-  const available = hasMetrics ? [...groups, ...metrics.map(m => m.output_column)] : options.map((c: any) => c.name);
+  const available = hasMetrics ? [...groups, ...metrics.map(m => m.output_column)] : [...options,...(context?.generated_columns || [])].map((c: any) => c.name);
   const changeFilter = (index: number, values: any) => {setFilters(filters.map((f, i) => i === index ? {...f, ...values} : f)); setConfirmed(false)};
   const save = () => action(async () => {
     if (!confirmed || !filterMode || (filterMode === 'FILTER' && !filters.length)) throw new Error('請明確選擇篩選方式並確認規格。');
+    if(context.binding.version===3&&(filterMode!=='ALL'||hasMetrics||!outputs.includes(context.binding.source_order.ordinal_column))) throw new Error('保留來源順序須不篩選、不聚合，且輸出必須包含來源序號。');
     const predicates = filterMode === 'ALL' ? [] : filters.map(f => {
       const kind = options.find((c: any) => c.name === f.column)?.constant_type;
       if (['IS_NULL','IS_NOT_NULL'].includes(f.operator)) return {column: f.column, operator: f.operator, constant: null};
@@ -52,6 +54,7 @@ export function SpecificationEditor({base, initial, onSaved, onCancel}: {base: s
     {context && <>
       <p>固定目標：{context.binding.target_schema}.{context.binding.target_table} · {context.binding.write_mode}。變更目標需先補正 Run。</p>
       {context.binding.version === 2 && <><JoinSummary joins={context.binding.joins}/><p>Join 規則取自已確認需求；需變更時，請先補正 Run 並重新核准。</p></>}
+      <SourceOrderSummary value={context.binding.source_order}/>
       <p>欄位：{options.map((c: any) => `${c.source_name} → ${c.name} (${c.data_type})`).join('、')}</p>
       <label>篩選方式<select disabled={busy} value={filterMode} onChange={e => {setFilterMode(e.target.value); setConfirmed(false)}}><option value="">請明確選擇</option><option value="ALL">不篩選，保留全部資料</option><option value="FILTER">全部條件皆符合才保留</option></select></label>
       {filterMode === 'FILTER' && <>

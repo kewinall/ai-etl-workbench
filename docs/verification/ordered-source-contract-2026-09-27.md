@@ -256,3 +256,19 @@ exact expected explanatory cells, invalid order binding and legacy isolation.
 No ordered workbook visual inspection, live model calls, new Pilot writes,
 deployment or portable replay was performed in this checkpoint. Public V3
 specification endpoints remain closed pending the remaining delivery checks.
+
+## Specification editor context checkpoint
+
+The editor now recognizes the confirmed generated ordinal separately from
+physical source and metric fields, binds specification V3 to the immutable
+source-order contract and validates that naming has the exact required name
+and BIGINT type. The frontend offers the ordinal only as a projection output,
+displays the order contract and blocks filtered/aggregated/ordinal-free drafts.
+No order or output selection is silently invented by the editor.
+
+Focused context/compiler tests: 13 passed. Frontend build passed. Full isolated
+backend regression: 1,395 passed, 48 skipped, one warning, 28.06 seconds, exit 0.
+This checkpoint does not claim browser interaction or real save roundtrip.
+Public V3 save remains closed pending ordered workbook verification; the
+deployed platform has not been replaced. knowledge-workspace is still absent
+at the expected local path and has not been synchronized.
