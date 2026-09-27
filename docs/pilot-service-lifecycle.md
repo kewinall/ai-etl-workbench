@@ -63,3 +63,31 @@ postgres/api/web 呼叫 Docker start，最後檢查網站 `/api/ready`。
 不能把本頁或舊入口的安全阻擋當作持久服務驗收。Windows 登入自啟或手動
 啟動模式仍待操作者決定；目前沒有安裝 Windows 排程或改全域 WSL 設定。
 維護時採已驗證的個別操作、先檢查工作再停止，並記錄部署及 readiness 結果。
+
+## 協調式私有備份（單一操作者維護窗口）
+
+先執行 `pwsh -File scripts/backup-pilot.ps1 -CheckOnly`；預檢通過後執行
+`pwsh -File scripts/backup-pilot.ps1`。工具要求既有三個應用服務正在運行，
+以確定恢復範圍；不建立新部署或採用猜測的 volume。
+
+流程：正常停止應用服務 → 確認無額外 DB client／容器寫入者 → pg_dump →
+四個正式資料卷唯讀打包與 checksum → 再檢查停止狀態 → 寫協調完成標記 →
+恢復原有 API、網站與 control-worker。模型與 Hop 不派發、不重跑。
+
+備份在 RockyLinux9 的 `/root/ai-etl-workbench-backups/batch-<uuid>/`，
+根目錄及每批目錄要求 root-owned `0700`；不自動修改不符要求的既有目錄。
+這是同一台主機、同一 WSL 的私有儲存，不是異機、加密或災難備援備份。
+內含未加密的主金鑰，禁止提交 GitHub 或直接對外分享。失敗批次與 dump
+暫存保留供檢查，尚無自動保留／清理策略；不要遞迴清除整個 runtime。
+
+每批包含 `database-input.dump`、`recovery-<uuid>/` 的五檔及 manifest。
+只有 `coordination.json` 也存在且 PASS，才表示工具通過維護窗口檢查；
+僅有 manifest 不等於整次協調成功。其 `restore_verified` 預設 false，
+必須另做 [隔離還原驗證](recovery-verification.md)，不能拿匯出成功代替。
+讀取 0700 備份需 root helper；解包僅進入全新空還原 volumes，必要時只對
+這四個新副本設定 UID 10001，再以非 root 平台 UID 驗證。勿改正式資料權限。
+
+中途錯誤會留下應用服務停止狀態，不自動重试或覆蓋部分輸出；核對原因後
+手動恢復。維護期间必須禁止其他終端啟動服務、原生寫入程序或直連 DB。
+工具有前後查核但沒有持久 admission fence，不宣稱能抵抗另一位管理員
+在檢查間隙寫入，也不備份 Vertica 業務資料或原 PostgreSQL roles／ACL。

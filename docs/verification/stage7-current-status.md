@@ -2,6 +2,44 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 2026-09-28：同一維護窗口備份與新副本真實 HTTP 還原
+
+新增 `scripts/backup-pilot.ps1`，串接已驗證安全停止、DB custom dump、四個
+資料卷唯讀匯出、前後寫入者查核及原服務恢復。只有後檢查通過才寫
+coordination.json；標示單操作者維護範圍、無 persistent admission fence、
+尚待還原驗證。每次新建 root-owned 0700 WSL 私有目錄，不覆蓋既有批次。
+
+修正 exporter：所有根目錄及 dump 在最後再次核對，避免較早完成的根目錄
+在後續打包期間改變仍被標成 PASS。兩種 race 回歸與原匯出／解包合計
+Linux **7 passed（1.92 秒）**；PowerShell 啟停及備份預檢合計
+**26 passed（7.86 秒）**。
+
+實測曾遇到 Windows 路徑被 shell 解析、Windows 新限權目錄在 WSL 不可見。
+第一種改用 wslpath --exec；後者沒有宣稱根因已證實，也沒有對 Everyone
+開權限，而改用 WSL 私有 0700 目錄。失敗批次未標完成；其中一次停止後
+失敗，已先手動恢復原服務再改正。Windows 直接執行 Python 測試為
+3 failed／4 passed，失敗在 inventory 的檔案時間屬性檢查；不冒充 Windows
+支援通過。實際匯出執行於 Linux，上述 7 項全部通過。
+
+最後正式協調備份成功，dump SHA-256：
+`3ddb04be0d3a5a1b0df7e0b67d9b3473e0326c34d6d2e86c53372e25fe535097`。
+完整 DB／檔案／密鑰／協調標記只保存在私有目錄，不加入 Git。
+
+將這一份新備份解包至四個全新空 volume，還原至新 PostgreSQL 17、
+`--network none`、無對外 port；pg_restore single-transaction / exit-on-error
+成功。第一次以非 root 讀 0700 package 被拒，改由 root helper 解包，再僅
+對四個新還原副本設定平台 UID 10001，原 package 與正式 volumes 不變。
+
+用 UID 10001、四副本唯讀、所有派發關閉的 verifier 實測：1 筆 secret
+可解密、20／20 ZIP 真實 loopback HTTP checksum／CRC 通過、19／20 原凍結
+情境匹配、Run／effort events 不變、ETL 未重跑。第 19 案需求延伸邊界不變。
+隔離 DB 已正常停止且保留副本；正式 readiness 回 ready，Run 305、events
+2,861、歷史 deliveries 24，與備份前一致。
+
+本段補足單操作者維護窗口下的一次可重現協調備份及還原，不代表同機備份
+可防磁碟／WSL 故障；異機加密保管、保留策略、原 roles／ACL、宿主機重啟、
+真實寫入中斷與任意外部寫入者隔離仍未完成。第 7 階段保持未完成。
+
 ## 2026-09-28：安全停止與正式服務恢復驗收
 
 新增 `scripts/stop-pilot.ps1`：精確名稱及標籤查核、Windows 原生 Worker

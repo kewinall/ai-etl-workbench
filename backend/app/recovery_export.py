@@ -57,6 +57,12 @@ def export(destination, dump, expected_dump_checksum, roots):
             if observed != before[name]:
                 raise ValueError('RECOVERY_ARCHIVE_MISMATCH')
         entries.append({'name': archive.name, 'sha256': digest(archive), 'bytes': archive.stat().st_size})
+    # A root already archived can still change while a later root is copied.
+    # Check the entire source set again before publishing the completion marker.
+    if digest(dump) != expected_dump_checksum or any(
+        inventory(root) != before[name] for name, root in roots.items()
+    ):
+        raise ValueError('RECOVERY_SOURCE_CHANGED')
     manifest = {'format': 'workbench-private-recovery-v1', 'contains_secrets': True,
                 'live_snapshot_created': False, 'files': entries}
     with (destination / 'manifest.json').open('x', encoding='utf-8') as stream:
