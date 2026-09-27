@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-from .repository import PostgresRepository
+from .repository import PostgresRepository, TaskCreationConflict
 from .project_api import create_project_router
 from .execution_settings import resolve_settings
 from .ai_profile_api import create_ai_profile_router
@@ -31,6 +31,7 @@ from .release import create_release, create_sdm, sha as artifact_sha
 ROOT=Path(__file__).resolve().parents[2];load_dotenv(ROOT/'.env');DB=os.environ['DATABASE_URL'];repo=PostgresRepository(DB)
 app=FastAPI(title='AI Hop Workflow Platform',version='0.2.0');app.add_middleware(CORSMiddleware,allow_origins=['http://127.0.0.1:5173','http://localhost:5173'],allow_methods=['*'],allow_headers=['*'])
 class TaskCreate(BaseModel):
+ creation_request_key:str|None=Field(default=None,pattern=r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
  project_id:str|None=None
  name:str=Field(min_length=2,max_length=120);requirement:str=Field(min_length=5);operation:str='NEW';category:str='STAGE';source_type:str='CSV';source_config:dict[str,Any]=Field(default_factory=dict);target_type:str='VERTICA';target_schema:str='etl_output';target_table:str='validation_output';target_config:dict[str,Any]=Field(default_factory=dict);model:str='copilot';error_test_config:dict[str,Any]=Field(default_factory=dict)
 class TaskUpdate(TaskCreate):pass
@@ -391,7 +392,8 @@ def create(data:TaskCreate):
    table_sources=len(sources)>=2 and all(x.get('type')=='VERTICA' for x in sources)
    csv_join_sources=len(sources)==2 and all(x.get('type')=='CSV' for x in sources)
    if not (table_sources or csv_join_sources):raise HTTPException(422,'DW/DM 必須使用至少兩個 Vertica Table，或恰好兩個 CSV 來源；不可混用')
- return repo.create_task(payload)
+ try:return repo.create_task(payload)
+ except TaskCreationConflict:raise HTTPException(409,'建立請求內容已變更，請使用新的請求識別碼') from None
 @app.post('/api/tasks/{task_id}/requirements/validate')
 def validate_requirements(task_id:str):
  task=repo.get_task(task_id)

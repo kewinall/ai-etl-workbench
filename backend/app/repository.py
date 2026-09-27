@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json, uuid
+from hashlib import sha256
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -9,6 +10,9 @@ from .project_api import ProjectConflict
 from .settings_contract import validate_setting
 
 STEPS=[('router','Rule Router'),('profiler','Source Profiler'),('sa','Requirement / SA Agent'),('developer','Developer Agent'),('static','Static Validator'),('semantic','Semantic Validator'),('executor','Hop Executor'),('postwrite','Post-write Count')]
+
+class TaskCreationConflict(ValueError):
+ pass
 
 class PostgresRepository:
  def __init__(self,url:str): self.url=url
@@ -58,11 +62,23 @@ class PostgresRepository:
   if target not in ('POSTGRESQL','VERTICA'):raise ValueError('Unsupported target database')
   with self.conn() as c:
    task_id=self.next_id(c)
+   project_id=data.get('project_id') or '00000000-0000-0000-0000-000000000010'
+   request_key=data.get('creation_request_key')
+   if request_key:
+    request_key=str(uuid.UUID(str(request_key)))
+    canonical={**data,'project_id':str(project_id)}
+    canonical.pop('creation_request_key',None)
+    digest=sha256(json.dumps(canonical,sort_keys=True,ensure_ascii=False,separators=(',',':')).encode()).hexdigest()
+    previous=c.execute('SELECT task_id,payload_checksum FROM platform.task_creation_request WHERE project_id=%s AND request_key=%s',(project_id,request_key)).fetchone()
+    if previous:
+     if previous['payload_checksum']!=digest:raise TaskCreationConflict('TASK_CREATION_REQUEST_CHANGED')
+     return self.get_task(previous['task_id'])
    target_config={**(data.get('target_config') or {}),'type':target,'schema':data['target_schema'],'table':data['target_table']}
    project_id=data.get('project_id') or '00000000-0000-0000-0000-000000000010'
    c.execute("insert into platform.task(task_id,project_id,task_name,task_type,task_category,requirement_text,status,current_step,source_type,source_config,target_type,target_config,model_provider,progress,error_test_config) values(%s,%s,%s,%s,%s,%s,'CREATED','router',%s,%s,%s,%s,%s,0,%s)",(task_id,project_id,data['name'],operation,data.get('category','STAGE'),data['requirement'],source,json.dumps(source_config),target,json.dumps(target_config),data['model'],json.dumps(data.get('error_test_config') or {})))
    for i,(key,label) in enumerate(STEPS): c.execute("insert into platform.task_node_run(node_run_id,task_id,node_key,node_label,sequence_no,status) values(%s,%s,%s,%s,%s,'PENDING')",(uuid.uuid4(),task_id,key,label,i+1))
    c.execute("insert into platform.task_event(task_id,level,node_key,message) values(%s,'INFO','router','Task created and persisted in PostgreSQL')",(task_id,))
+   if request_key:c.execute('INSERT INTO platform.task_creation_request(project_id,request_key,payload_checksum,task_id) VALUES(%s,%s,%s,%s)',(project_id,request_key,digest,task_id))
   return self.get_task(task_id)
  def reset_task(self,task_id):
   with self.conn() as c:

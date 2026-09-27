@@ -58,6 +58,13 @@ run_count 0。未授權模型、未執行 Hop 或建立 Vertica 表；保留該 
 
 ## 後續階段邊界
 
+Task 重送去重後端已實作（尚未部署）：新增 migration 050、選用 UUID
+creation_request_key，專案＋key 綁定 payload checksum 與 Task。同內容回既有
+Task，不重建節點／事件；同 key 改內容回衝突。舊客戶端未帶 key 仍是原建立語意。
+隔離 PostgreSQL 六個同步重送只產生一筆、再次重送同 ID、改內容拒絕，均通過；
+全套 1081 passed、46 skipped、1 warning，24.62s、exit 0。
+前端尚未傳 key，Pilot DB 尚未套用 migration，不能宣稱網站已具備完整重送去重。
+
 Task 建立交易修正：原 next_id 在獨立連線讀最後編號，與 INSERT 分開，可能並行
 撞號。現在在建立交易內取得 advisory transaction lock，再讀編號、插入 Task、
 節點與事件並一起 commit。隔離 PostgreSQL 以八個同步請求實測唯一 ID、每筆
