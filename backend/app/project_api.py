@@ -7,6 +7,7 @@ import re
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from psycopg.errors import UniqueViolation
+from .pilot_cohort import PilotCohortPlan
 
 
 class ProjectPayload(BaseModel):
@@ -83,6 +84,30 @@ def create_project_router(repo) -> APIRouter:
             return repo.create_project(data.model_dump(exclude={'expected_updated_at'}))
         except UniqueViolation:
             raise HTTPException(409, detail={'code': 'PROJECT_NAME_EXISTS', 'message': '此專案名稱已存在'}) from None
+
+    @router.post('/{project_id}/pilot-cohorts', status_code=201)
+    def register_cohort(project_id: UUID, data: PilotCohortPlan):
+        from .pilot_cohort import register
+        try:
+            get_project(project_id)
+            return register(repo, str(project_id), data)
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(503, detail={'code': 'PILOT_REGISTRATION_UNAVAILABLE',
+                'message': '案例登錄未確認完成；可重送相同計畫，不會重複登錄。'}) from None
+
+    @router.get('/{project_id}/pilot-cohorts')
+    def list_cohorts(project_id: UUID):
+        from .pilot_cohort import inventory
+        try:
+            get_project(project_id)
+            return inventory(repo, str(project_id))
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(503, detail={'code': 'PILOT_COHORTS_UNAVAILABLE',
+                'message': '案例集合暫時無法讀取，不代表沒有案例。'}) from None
 
     @router.put('/{project_id}')
     def update_project(project_id: UUID, data: ProjectPayload):
