@@ -5,6 +5,21 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 執行復原入口：單次領取與所有權核對（2026-09-27）
+
+新增 opt-in CLI pilot_recovery_probe（不是一般 API），需明確啟用
+WORKBENCH_SYNTHETIC_FAILURE_PROBE=frozen-cohort-missing-column-v1，並提供
+Task、Run、目前 dispatch binding。先核對唯一同專案 cohort 登錄；正常建立
+新目標後，在 Task／target 鎖內核對登錄 DDL 指紋、同 Task／Run 所有權、空表
+及精確欄位，才 rename 第一欄以製造缺欄位；不修改 HPL、不 DROP、不重試。
+執行後另開連線記錄列數與欄位，非明確終止結果不宣稱 engine_stopped。
+
+新增檢查共 21 passed；完整隔離 PostgreSQL 回歸 1236 passed／46 skipped／
+1 warning（27.66s），exit 0。原生 opt-in 測試跳過不可當成 E2E 通過。
+尚未部署或執行本入口；下一步建置 worker，完成第十六案模型／核准流程，
+以專用新目標驗證真實失敗、診斷、核准修訂、新目標成功及可攜交付。
+正式集合仍 15／20，後續五案與第七階段未完成。
+
 ### 執行復原前置：凍結案例範圍檢查（2026-09-27）
 
 新增純函式 pilot_recovery_scope，限定五個既定 EXECUTION_RECOVERY 定義、
