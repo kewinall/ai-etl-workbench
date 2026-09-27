@@ -58,6 +58,11 @@ run_count 0。未授權模型、未執行 Hop 或建立 Vertica 表；保留該 
 
 ## 後續階段邊界
 
+設定中心窄版發現六個分類按鈕文字完全空白；DOM 確認 font-size 為 0px，原因
+是舊 styles.css 的全域 nav button 響應式規則。限縮為 aside nav button 後，
+build／部署通過，390px 真實截圖可見全部分類文字，computed font-size 均為 13px。
+沒有修改 AI 或資料連線設定；已恢復正常 viewport。
+
 Task 頁籤追加實測：ArrowRight 依序切至需求／協作／產物／執行，End 至交付、
 Home 回概覽，網址與畫面選取一致。390px 檢查發現需求來源卡片超寬至約 684px，
 雖然整頁沒有水平捲軸但內容遭裁切。改用 minmax(0,1fr)、min-width:0 與長文字
