@@ -39,6 +39,27 @@ def test_invalid_population_rejected():
         render(data)
 
 
+def test_partial_usage_and_effort_never_imply_complete_measurement():
+    data = snapshot()
+    group = data['cohorts'][0]
+    group['effort'] = {'status':'RECORDED_INTERVALS_ONLY','modes':{
+        'WORKBENCH':{'recorded_seconds':12,'cases_with_recorded_intervals':1,'cases_without_recorded_intervals':19},
+        'MANUAL_BASELINE':{'recorded_seconds':None,'cases_with_recorded_intervals':0,'cases_without_recorded_intervals':20}},
+        'excluded_nonhuman_sessions':2,'abandoned_sessions':1,'has_open_session':True}
+    from app.pilot_usage import METRICS
+    metrics = {key:{'reported_sum':None,'reported_invocations':0,'missing_invocations':2,'complete_sum':None} for key in METRICS}
+    metrics['ai_credits'].update(reported_sum=1.25,reported_invocations=1,missing_invocations=1)
+    group['usage'] = {'limitations':['不估算成本'], 'groups':[{'provider':'test','model':'model',
+        'journal_invocations':2,'nonaccepted_invocations':1,'provider_partial_records':1,'metrics':metrics}]}
+    html = render(data)
+    assert '工作台操作：已記錄 12 秒' in html
+    assert '人工基準：尚未量測' in html
+    assert '有區間紀錄 1 / 20 案，未記錄 19 案' in html
+    assert '排除代理／功能測試 2 段' in html
+    assert 'AI credits：已回報合計 1.25；覆蓋 1 / 2 筆，缺 1 筆；完整總量不可用' in html
+    assert '總 Token：未回報' in html
+
+
 def test_report_route_scope_headers_and_safe_failure(monkeypatch):
     data = snapshot()
     repo = Mock()

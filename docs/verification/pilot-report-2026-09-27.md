@@ -44,3 +44,32 @@ with this report feature. No accepted ETL writes were replayed.
 Complete the report's bounded evidence sections using existing measurement data,
 then test both server-origin headers and the actual Windows client path explicitly.
 Perform read-only formal-cohort reconciliation before deploying the feature.
+
+## Follow-up: coverage and formal data reconciliation
+
+Added model-usage coverage for every existing metric, including missing counts,
+partial totals and unavailable complete totals; added self-declared effort interval
+coverage, excluded nonhuman sessions and abandoned/open intervals. These remain
+distinct from full-case human effort and cost. Per-case text now explains the
+scenario's acceptance question and shows source/oracle/precondition checks without
+claiming that the expected treatment occurred when evidence is absent.
+
+- Renderer/API plus measurement tests: **16 passed** before the narrative addition.
+- Isolated real-browser functional report test: **passed**, including both new
+  sections and 390/768/1440 widths.
+- Separate Windows exact-CSP test: **failed** with the same AdGuard-path difference.
+  The assertion is retained, not weakened or skipped.
+- Fresh read-only formal API result rendered in memory: **20 cases, 20 releases,
+  19 frozen-scenario matches, one model group**. Usage observation denominators
+  reconciled. No private snapshot was committed and no model/ETL was run.
+- This reconciliation verifies the renderer against live measurements, not formal
+  deployment or printed pagination. Those checks remain open.
+
+Final backend regression after the scenario narrative addition: **1,437 passed,
+48 skipped, one warning in 30.05 seconds**. Skipped live/model/host checks are not
+counted as acceptance. Isolated test services were stopped, with volumes retained.
+
+The operator explicitly deferred the real human baseline on 2026-09-27. Keep it
+unmeasured, along with improvement rate; do not substitute agent operation time.
+This is a deferred evaluation dependency, not evidence that P3 value comparison
+has been completed. Continue the remaining engineering and acceptance work.

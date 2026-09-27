@@ -15,6 +15,8 @@ test('隔離報告入口、固定二十案與列印版面',async({page,request,b
   await expect(report.locator('article')).toHaveCount(20);
   await expect(report.locator('body')).toContainText('目前可交付 0 / 20');
   await expect(report.locator('body')).toContainText('尚無完整量測');
+  await expect(report.locator('body')).toContainText('人工基準：尚未量測');
+  await expect(report.locator('body')).toContainText('尚無模型用量紀錄，不推定為零消耗');
   for(const width of [390,768,1440]){
     await report.setViewportSize({width,height:1000});
     expect(await report.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true);
@@ -25,5 +27,15 @@ test('隔離報告入口、固定二十案與列印版面',async({page,request,b
   await report.screenshot({path:'test-results/pilot-report-print.png',fullPage:true});
   const response=await request.get(`/api/projects/${project}/pilot-report`);
   expect(response.headers()['cache-control']).toBe('no-store');
-  expect(response.headers()['content-security-policy']).toContain("default-src 'none'");
+});
+
+test('Windows HTTP 路徑保留報告原始安全標頭',async({request,baseURL})=>{
+  test.skip(process.env.WORKBENCH_ALLOW_SYNTHETIC_UI!=='1','Explicit isolated environment required');
+  expect(baseURL).toBe('http://127.0.0.1:5195');
+  const projects=await (await request.get('/api/projects')).json();
+  const project=projects.find((p:any)=>p.project_name.startsWith('Synthetic report '));
+  expect(project).toBeTruthy();
+  const response=await request.get(`/api/projects/${project.project_id}/pilot-report`);
+  expect(response.status()).toBe(200);
+  expect(response.headers()['content-security-policy']).toBe("default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'");
 });
