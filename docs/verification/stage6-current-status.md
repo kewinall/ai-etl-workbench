@@ -5,6 +5,14 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 復原歷史真實網站回歸（2026-09-27）
+
+新增 recovery-history-readonly.spec.ts，以第十六案既有真實失敗與修正版
+執行，不 mock API、不新增案例。1 passed（4.5s）：失敗診斷行號及日誌指紋、
+核對結案、父子版本關聯、執行頁歷史選擇、返回、390／768／1440px 均通過；
+原事件完全不變、沒有 mutating request 或 page error。這是指定復原路徑的
+證據，並非全平台所有操作驗收。修正後 worker 已建置供第十七案使用。
+
 ### 第十六案：真實缺欄位失敗與新目標復原（2026-09-27）
 
 recovery-filter-aggregate 經 SA v5／Developer v4 及規格、標準答案核准，在
