@@ -5,6 +5,21 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 第十八案：LEFT JOIN 失敗復原與交付（2026-09-27）
+
+recovery-left-join 完成。首次專用新空目標只 rename customer_id，原 HPL
+保持不變；真實 Hop exit 1／errors 1，診斷引用加密 Log 第 18／25／45 行，
+獨立連線 0 列且欄位 customer_id_missing_fault。核對結案後另建新目標及
+revision，原失敗表保留。SA v5／Developer v5 重新核准，修正真實 Hop
+EXACT_MULTISET 4／4 MATCH、BOUND_PLATFORM_TARGET，涵蓋一對多與未配對左列。
+
+真實唯讀網站回歸 1 passed（1.7s），診斷、版本關聯、窄版及返回通過。
+初次 QA v8 NEEDS_REVIEW 指出雙來源契約缺口（下節）；補齊同執行綁定證據
+後 QA v9/context v12 真實複核 PASS，兩次 QA 紀錄均保留，沒有重跑 Hop。
+候選包隔離重播 PASS，正式 RELEASE_READY；下載指紋、六個 allowlist 成員
+及內容檢查通過。正式交付 18／20，尚缺全列投影及 NULL 分組復原兩案、
+完整量測報告、第七階段與 knowledge-workspace 同步。
+
 ### 第十八案前置：雙來源 QA 目標契約缺口（2026-09-27）
 
 JOIN 復原案已保存真實缺欄位失敗、新連線 0 列查核、核對結案與新目標
