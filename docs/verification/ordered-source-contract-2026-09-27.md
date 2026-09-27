@@ -440,3 +440,18 @@ source fields and adding only the generated source_position BIGINT mapping.
 Historical naming remains stored. No Developer call, Hop dispatch, Vertica
 write or release approval occurred. Next: validate the current Developer offer,
 run one genuine proposal, and check the V3 specification/DDL before execution.
+
+## Formal Developer specification
+
+One genuine configured Copilot gpt-5.4 Developer session produced proposal/spec
+V3 with prompt V6. The result cites source_order.conditions and confirms exactly
+record_id then source_position, no filter/aggregation, APPEND and logical-record
+ascending source order. Deterministic validation and compilation passed; the
+preview DDL contains record_id BIGINT and source_position BIGINT NOT NULL.
+
+Recorded duration: 11,312 ms. Usage is PARTIAL: 4.4449 AI credits, one premium
+request, one CLI session, zero retries/tools, unavailable token counts. Approved
+and read back the exact specification fingerprint; approval is effective but
+execution_authorized remains false. No Hop or Vertica write occurred. Next:
+create the independent V2 ordered oracle from the approved source extension,
+preserving the original frozen unordered case, then complete execution gates.
