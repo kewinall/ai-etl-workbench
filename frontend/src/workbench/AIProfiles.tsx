@@ -83,11 +83,12 @@ export function AIProfiles() {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [query,setQuery] = useState('');
   const [error, setError] = useState('');
+  const [leaveMessage,setLeaveMessage] = useState('');
   const [dirtyIds,setDirtyIds] = useState<Set<string>>(new Set());
   const onDirty = useCallback((id: string, dirty: boolean) => setDirtyIds(old => {const next=new Set(old); if(dirty)next.add(id);else next.delete(id);return next}),[]);
   useEffect(() => {
     if(!dirtyIds.size)return;
-    const beforeNavigate=(event: Event)=>{if(!event.defaultPrevented&&!window.confirm('AI Profile 有未儲存修改（包含尚未儲存的機密）。確定放棄並離開？'))event.preventDefault()};
+    const beforeNavigate=(event: Event)=>{if(event.defaultPrevented)return;event.preventDefault();setLeaveMessage('尚未離開：AI Profile 草稿已保留。請先儲存或取消 AI 變更（包含搜尋隱藏的表單），再選擇目的頁面。')};
     const beforeUnload=(event: BeforeUnloadEvent)=>{event.preventDefault();event.returnValue=''};
     window.addEventListener('workbench:before-navigate',beforeNavigate);
     window.addEventListener('beforeunload',beforeUnload);
@@ -104,6 +105,7 @@ export function AIProfiles() {
   useEffect(() => {load().catch(error => setError(error.message))}, []);
   const matches=(profile:any)=>`${profile.display_name} ${profile.profile_id} ${profile.provider_type}`.toLowerCase().includes(query.trim().toLowerCase());
   return <div><h2>AI 連線與角色模型</h2>
+    {leaveMessage&&!!dirtyIds.size&&<p role="alert">{leaveMessage}</p>}
     <label>搜尋 AI Profile<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="名稱、Profile ID 或供應商"/></label>
     <p>顯示 {profiles.filter(matches).length} / {profiles.length} 個 Profile。搜尋只隱藏表單，不丟棄草稿；清空搜尋可查看全部。</p>
     {!!dirtyIds.size&&<p role="status">有 {dirtyIds.size} 個 AI Profile 尚未儲存（包含搜尋隱藏的表單）</p>}

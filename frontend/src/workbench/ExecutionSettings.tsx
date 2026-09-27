@@ -17,6 +17,7 @@ export function ExecutionSettings({group}:{group:string}) {
   const [busy,setBusy]=useState(false);
   const [toolMessage,setToolMessage]=useState('');
   const [secretMessage,setSecretMessage]=useState('');
+  const [leaveMessage,setLeaveMessage]=useState('');
   const [loadAttempt,setLoadAttempt]=useState(0);
   const dirty=(saved!==null && JSON.stringify(tools)!==JSON.stringify(saved)) || !!secret;
   useEffect(()=>{let active=true;setToolMessage('');request('/api/settings/groups').then(x=>{
@@ -27,8 +28,8 @@ export function ExecutionSettings({group}:{group:string}) {
     if(!dirty&&!busy)return;
     const leave=(event:Event)=>{
       if(event.defaultPrevented)return;
-      if(busy){event.preventDefault();window.alert('設定正在儲存，請等待結果後再離開。');return;}
-      if(!window.confirm('工具路徑或連線機密尚未儲存，確定放棄修改並離開？'))event.preventDefault();
+      event.preventDefault();
+      setLeaveMessage(busy?'設定正在儲存，請等待結果後再離開。':'尚未離開：工具路徑或連線機密草稿已保留。請先儲存、取消路徑修改或清除未儲存機密，再選擇目的頁面。');
     };
     const unload=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue=''};
     window.addEventListener('workbench:before-navigate',leave);
@@ -51,6 +52,7 @@ export function ExecutionSettings({group}:{group:string}) {
     }catch(e:any){setSecretMessage(e.message)}finally{setBusy(false)}
   };
   return <>
+    {leaveMessage&&(dirty||busy)&&<p role="alert">{leaveMessage}</p>}
     {group==='connections'&&<><ControlDatabaseStatus/><ConnectionTest/></>}
     <section hidden={group!=='execution'} className="panel setting-card">
       <h2>執行環境與工具路徑</h2><p>指定 Apache Hop 與工作目錄。儲存路徑不代表 Worker 已具備該檔案，仍須通過執行環境驗證。</p>

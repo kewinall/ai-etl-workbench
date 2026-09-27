@@ -22,8 +22,8 @@ export function useSettingsDraft() {
     if(!dirty&&!busy)return;
     const leave=(event:Event)=>{
       if(event.defaultPrevented)return;
-      if(busy){event.preventDefault();window.alert('設定正在儲存，請等待結果後再離開。');return;}
-      if(!window.confirm('平台設定尚未儲存，確定放棄修改並離開？'))event.preventDefault();
+      event.preventDefault();
+      setMsg(busy?'設定正在儲存，請等待結果後再離開。':'尚未離開：平台設定草稿已保留。請先儲存或取消各分組的修改，再選擇目的頁面。');
     };
     const unload=(event:BeforeUnloadEvent)=>{event.preventDefault();event.returnValue=''};
     window.addEventListener('workbench:before-navigate',leave);
