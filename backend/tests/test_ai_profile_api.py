@@ -47,6 +47,17 @@ def test_profile_conflict_returns_409_without_internal_details():
     assert response.status_code==409
     assert response.json()['detail']=='AI Profile 已被更新'
 
+def test_secret_conflict_is_409_and_does_not_echo_secret(monkeypatch):
+    from app.ai_profile_api import ProfileConflict
+    monkeypatch.setattr('app.ai_profile_api.encrypt_secret',lambda _: (b'cipher',b'nonce'))
+    class ConflictRepo(Repo):
+        def update_ai_profile_secret(self,profile_id,cipher,nonce,expected_version=None):
+            assert expected_version=='stale'
+            raise ProfileConflict('AI Profile 已被更新，機密未儲存')
+    response=client(ConflictRepo()).post('/api/settings/ai-profiles/test-ai/secret',json={'secret_value':'synthetic-private'},headers={'X-Settings-Version':'stale'})
+    assert response.status_code==409
+    assert 'synthetic-private' not in response.text
+
 
 @pytest.mark.parametrize('extra', [
     {'provider_type': 'unsupported'}, {'display_name': ''},

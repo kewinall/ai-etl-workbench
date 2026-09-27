@@ -64,3 +64,32 @@ def test_stale_and_simultaneous_group_updates_do_not_overwrite(context):
                 conn.execute('update platform.system_setting set setting_value=%s,updated_at=%s where setting_key=%s',(json.dumps(original['value']),original['updated_at'],key))
             else:
                 conn.execute('delete from platform.system_setting where setting_key=%s',(key,))
+
+def test_profile_secret_conflict_leaves_vault_unchanged(context):
+    from app.ai_profile_api import ProfileConflict
+    queue,task_id=context
+    repo=PostgresRepository(os.environ['DATABASE_URL'])
+    project=repo.get_project(repo.get_task(task_id)['project_id'])
+    original=repo.ai_profile(project['default_ai_profile'])
+    ref=f"ai-profile:{original['profile_id']}"
+    try:
+        first=repo.upsert_ai_profile({**original,'provider_type':'LITELLM_BEDROCK'})
+        stale=first['updated_at'].isoformat()
+        current=repo.upsert_ai_profile({**first,'display_name':'Concurrent newer profile','_expected_version':stale})
+        with pytest.raises(ProfileConflict):
+            repo.update_ai_profile_secret(original['profile_id'],b'synthetic-cipher',b'synthetic-nonce',stale)
+        with repo.conn() as conn:
+            assert conn.execute('select 1 from platform.secret_vault_entry where secret_ref=%s',(ref,)).fetchone() is None
+        repo.update_ai_profile_secret(original['profile_id'],b'synthetic-cipher',b'synthetic-nonce',current['updated_at'].isoformat())
+        result=repo.ai_profile(original['profile_id'])
+        assert result['display_name']=='Concurrent newer profile'
+        assert result['secret_ref']==ref
+        with pytest.raises(ProfileConflict):
+            repo.update_ai_profile_secret(original['profile_id'],b'rejected',b'rejected',current['updated_at'].isoformat())
+        with repo.conn() as conn:
+            stored=conn.execute('select cipher_text from platform.secret_vault_entry where secret_ref=%s',(ref,)).fetchone()
+            assert bytes(stored['cipher_text'])==b'synthetic-cipher'
+    finally:
+        with repo.conn() as conn:
+            conn.execute('update platform.ai_provider_profile set secret_ref=%s where profile_id=%s',(original['secret_ref'],original['profile_id']))
+            conn.execute('delete from platform.secret_vault_entry where secret_ref=%s',(ref,))

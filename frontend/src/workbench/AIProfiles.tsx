@@ -16,9 +16,28 @@ function ProfileEditor({profile, onSaved, onDirty, onBusy}: {profile: any; onSav
   const [message, setMessage] = useState('');
   const [testRole, setTestRole] = useState('requirement_gate');
   const [allowTest, setAllowTest] = useState(false);
+  const [latest,setLatest]=useState<any>(null);
   const operation=useRef(new OperationLatch());
   useEffect(() => {setDraft(profile)}, [profile]);
   const change = (key: string, value: any) => {setDraft({...draft, [key]: value}); setAllowTest(false)};
+  const compareLatest=async()=>{
+    if(!operation.current.acquire())return;
+    setBusy(true);onBusy(profile.profile_id,true);setMessage('');
+    try{
+      const items=await request<any[]>('/api/settings/ai-profiles');
+      const item=items.find(p=>p.profile_id===profile.profile_id);
+      if(!item)throw new Error('AI Profile 已不存在；草稿保留');
+      setLatest(item);setMessage('已讀取最新版本供比較，尚未修改草稿或伺服器。');
+    }catch(e:any){setMessage(e.message)}
+    finally{setBusy(false);onBusy(profile.profile_id,false);operation.current.release()}
+  };
+  const discardAndReload=async()=>{
+    if(!operation.current.acquire())return;
+    setBusy(true);onBusy(profile.profile_id,true);
+    try{await onSaved();setSecret('');setLatest(null);setAllowTest(false);setMessage('已捨棄此 Profile 草稿及未儲存機密，重新讀取最新設定。')}
+    catch(e:any){setMessage('重新讀取未完成，草稿保留：'+e.message)}
+    finally{setBusy(false);onBusy(profile.profile_id,false);operation.current.release()}
+  };
   const save = async () => {
     if(!operation.current.acquire())return;
     onBusy(profile.profile_id,true);
@@ -28,15 +47,18 @@ function ProfileEditor({profile, onSaved, onDirty, onBusy}: {profile: any; onSav
       const {display_name, provider_type, endpoint, region, model_routes, enabled} = draft;
       if(!profile.updated_at)throw new Error('缺少設定版本，請重新載入後再儲存');
       const options=jsonBody('PUT', {display_name, provider_type, endpoint: endpoint || null, region: region || null, model_routes, enabled});
-      await request(`/api/settings/ai-profiles/${profile.profile_id}`, {...options,headers:{...options.headers,'X-Settings-Version':profile.updated_at}});
+      const updated=await request(`/api/settings/ai-profiles/${profile.profile_id}`, {...options,headers:{...options.headers,'X-Settings-Version':profile.updated_at}});
       profileSaved = true;
       if (secret) {
-        await request(`/api/settings/ai-profiles/${profile.profile_id}/secret`, jsonBody('POST', {secret_value: secret}));
+        if(!updated.updated_at)throw new Error('缺少已保存版本，機密尚未送出');
+        const secretOptions=jsonBody('POST', {secret_value: secret});
+        await request(`/api/settings/ai-profiles/${profile.profile_id}/secret`, {...secretOptions,headers:{...secretOptions.headers,'X-Settings-Version':updated.updated_at}});
         setSecret('');
       }
       await onSaved();
       setAllowTest(false);
       setMessage('AI Profile 已儲存；尚未測試真實連線。');
+      setLatest(null);
     } catch (error: any) {setMessage(`${profileSaved ? 'Profile 已儲存，但機密或重新載入未完成：' : '儲存失敗：'}${error.message}`)}
     finally {setBusy(false);onBusy(profile.profile_id,false);operation.current.release()}
   };
@@ -75,7 +97,22 @@ function ProfileEditor({profile, onSaved, onDirty, onBusy}: {profile: any; onSav
     <div style={{display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 16}}>
       <button disabled={busy} onClick={() => {setDraft(profile); setSecret(''); setMessage(''); setAllowTest(false)}}>取消 AI 變更</button>
       <button className="primary" disabled={busy || !draft.display_name?.trim()} onClick={save}>儲存 AI Profile</button>
+      <button disabled={busy} onClick={compareLatest}>比較草稿與最新設定</button>
     </div>
+    {latest&&<section aria-label="AI 設定版本比較">
+      <h4>草稿與伺服器最新設定</h4>
+      <p>比較不會寫入，也不會自動合併。密鑰不讀取、不顯示；以下不含未儲存的密鑰內容。</p>
+      <div className="settings-fields">{[
+        ['顯示名稱',draft.display_name,latest.display_name],
+        ['AI 連線方式',draft.provider_type,latest.provider_type],
+        ['AWS Region',draft.region,latest.region],
+        ['LiteLLM Proxy Endpoint',draft.endpoint,latest.endpoint],
+        ['啟用',draft.enabled?'是':'否',latest.enabled?'是':'否'],
+        ...roleFields.map(([key,label])=>[label,draft.model_routes?.[key],latest.model_routes?.[key]])
+      ].map(([label,local,remote])=><div key={label} style={{minWidth:0,overflowWrap:'anywhere'}}><b>{label}</b><p>草稿：{local||'未設定'}</p><p>最新：{remote||'未設定'}</p></div>)}</div>
+      <button disabled={busy} onClick={()=>setLatest(null)}>保留草稿並關閉比較</button>
+      <button disabled={busy} onClick={discardAndReload}>捨棄此 Profile 草稿與未儲存機密，讀取最新設定</button>
+    </section>}
     {draft.provider_type === 'LOCAL_COPILOT' ? <p>本機連線驗收請在 Task 通過需求檢查後授權一次 SA，並啟動 Windows 本機 Worker；容器內不會冒用 Windows 登入。</p> : <fieldset style={{marginTop: 20, padding: 12}}>
       <legend>真實模型連線測試</legend>
       <p>會送出簡短測試提示，可能產生用量費用；只測試已儲存的設定。</p>

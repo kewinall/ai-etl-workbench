@@ -95,16 +95,16 @@ def create_ai_profile_router(repo, *, complete=complete_json):
             raise HTTPException(503, 'AI Profile 儲存失敗，請檢查平台資料庫') from None
 
     @router.post('/{profile_id}/secret')
-    def save_profile_secret(profile_id: str, value: SecretInput):
+    def save_profile_secret(profile_id: str, value: SecretInput, x_settings_version: str | None = Header(default=None)):
         profile = get_profile(profile_id)
         if profile['provider_type'] == 'LOCAL_COPILOT':
             raise HTTPException(422, '本機 Copilot 使用既有 CLI 登入，平台不保存其 Token')
         try:
             cipher, nonce = encrypt_secret(value.secret_value)
-            secret_ref = f'ai-profile:{profile_id}'
-            repo.save_secret(secret_ref, cipher, nonce)
-            repo.upsert_ai_profile({**profile, 'secret_ref': secret_ref})
+            repo.update_ai_profile_secret(profile_id, cipher, nonce, expected_version=x_settings_version)
             return {'profile_id': profile_id, 'secret_configured': True}
+        except ProfileConflict as exc:
+            raise HTTPException(409, str(exc)) from None
         except Exception:
             raise HTTPException(503, '機密儲存失敗，請檢查主金鑰與平台資料庫') from None
 

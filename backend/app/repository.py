@@ -268,7 +268,21 @@ class PostgresRepository:
    if '_expected_version' in data and data['_expected_version']!=version:
     raise ProfileConflict('AI Profile 已被更新，草稿未覆蓋伺服器。請重新讀取後比對再儲存。')
    c.execute("insert into platform.ai_provider_profile(profile_id,display_name,provider_type,endpoint,region,model_routes,enabled,secret_ref,updated_at) values(%s,%s,%s,%s,%s,%s,%s,%s,clock_timestamp()) on conflict(profile_id) do update set display_name=excluded.display_name,provider_type=excluded.provider_type,endpoint=excluded.endpoint,region=excluded.region,model_routes=excluded.model_routes,enabled=excluded.enabled,secret_ref=coalesce(excluded.secret_ref,platform.ai_provider_profile.secret_ref),updated_at=clock_timestamp()",(data['profile_id'],data['display_name'],data.get('provider_type','LITELLM_BEDROCK'),data.get('endpoint'),data.get('region'),json.dumps(data.get('model_routes') or {}),data.get('enabled',True),data.get('secret_ref')))
-  return self.ai_profile(data['profile_id'])
+   result=c.execute('select * from platform.ai_provider_profile where profile_id=%s',(data['profile_id'],)).fetchone()
+  return dict(result)
+ def update_ai_profile_secret(self,profile_id,cipher,nonce,expected_version=None):
+  from .ai_profile_api import ProfileConflict
+  with self.conn() as c:
+   c.execute('select pg_advisory_xact_lock(271828,3)')
+   row=c.execute('select provider_type,updated_at from platform.ai_provider_profile where profile_id=%s for update',(profile_id,)).fetchone()
+   if not row:raise ProfileConflict('AI Profile 不存在或已變更，請重新讀取。')
+   if row['provider_type']=='LOCAL_COPILOT':raise ProfileConflict('本機 Copilot 不接受機密更新。')
+   if expected_version is not None and row['updated_at'].isoformat()!=expected_version:
+    raise ProfileConflict('AI Profile 已被更新，機密未儲存；請重新讀取後再確認。')
+   secret_ref=f'ai-profile:{profile_id}'
+   c.execute('insert into platform.secret_vault_entry(secret_ref,cipher_text,nonce,updated_at) values(%s,%s,%s,clock_timestamp()) on conflict(secret_ref) do update set cipher_text=excluded.cipher_text,nonce=excluded.nonce,updated_at=excluded.updated_at',(secret_ref,cipher,nonce))
+   # Only change the reference/version, never replay a stale profile snapshot.
+   c.execute('update platform.ai_provider_profile set secret_ref=%s,updated_at=clock_timestamp() where profile_id=%s',(secret_ref,profile_id))
  def save_secret(self,secret_ref,cipher,nonce):
   with self.conn() as c:c.execute("insert into platform.secret_vault_entry(secret_ref,cipher_text,nonce,updated_at) values(%s,%s,%s,now()) on conflict(secret_ref) do update set cipher_text=excluded.cipher_text,nonce=excluded.nonce,updated_at=now()",(secret_ref,cipher,nonce))
  def read_secret(self,secret_ref):
