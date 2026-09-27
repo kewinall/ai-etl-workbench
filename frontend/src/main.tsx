@@ -7,6 +7,7 @@ import {AIProfiles} from './workbench/AIProfiles';
 import {OperatorGuide} from './workbench/OperatorGuide';
 import {useSettingsDraft} from './workbench/useSettingsDraft';
 import {SettingsComparison} from './workbench/SettingsComparison';
+import {SavedJoinSummary} from './workbench/SavedJoinSummary';
 import {ExecutionSettings} from './workbench/ExecutionSettings';
 import {PilotHome} from './workbench/PilotHome';
 import {WorkerStatus} from './workbench/WorkerStatus';
@@ -271,6 +272,7 @@ function CompleteTaskSetup({task}:{task:any}){
   {errorTest.enabled&&<section className="setup-section"><h4>錯誤情境設定</h4><PrettyValue value={errorTest}/></section>}
   <div className="source-summary-grid">{sources.map((source:any,index:number)=>{const table=source.type==='VERTICA';const acquisition=table?(source.has_actual_data===false?'建立範例資料表':'使用既有資料表'):(source.has_actual_data===false?'產生範例檔案':'上傳實際檔案');const details=table?{connection:source.connection||'vertica-poc',schema:source.schema||'—',table_or_view:source.object||source.table||'—'}:{file_name:source.original_name||source.object||'執行時產生',encoding:source.encoding||'UTF-8',delimiter:source.delimiter||target.delimiter||',',quote:source.quote||target.quote||'"',header:source.header!==false,worksheet:source.worksheet||undefined,parser_format:source.parser_format||target.format||undefined,file_pattern:source.file_pattern||undefined};return <article className="source-summary-card" key={source.id||index}><div className="panelhead"><h3>來源 {index+1} · {source.alias||'-'}</h3><span>{source.type||task.source}</span></div><div className="config-grid"><article><small>資料取得方式</small><b>{acquisition}</b></article><article><small>{table?'資料表':'檔案名稱'}</small><b>{table?`${source.schema||'-'}.${source.object||source.table||'-'}`:source.original_name||source.object||'執行時產生'}</b></article><article><small>來源別名</small><b>{source.alias||'—'}</b></article><article><small>欄位數</small><b>{source.fields?.filter((x:any)=>x.name).length||0}</b></article></div><h4>來源完整設定</h4><PrettyValue value={details}/>{source.fields?.some((x:any)=>x.name)&&<><h4>欄位與型別</h4><PrettyValue value={source.fields.filter((x:any)=>x.name)}/></>}</article>})}</div>
   {category==='STAGE'&&stageMode!=='NORMAL'&&<section className="setup-section"><h4>Vertica Server 路徑與格式</h4><PrettyValue value={{data_directory:target.data_directory,data_path:target.data_path,reject_path:target.reject_path,exception_path:target.exception_path,format:target.format,delimiter:target.delimiter,quote:target.quote,header:target.header}}/></section>}
+  <SavedJoinSummary contract={target.join_contract_v1}/>
   <div className="notice"><Database/><div><b>目標固定寫入 Vertica</b><p>{target.schema}.{target.table}；以上為 Task 保存的完整設定，執行產生的 SQL 與檔案路徑另於「產物與流程」呈現。</p></div></div>
  </>
 }
