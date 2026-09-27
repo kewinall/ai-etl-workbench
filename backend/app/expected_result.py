@@ -89,3 +89,36 @@ def compare_expected_result(columns, expected, actual):
         'expected_checksum':digest(wanted), 'actual_checksum':digest(observed),
         'qa_passed':False, 'release_ready':False,
     }
+
+
+def compare_ordered_result(columns, expected, actual, *, ordinal_column):
+    """Compare an explicitly ordered read against pinned source ordinals.
+
+    This primitive does not sort either side: doing so would conceal a missing
+    ORDER BY in the execution adapter. It grants no execution or release rights.
+    """
+    baseline = compare_expected_result(columns, expected, actual)
+    ordinal = next((c for c in columns if c.name == ordinal_column), None)
+    if ordinal is None or ordinal.kind != 'INTEGER' or ordinal.nullable:
+        raise ValueError('RESULT_ORDER_COLUMN_INVALID')
+    # Full-source projection requires the original, contiguous, one-based row
+    # positions. Filtered/aggregated ordered outputs need a different contract.
+    if [row[ordinal_column] for row in expected] != list(range(1, len(expected) + 1)):
+        raise ValueError('RESULT_EXPECTED_SOURCE_ORDER_INVALID')
+
+    def canonical(rows):
+        return [tuple(_cell(row[c.name], c) for c in columns) for row in rows]
+
+    wanted, observed = canonical(expected), canonical(actual)
+
+    def digest(rows):
+        value = {'columns': [(c.name, c.kind, c.nullable) for c in columns],
+                 'ordinal_column': ordinal_column, 'rows': rows}
+        return sha256(json.dumps(value, ensure_ascii=True, separators=(',', ':')).encode()).hexdigest()
+
+    return {**baseline, 'comparison': 'EXACT_SOURCE_SEQUENCE',
+            'ordinal_column': ordinal_column,
+            'status': 'MATCH' if wanted == observed else 'MISMATCH',
+            'position_mismatch_count': sum(a != b for a, b in zip(wanted, observed))
+                                       + abs(len(wanted) - len(observed)),
+            'expected_checksum': digest(wanted), 'actual_checksum': digest(observed)}
