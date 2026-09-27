@@ -30,7 +30,7 @@ export function TransformationSummary({value}: {value: any}) {
   </section>;
 }
 
-export function TransformationEditor({value, sources, disabled, onChange}: {value: any; sources: string[]; disabled: boolean; onChange: (value: any) => void}) {
+export function TransformationEditor({value, sources, disabled, onChange, generatedOutputs = []}: {value: any; sources: string[]; disabled: boolean; onChange: (value: any) => void; generatedOutputs?: string[]}) {
   const patch = (changes: any) => onChange({...value, ...changes});
   const select = (label: string, current: string, choices: string[], change: (v: string) => void) => <label>{label}<select aria-label={label} required value={current} onChange={e => change(e.target.value)}><option value="">請選擇</option>{choices.map(v => <option key={v} value={v}>{v}</option>)}</select></label>;
   if (!value || value.invalid) return <fieldset disabled={disabled}><legend>結構化轉換意圖</legend>
@@ -38,7 +38,7 @@ export function TransformationEditor({value, sources, disabled, onChange}: {valu
     <button type="button" disabled={!sources.length} onClick={() => onChange({version: 1, filters: [], filter_logic: 'ALL', filter_null_policy: 'EXCLUDE_UNKNOWN', aggregation: null, output_columns: []})}>新增轉換意圖</button>
   </fieldset>;
   const agg = value.aggregation;
-  const outputs = agg ? [...agg.group_by, ...agg.metrics.filter((m: any) => m.id).map((m: any) => '$metric.' + m.id)] : sources;
+  const outputs = agg ? [...agg.group_by, ...agg.metrics.filter((m: any) => m.id).map((m: any) => '$metric.' + m.id)] : [...sources, ...generatedOutputs];
   return <fieldset disabled={disabled}><legend>結構化轉換意圖</legend>
     <p>全部篩選條件以 AND 結合；一般比較排除 NULL。沒有條件代表不篩選。欄位包含來源編號，避免同名欄位混淆。</p>
     {value.filters.map((f: any, index: number) => {

@@ -201,3 +201,27 @@ one warning, 27.88 seconds, exit 0.
 No provider calls, deployment or real corrected-case execution occurred.
 Pending: user-facing order controls, naming/editor support, SDM generated-field
 semantics and visual verification, public V3 API, deployment and real acceptance.
+
+## Website editor checkpoint
+
+Added an explicit source-order revision control, persisted-order summary and
+generated ordinal naming action. Enabling order adds the ordinal output but
+does not silently remove filters/aggregation. Conflicting intent is blocked
+before submission. Generated ordinals are offered as projection outputs, not
+as physical source fields for filtering/grouping. The naming action uses the
+confirmed ordinal name, BIGINT and the stable generated-field reference, and
+prevents duplicate insertion.
+
+Frontend TypeScript/Vite build passed. Browser test: one passed in 5.0 seconds
+against the freshly built preview with existing read-only navigation. Revision
+and naming writes were intercepted and inspected; no real Task data or ETL was
+modified. It exercised activation, blocked filtered intent, corrected submit,
+persisted-summary rendering, naming insertion, duplicate prevention and 390,
+768, 1440-pixel horizontal-overflow checks. This is UI wiring evidence, not a
+claim of real write roundtrip or end-to-end acceptance. The temporary preview
+was stopped after testing; the deployed platform was not replaced.
+
+Still required: SDM generated-field semantics/visual verification, public V3
+specification editor and oracle UI compatibility, deployment, genuine revised
+case execution and independent portable replay. knowledge-workspace remains
+unsynchronized.
