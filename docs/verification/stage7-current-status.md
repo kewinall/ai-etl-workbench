@@ -2,6 +2,22 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 2026-09-28：完全從私有封裝還原的新環境
+
+新建無外部網路、無 host port PostgreSQL 17 容器及四個全新檔案卷；
+來源只有上一節封裝中的 DB dump 與四份 tar，沒有掛原復原卷或正式卷。
+`pg_restore --exit-on-error --single-transaction --no-owner --no-privileges`
+還原新 `restore_portable` DB 成功。新解包工具先核對五份 checksum 及 tar
+安全路徑、禁止覆寫。第一次因新卷根目錄屬 root、API UID 10001 無寫入權而
+失敗；確認四卷仍全空後只調整新卷根目錄擁有者，第二次解包 PASS。
+初次失敗不計通過，且 DB 已成功還原，沒有重跑 DB restore 或既有 ETL。
+
+以新 DB＋新卷 readonly 執行 `app.recovery_verify --http`：**PASS**，secret 1、
+20 份 service／HTTP 下載通過、19 個原凍結情境匹配、Run／effort events 不變，
+ETL replay false，exit 0。完成後停止新還原容器，保留副本；正式服務未停止。
+這是同機從封裝的新環境還原證據，不是 offsite、原 roles／ACL、部署 entrypoint
+與完整 readiness、live 備份自動協調或真實 ETL 寫入中斷驗證。
+
 ## 2026-09-28：從已驗證副本產生私有可攜封裝
 
 新增 `app.recovery_export`，明確 opt-in、來源 readonly、目的地新建 UUID

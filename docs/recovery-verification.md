@@ -21,6 +21,20 @@ Release 核准工具。必須先建立隔離 PostgreSQL 與完整私有副本。
 檔案系統存取控制由備份目的地負責；若需離機，另行決定加密及保管政策。
 這是可攜封裝，不等同 offsite、完整角色權限或從封裝實際還原的驗收。
 
+### 從封裝還原檔案
+
+`python -m app.recovery_unpack --package /package --destination /restored`
+先檢查五個固定成員的大小／checksum、四份 tar 的全部成員，再解包。
+只允許一般檔案與目錄，拒絕 traversal、絕對路徑與連結；四個目的子目錄
+`secrets/uploads/artifacts/outputs` 必須已存在且全空，不可重用正式卷。
+以 runtime UID 10001 執行；新 Docker volume 根目錄預設 root 擁有，應由
+launcher 在確認空卷後只調整新卷根目錄擁有者，不能遞迴改寫既有資料。
+來源 package 必須 readonly 且不被其他程序修改，helper 使用 network-none。
+本工具不恢復 PostgreSQL。DB dump 另以 `pg_restore --exit-on-error
+--single-transaction --no-owner --no-privileges` 還原至新 restore_ DB；這不保存
+原始 roles／ACL。任一步驟失敗不可繼續宣稱成功，也不要直接覆盖部分解包。
+接著將新檔案卷改 readonly 執行 `app.recovery_verify --http`。
+
 1. 使用與備份相容的 API image 和 PostgreSQL 版本。保留 migration ledger，
    不手改 checksum 或跳過 migration 檢查。
 2. 資料庫容器使用 `--network none`，無 host port，資料庫名稱以 `restore_`
