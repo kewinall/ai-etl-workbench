@@ -42,6 +42,36 @@
 - 同版 migration／API／worker image 的啟動與回復流程。
 - knowledge-workspace 持久化同步仍未完成。
 
+## 後續：migration 055 與私有產物副本復原
+
+短暫停止正式 API 與 control-worker，建立新 PostgreSQL custom-format 備份，
+並從唯讀正式 volumes 複製 secrets、uploads、artifacts、outputs 至新的私有
+復原 volumes。完成後恢復原服務；未刪除或覆寫正式 volume。備份檔 SHA-256：
+`ac038d5032754b7630fa081694286e69c3b22df8283f579fda017fb5a3805224`。
+副本含機密，僅留在本機 Docker 私有 volume／私有備份目錄，未提交 Git。
+
+同一無網路還原容器中新建 `restore_full_055`，不覆寫前一演練 DB。
+單一交易還原成功：最新 migration 055、Run events 2,861、effort events 0。
+仍使用 no-owner/no-privileges，不宣稱原 roles／ACL 復原。
+
+驗證工具容器只共用該 `--network none` DB 的 network namespace，以 loopback
+連線；全部檔案副本唯讀、容器 root filesystem 唯讀，沒有 API／Worker 派發。
+未掛載任何正式 volume。實測結果：
+
+- 副本金鑰成功解密 1 筆既有 secret；只驗證非空，不輸出或保存明文。
+- 既有量測服務回讀：20／20 RELEASE_READY、19／20 原凍結情境匹配、
+  unverified 0。保留第 19 案需求延伸邊界。
+- 驗證前後 Run event 數不變。
+- 逐案呼叫實際 Release download service：20 份 checksum 一致，均為 6 個
+  ZIP 成員且 CRC 檢查通過，共 204,442 bytes。這是 service-layer 驗證，
+  不是 HTTP／瀏覽器下載驗證，也沒有重新執行 ETL。
+- 隔離容器已停止並保留副本。正式 `/api/ready` 回 ready、execution enabled。
+
+這證明最新 DB＋複製金鑰＋指定交付依賴可以在隔離副本讀取與通過 gate。
+尚未證明所有歷史 uploads/產物逐檔完整、異機／離線備份可用、原 roles／ACL、
+HTTP 還原部署、持久 lifecycle 或中斷寫入不重複。上節尚未證明項目應依本次
+具體證據縮小範圍，不視為整體第 7 階段完成。
+
 ## 下一步
 
 先建立可重現的隔離整體復原流程：停止還原環境派發能力、保持無外部網路，
