@@ -80,13 +80,18 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
     setTasksLoading(false);
     if (projectId && !creating && tab === 'history') {
       setTasksLoading(true);
-      request<any[]>(`/api/projects/${projectId}/tasks`).then(items => active && setTasks(items))
+      Promise.all([request<any[]>(`/api/projects/${projectId}/tasks`),request(`/api/projects/${projectId}/evaluation`)]).then(([items,evaluation]) => {
+        if(evaluation.project_id!==projectId||evaluation.basis!=='ALL_PERSISTED_RUNS')throw Error('版本摘要與目前專案不一致');
+        const latest=new Map<string,any>();
+        for(const entry of evaluation.cases)if(!latest.has(entry.task_id))latest.set(entry.task_id,entry);
+        if(active)setTasks(items.map(task=>({...task,latest_run:latest.get(task.id),display_state:latest.get(task.id)?.state||'NO_RUN'})));
+      })
         .catch(e => active && setTasksError(e.message)).finally(()=>active&&setTasksLoading(false));
     }
     return () => {active = false};
   }, [projectId, tab, tasksAttempt]);
   useEffect(()=>{setQuery('');setStatusFilter('')},[projectId]);
-  const visibleTasks=tasks.filter(t=>(!statusFilter||t.status===statusFilter)&&`${t.name} ${t.id}`.toLowerCase().includes(query.toLowerCase()));
+  const visibleTasks=tasks.filter(t=>(!statusFilter||t.display_state===statusFilter)&&`${t.name} ${t.id}`.toLowerCase().includes(query.toLowerCase()));
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -163,12 +168,12 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
           <div className="wb-actions"><button type="button" disabled={busy} onClick={() => {restore(selected); if (creating) navigate(projects.length ? `/projects/${projects[0].project_id}/settings` : '/projects')}}>取消變更</button><button className="primary" type="submit" disabled={busy || form.project_name.trim().length < 2}>{busy ? '儲存中…' : creating ? '建立專案' : '儲存設定'}</button></div>
           </fieldset>
         </form> : <section className="panel wb-history" aria-label="專案歷史 Task">
-          <p>以下為歷史 Task 狀態，不代表最新 Run 已通過 QA 或可交付；請進入 Task 查看版本與證據。</p>
+          <p>以每個 Task 最新 Run 顯示與篩選；NO_RUN 表示尚無準備版本。舊版 Task 狀態另外保留。歷史交付紀錄不代表目前可下載，請進入 Task 核對交付證據。</p>
           <label>搜尋 Task<input value={query} onChange={e => setQuery(e.target.value)} placeholder="名稱或 Task ID"/></label>
-          <label>篩選 Task 狀態<select aria-label="篩選 Task 狀態" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} disabled={tasksLoading||!!tasksError}><option value="">全部狀態</option>{Array.from(new Set(tasks.map(t=>String(t.status)))).sort().map(status=><option key={status} value={status}>{status}（{tasks.filter(t=>t.status===status).length}）</option>)}</select></label>
+          <label>篩選最新 Run 狀態<select aria-label="篩選 Task 狀態" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} disabled={tasksLoading||!!tasksError}><option value="">全部狀態</option>{Array.from(new Set(tasks.map(t=>String(t.display_state)))).sort().map(status=><option key={status} value={status}>{status}（{tasks.filter(t=>t.display_state===status).length}）</option>)}</select></label>
           {tasksLoading?<p role="status">正在讀取歷史 Task…</p>:tasksError?<div role="alert"><p>歷史 Task 讀取失敗：{tasksError}</p><button onClick={()=>setTasksAttempt(attempt=>attempt+1)}>重新讀取歷史 Task</button></div>:<>
             <p role="status">顯示 {visibleTasks.length} / {tasks.length} 個 Task</p>
-            {visibleTasks.map(t => <button className="wb-history-row" key={t.id} onClick={() => navigate(`/projects/${projectId}/tasks/${encodeURIComponent(t.id)}`)}><span><strong>{t.name}</strong><small>{t.id} · {t.source} → {t.target}</small></span><span>{t.status} →</span></button>)}
+            {visibleTasks.map(t => <button className="wb-history-row" key={t.id} onClick={() => navigate(`/projects/${projectId}/tasks/${encodeURIComponent(t.id)}`)}><span><strong>{t.name}</strong><small>{t.id} · {t.source} → {t.target}</small><small>舊版 Task：{t.status} · 最新 Run 歷史交付：{t.latest_run?.historical_release_count??0}</small></span><span>{t.display_state} →</span></button>)}
             {!tasks.length?<p>此專案尚無 Task，可使用上方「建立 Task」。</p>:!visibleTasks.length&&<p>沒有符合搜尋或狀態條件的 Task。</p>}
           </>}
         </section>}

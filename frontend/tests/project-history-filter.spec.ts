@@ -2,6 +2,7 @@ import {test,expect} from '@playwright/test';
 
 test('專案歷史區分失敗與空清單，狀態及文字可交叉篩選',async({page})=>{
   const id='00000000-0000-4000-8000-000000000091';
+  await page.route(`**/api/projects/${id}/evaluation`,route=>route.fulfill({json:{project_id:id,basis:'ALL_PERSISTED_RUNS',cases:[{task_id:'TEST-1',state:null,historical_release_count:0},{task_id:'TEST-2',state:'FAILED',historical_release_count:0}]}}));
   await page.route(`**/api/projects/${id}/summary`,route=>route.fulfill({json:{project_id:id,basis:'LATEST_RUN_PER_TASK',task_count:2,states:[{state:'NO_RUN',count:2}],qa_evaluated:false,release_evaluated:false}}));
   await page.route('**/api/projects',route=>route.fulfill({json:[{project_id:id,project_name:'合成歷史專案',description:'',naming_rules:{},default_ai_profile:'',default_connection:''}]}));
   let failed=true;
