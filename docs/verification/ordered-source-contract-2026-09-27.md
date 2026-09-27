@@ -308,3 +308,17 @@ exit 0. Historical specification UI also displays the source-order summary.
 Opening the design API is not deployment or execution approval. Ordered XLSX
 visual inspection, browser roundtrip, live execution and portable replay remain
 required; no existing Pilot run or frozen oracle was changed.
+
+## SDM browser display compatibility checkpoint
+
+Found that SdmPreview rejected document V3 and described empty-source ordinal
+mappings as row counts. It now accepts a structurally complete V3 order contract,
+displays the confirmed order summary and labels the generated logical-record
+position separately from COUNT_ROWS. Missing/wrong/duplicate ordinal mappings,
+wrong type or physical-source lineage, filters and aggregation are rejected by
+the display guard. Server validation remains authoritative.
+
+Seven focused frontend logic tests passed (403 ms), covering ordered SDM guards
+and oracle serialization regressions. TypeScript/Vite build passed. These tests
+do not launch a browser or prove rendered layout, real API roundtrip or XLSX
+visual correctness. The deployment and formal Pilot data remain unchanged.
