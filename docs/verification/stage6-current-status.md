@@ -5,6 +5,22 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 零列案與 SA 階段邊界修正（2026-09-27）
+
+第 4 案尚未交付。首次 SA 指出輸出契約、重複列規則，以及需求中零筆宣稱
+缺乏實測依據；以 revision 補明 BIGINT／nullable、保留重複、EXCLUDE_UNKNOWN，
+固定樣本與答案未變。第二次 SA 卻要求需求階段提供尚未產生的 Hop 節點與
+結果來源證據，形成階段死結；未核准 Developer，未執行 Hop。
+
+SA prompt 升為 v3，明定 REQUIREMENT_GATE 在設計／編譯／執行之前，後續
+證據是強制 downstream 驗收條件，不是當前缺件；仍須攔截真正缺漏、衝突與
+不安全操作，不得推定預設或推翻程式 Gate。新增測試確認 prompt／checksum／
+版本實際傳入，原始需求未刪除；mock 測試不證明模型語意正確。
+局部 17 passed；隔離完整回歸 1151 passed／46 skipped／1 warning（25.50 秒）。
+已部署 API。第 3 次 revision 明確分工後，以真實 Copilot SA v3 驗證，
+READY_FOR_REVIEW、issues=[]，明確保留後續 Hop／來源證據要求。
+兩次舊 NEEDS_INPUT 未覆寫；第四案仍待 Developer、Hop、QA 與 Release。
+
 ### LEFT JOIN 案正式交付（2026-09-27）
 
 第 3 案在第 1 次準備完成：真實 SA READY_FOR_REVIEW、Developer 提案保存並

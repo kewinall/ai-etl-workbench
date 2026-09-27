@@ -30,6 +30,27 @@ def test_gateway_schema_and_trace_are_connected_without_execution():
     assert len(trace['prompt_checksum']) == len(trace['output_checksum']) == 64
 
 
+def test_stage_scoped_prompt_is_sent_and_versioned_without_removing_requirements():
+    from app.sa_gateway import PROMPT, PROMPT_VERSION
+    from app.sa_contract import digest
+    run, profile = values()
+    requirement = 'Filter amount > 100; later QA must supply Hop nodes and result provenance.'
+    run['input_snapshot']['requirement_text'] = requirement
+    def inspect(**kwargs):
+        assert kwargs['messages'][0]['content'] == PROMPT
+        assert 'before Developer design, compilation and execution' in PROMPT
+        assert 'not missing current inputs' in PROMPT
+        assert 'unverified acceptance expectation' in PROMPT
+        assert 'genuinely missing or conflicting transformation semantics' in PROMPT
+        context = json.loads(kwargs['messages'][1]['content'])['context']
+        assert next(e['value'] for e in context['evidence'] if e['id'] == 'requirement') == requirement
+        return response(**kwargs)
+    _, trace = complete_sa_review(run, profile, completion=inspect)
+    assert PROMPT_VERSION == trace['prompt_version'] == 3
+    assert trace['prompt_checksum'] == digest(PROMPT)
+    # This checks wiring only; real model acceptance is separately recorded.
+
+
 def test_proxy_route_uses_same_normalized_model_as_settings():
     run, profile = values()
     profile.update(provider_type='LITELLM_PROXY', endpoint='http://synthetic.invalid/v1', model_routes={'requirement_gate': 'synthetic-alias'})
