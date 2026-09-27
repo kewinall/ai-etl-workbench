@@ -2,6 +2,22 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 2026-09-28：從已驗證副本產生私有可攜封裝
+
+新增 `app.recovery_export`，明確 opt-in、來源 readonly、目的地新建 UUID
+目錄且不可覆寫。使用前次 migration 055 配對 DB dump（SHA-256 見下方）
+與四組既有復原 volumes，network-none helper 匯出至 Windows 本機私有備份
+目錄；未使用正式卷、未停止正式服務，也沒有新建 live snapshot。
+
+實測 PASS：一份 DB dump、四份 tar、最後產生 manifest；各 tar 重新讀取，
+全部相對名稱、檔案內容雜湊與空目錄皆與來源 inventory 相符。備份本體含
+密鑰，僅在本機私有目錄，不納入 Git。合成封裝／禁止覆寫／錯誤 DB checksum
+測試 1 passed（1.08 秒），不把合成檔案視為 PostgreSQL 還原證據。
+
+下一步必須從這份封裝（不直接掛原復原卷）還原到新 DB 與新檔案卷，再跑
+service-layer／HTTP 驗證。尚未完成此步，不宣稱可攜封裝已可完整復原。
+也未驗證 offsite、備份加密、目的地 ACL、roles／ACL 或 live 備份協調流程。
+
 ## 復原工具加入後的完整回歸
 
 以 commit `8266acc` 的 checkout 執行既有隔離 PostgreSQL Compose suite：

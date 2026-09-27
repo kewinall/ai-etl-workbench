@@ -10,6 +10,7 @@ REQUIRED = [
     'backend/app/recovery_http.py',
     'backend/app/recovery_server.py',
     'backend/app/recovery_files.py',
+    'backend/app/recovery_export.py',
     'backend/app/pilot_report.py',
     'docs/recovery-verification.md',
     'docs/staged-completion.md',

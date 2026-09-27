@@ -6,6 +6,21 @@ Release 核准工具。必須先建立隔離 PostgreSQL 與完整私有副本。
 
 ## 前置條件
 
+### 私有可攜副本封裝
+
+`python -m app.recovery_export --dump-checksum <verified-sha256>` 封裝已事先
+停止寫入、配對驗證的復原副本，不負責為 live system 建立一致性 snapshot。
+需要 `WORKBENCH_RECOVERY_EXPORT=private-copies-v1`，以 network-none helper
+掛載 `/copies/{secrets,uploads,artifacts,outputs}` 與 `/snapshot.dump` 為唯讀，
+`/backup` 為本機私有備份目錄。禁止使用 repository、公開分享或發布目錄。
+工具建立新的 UUID 子目錄，不覆寫現有目錄，包含 DB dump、四份 tar 與
+最後寫入的 manifest。逐檔重讀 archive 比對，並保存五份內容的 SHA-256。
+任何沒有完整可讀 manifest 的中斷輸出不可使用；工具不自動清除它。
+
+**封裝含未另行加密的金鑰與私有資料，不能上傳 GitHub 或公開傳送。**
+檔案系統存取控制由備份目的地負責；若需離機，另行決定加密及保管政策。
+這是可攜封裝，不等同 offsite、完整角色權限或從封裝實際還原的驗收。
+
 1. 使用與備份相容的 API image 和 PostgreSQL 版本。保留 migration ledger，
    不手改 checksum 或跳過 migration 檢查。
 2. 資料庫容器使用 `--network none`，無 host port，資料庫名稱以 `restore_`
