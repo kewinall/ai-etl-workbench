@@ -5,6 +5,22 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 第十八案前置：雙來源 QA 目標契約缺口（2026-09-27）
+
+JOIN 復原案已保存真實缺欄位失敗、新連線 0 列查核、核對結案與新目標
+revision；修正 Hop 已 4／4 MATCH。真實 QA v8 回 NEEDS_REVIEW，指出缺少
+目標 DDL 契約。程式檢查確認此資訊只供單來源，雙來源交接確有缺口，未核准。
+
+新增 target_contract，核對編譯 DDL 與持久化 target claim 的 Run、規格、
+HPL、設定、schema/table 及 DDL 指紋，列出精確欄位、nullable、預設值與約束。
+明示不是即時 catalog 證明。context v11／v12、QA prompt v9；已 PASS、
+進行中及未知結果舊 context 不自動升級。只對 NEEDS_REVIEW 增補同次執行
+證據且原內容完全相同時開放明確複核，不重跑 Hop、不覆寫旧 QA。
+
+完整隔離回歸 1249 passed／46 skipped／1 warning（27.01s），exit 0；
+API／Worker 同版建置，無活躍工作時部署。舊第十三案仍 RELEASE_READY。
+第十八案複核尚待結果，正式交付仍 17／20；不能以這項修正視為該案已交付。
+
 ### 第十七案：日期邊界缺欄位失敗與復原（2026-09-27）
 
 recovery-date-boundaries 完成。SA v5／Developer v4 真實審查後，依凍結案例

@@ -44,6 +44,7 @@ class QASemanticsV1(BaseModel):
 
 class QAExecutionDetailsV2(BaseModel):
     model_config=ConfigDict(extra='forbid')
+    target_contract: dict | None=None
     source_formats: dict | None=None
     runtime_options: dict | None=None
     csv_input_contracts: dict[str,CsvInputContractV1]
@@ -143,6 +144,12 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
                     if details['single_source_contract'] != expected_contract(value['specification'],details):
                         raise ValueError('QA_SINGLE_SOURCE_CONTRACT_CHANGED')
             if multi:
+                if details.get('target_contract') is None:
+                    details.pop('target_contract',None)
+                else:
+                    from .qa_target_contract import expected_target
+                    if details['target_contract'] != expected_target(value['specification'],details):
+                        raise ValueError('QA_TARGET_CONTRACT_CHANGED')
                 if details.get('runtime_options') is None:
                     details.pop('runtime_options',None)  # Preserve historical v4 bytes.
                 else:
@@ -178,6 +185,8 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
             context['version'] = 8 if multi else 7
         if intent is not None:
             context['version'] = 10 if multi else 9
+        if multi and details and 'target_contract' in details:
+            context['version'] = 12 if intent is not None else 11
     return {**context,'context_checksum':digest(context)}
 
 

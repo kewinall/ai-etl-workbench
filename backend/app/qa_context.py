@@ -48,6 +48,12 @@ def load_qa_context(queue,task_id,run_id,comparison_id,*,connection=None):
                 claim=conn.execute('SELECT * FROM platform.task_run_target_claim WHERE run_id=%s FOR SHARE',
                                    (run_id,)).fetchone()
                 details['single_source_contract']=inspect_contract(compiled,details,claim)
+        else:
+            from .qa_target_contract import inspect_target, should_enrich as enrich_target
+            if enrich_target(latest):
+                claim=conn.execute('SELECT * FROM platform.task_run_target_claim WHERE run_id=%s FOR SHARE',
+                                   (run_id,)).fetchone()
+                details['target_contract']=inspect_target(compiled,details,claim)
     root=ET.fromstring(compiled['hpl'])
     names=[node.findtext('name') for node in root.findall('transform')]
     errors=validate_pipeline_graph(root)
