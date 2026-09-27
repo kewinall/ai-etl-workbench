@@ -17,6 +17,7 @@ function Collaboration({taskId}: {taskId: string}) {
   const [selected, setSelected] = useState('');
   const [detail, setDetail] = useState<any>(null);
   const [invocation, setInvocation] = useState<any>(null);
+  const [roles, setRoles] = useState<any[]>([]);
   const [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0);
   const [listPending, setListPending] = useState(true);
@@ -28,13 +29,20 @@ function Collaboration({taskId}: {taskId: string}) {
   }, [taskId, refresh]);
   useEffect(() => {
     let live = true;
-    setDetail(null); setInvocation(null); setError('');
+    setDetail(null); setInvocation(null); setError(''); setRoles([]);
     if (selected) Promise.all([request(`/api/tasks/${taskId}/runs/${selected}`), request(`/api/tasks/${taskId}/runs/${selected}/sa-invocation`)])
       .then(([run, sa]) => {if (live) {setDetail(run); setInvocation(sa.invocation)}}).catch(e => live && setError(e.message));
+    if (selected) Promise.all(['developer','qa-review'].map(async endpoint => {
+      const role = endpoint === 'developer' ? 'Developer' : 'QA';
+      try {
+        const data = await request(`/api/tasks/${taskId}/runs/${selected}/${endpoint}`);
+        return {role, records: data.history ?? (data.invocation ? [data.invocation] : [])};
+      } catch (e: any) {return {role, error: e.message, records: []}}
+    })).then(value => {if (live) setRoles(value)});
     return () => {live = false};
   }, [taskId, selected, refresh]);
   return <section className="panel" aria-label="版本協作紀錄">
-    <h3>版本協作紀錄</h3><p>依保存紀錄顯示人工決定、控制程式與 SA 模型。Developer／QA 角色交接尚未接通，不以固定節點冒充 AI。</p>
+    <h3>版本協作紀錄</h3><p>分別呈現人工決定、控制程式事件與 SA／Developer／QA 模型紀錄。檢視不會呼叫模型或重跑 ETL；AI 建議不等於人工核准。</p>
     <button onClick={() => setRefresh(n => n + 1)}>重新整理協作紀錄</button>
     {error && <p role="alert">無法讀取紀錄：{error}</p>}
     {listPending && <p role="status">正在讀取版本清單…</p>}
@@ -53,6 +61,18 @@ function Collaboration({taskId}: {taskId: string}) {
       </li>)}</ol> : <p>此版本尚無控制事件。</p>}
       <h4>AI 角色：SA</h4>
       {invocation ? <article className="wb-record"><p>{invocation.model} · {invocation.status}</p><p>此紀錄不等於需求已核准。模型輸出、引用及用量可在「需求與規格」選擇同一版本查閱。</p></article> : <p>此版本尚無 SA 呼叫紀錄。</p>}
+      {!roles.length && <p role="status">正在讀取 Developer／QA 紀錄…</p>}
+      {roles.map(role => <section key={role.role} aria-label={`${role.role} 模型紀錄`}>
+        <h4>AI 角色：{role.role}</h4>
+        {role.error ? <p role="alert">無法讀取 {role.role}：{role.error}；不能判定沒有紀錄。</p>
+          : !role.records.length ? <p>此版本尚無 {role.role} 呼叫紀錄；不代表已通過。</p>
+          : role.records.map((item: any) => <article className="wb-record" key={item.invocation_id}>
+            <p>{item.model} · {item.status} · {time(item.created_at)}</p>
+            {item.review && <p>QA 建議：{item.review.status} · {item.review.summary}</p>}
+            <p>模型耗時：{item.duration_ms == null ? '未提供' : `${item.duration_ms} ms`}；Token：{item.usage?.total_tokens ?? '未提供'}</p>
+            <p>此為保存的模型紀錄，不代表目前核准有效。完整輸出與核准請至「{role.role === 'QA' ? '執行與 QA' : '需求與規格'}」查看相同版本。</p>
+          </article>)}
+      </section>)}
     </>}
   </section>;
 }
