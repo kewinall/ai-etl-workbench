@@ -36,7 +36,7 @@ export function TaskDraftBoundary({children}:{children:(complete:()=>void)=>Reac
   return <DraftContext.Provider value={report}>
     {(state.dirty||state.busy)&&<section className="panel" aria-label="新建 Task 草稿保護">
       <p role="status">有未建立的 Task 草稿；切換模式會保留內容，重新整理仍可能丟失草稿。</p>
-      {message&&<p role="alert">{message}</p>}
+      {message&&<p role="alert">{state.busy?'正在上傳或建立 Task，請等待結果，不能取消或離開。':'尚未離開：新建 Task 草稿已保留，包含另一種模式。請完成建立，或先取消全部草稿。'}</p>}
       <button disabled={state.busy} onClick={()=>{records.current.clear();completed.current=false;setMessage('');setRevision(n=>n+1)}}>取消全部 Task 草稿</button>
       <p>取消只清除兩種模式的表單，不刪除已上傳的伺服器檔案；上傳檔案依既有到期政策處理。</p>
     </section>}
