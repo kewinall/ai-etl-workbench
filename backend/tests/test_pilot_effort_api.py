@@ -11,7 +11,7 @@ def test_effort_read_scope_no_store_and_no_public_write(client_repo, monkeypatch
     response = client.get(path)
     assert response.status_code == 200 and response.headers['cache-control']=='no-store'
     assert response.json()['comparison_ready'] is False
-    assert client.post(path, json={'actor':'HUMAN'}).status_code == 405
+    assert client.post(path, json={'actor':'HUMAN'}).status_code == 422
     assert client.get(f'/api/projects/{uuid4()}/pilot-cohorts/{uuid4()}/cases/case-00/effort').status_code == 404
 
 

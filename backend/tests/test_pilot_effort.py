@@ -60,3 +60,13 @@ def test_manual_baseline_separate_and_not_automatically_comparable():
     assert result['totals']['MANUAL_BASELINE']['recorded_human_seconds'] == 12
     assert result['totals']['WORKBENCH']['recorded_human_seconds'] is None
     assert result['comparison_ready'] is False
+
+
+def test_self_reported_human_is_measured_but_not_identity_verified():
+    result = summarize([event(1,'START',0,actor='HUMAN_SELF_REPORTED'),
+                        event(2,'STOP',8,actor='HUMAN_SELF_REPORTED')])
+    assert result['totals']['WORKBENCH']['recorded_human_seconds'] == 8
+    assert result['excluded_nonhuman_sessions'] == 0
+    assert result['identity_verified'] is False
+    assert result['human_source'] == 'OPERATOR_SELF_DECLARATION'
+    assert result['comparison_ready'] is False

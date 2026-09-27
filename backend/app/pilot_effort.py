@@ -15,7 +15,7 @@ class EffortEvent(BaseModel):
     session_id: str = Field(min_length=1, max_length=100)
     case_key: str = Field(min_length=1, max_length=60)
     protocol_checksum: str = Field(pattern=r'^[a-f0-9]{64}$')
-    actor: Literal['HUMAN', 'DELEGATED_AGENT', 'FUNCTIONAL_TEST']
+    actor: Literal['HUMAN', 'HUMAN_SELF_REPORTED', 'DELEGATED_AGENT', 'FUNCTIONAL_TEST']
     mode: Literal['WORKBENCH', 'MANUAL_BASELINE']
     action: Literal['START', 'STOP', 'ABANDON']
     recorded_at: datetime
@@ -58,11 +58,12 @@ def summarize(events: list[EffortEvent]):
         previous = event
     totals = {}
     for mode in ('WORKBENCH', 'MANUAL_BASELINE'):
-        human = [r for r in completed if r['actor'] == 'HUMAN' and r['mode'] == mode]
+        human = [r for r in completed if r['actor'] in ('HUMAN', 'HUMAN_SELF_REPORTED') and r['mode'] == mode]
         totals[mode] = {'recorded_human_seconds': sum(r['seconds'] for r in human) if human else None,
                         'recorded_sessions': len(human)}
     return {'basis': 'RECORDED_SESSIONS_ONLY', 'totals': totals,
             'completed': completed, 'abandoned_sessions': abandoned,
             'open_session': active.session_id if active else None,
-            'excluded_nonhuman_sessions': sum(r['actor'] != 'HUMAN' for r in completed),
+            'excluded_nonhuman_sessions': sum(r['actor'] not in ('HUMAN', 'HUMAN_SELF_REPORTED') for r in completed),
+            'identity_verified': False, 'human_source': 'OPERATOR_SELF_DECLARATION',
             'coverage_complete': False, 'comparison_ready': False, 'improvement_rate': None}

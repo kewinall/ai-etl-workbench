@@ -9,6 +9,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from psycopg.errors import UniqueViolation
 from .pilot_cohort import PilotCohortPlan, PilotTaskBinding, PilotEnrollmentConflict
+from .pilot_effort_request import EffortRequest
 
 
 class ProjectPayload(BaseModel):
@@ -94,6 +95,19 @@ def create_project_router(repo) -> APIRouter:
             raise HTTPException(503, detail='計時證據暫時無法核對；不代表零工時') from None
         except Exception:
             raise HTTPException(503, detail='計時證據暫時無法讀取；不代表零工時') from None
+
+    @router.post('/{project_id}/pilot-cohorts/{cohort_id}/cases/{case_key}/effort')
+    def effort_record(project_id: UUID, cohort_id: UUID, case_key: str, data: EffortRequest):
+        from .pilot_effort_store import record
+        try:
+            get_project(project_id)
+            return record(repo, project_id, cohort_id, case_key, **data.model_dump(exclude={'confirmed'}))
+        except HTTPException:
+            raise
+        except ValueError:
+            raise HTTPException(409, detail='計時案例、版本或區間已變更，請重新讀取核對') from None
+        except Exception:
+            raise HTTPException(503, detail='計時保存結果需核對；請用原請求重試，不要另建區間') from None
 
     @router.post('', status_code=201)
     def create_project(data: ProjectPayload):

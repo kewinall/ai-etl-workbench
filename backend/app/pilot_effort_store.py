@@ -1,6 +1,6 @@
-"""Internal prospective recorder. Human recording remains disabled pending attestation.
+"""Prospective recorder with explicit self-declaration, not identity verification.
 
-No public API accepts timestamps or a claimed human identity. A short interval
+No public API accepts timestamps or an authenticated-identity claim. A short interval
 must be closed within two minutes; expired intervals are abandoned, never billed
 as active effort. UI activity segmentation is a separate, not-yet-enabled layer.
 """
@@ -56,12 +56,12 @@ def read(repo, project_id, cohort_id, case_key):
             'protocol_checksum': checksum, 'checked_at': now, 'summary': summary,
             'recovery': recovery, 'other_case_open': bool(global_summary['open_session'] and not recovery),
             'events': [{k: r[k] for k in ('sequence', 'session_id', 'action', 'actor', 'mode', 'recorded_at')} for r in scoped],
-            'human_recording_enabled': False, 'comparison_ready': False}
+            'human_recording_enabled': True, 'identity_verified': False, 'comparison_ready': False}
 
 
 def record(repo, project_id, cohort_id, case_key, request_key, *, action,
-           actor, mode, session_id=None):
-    if actor not in ('DELEGATED_AGENT', 'FUNCTIONAL_TEST'):
+           actor, mode, session_id=None, human_attested=False, expected_protocol_checksum=None):
+    if actor not in ('DELEGATED_AGENT', 'FUNCTIONAL_TEST', 'HUMAN_SELF_REPORTED') or type(human_attested) is not bool or human_attested != (actor == 'HUMAN_SELF_REPORTED'):
         raise ValueError('EFFORT_HUMAN_ATTESTATION_NOT_ENABLED')
     if mode not in ('WORKBENCH', 'MANUAL_BASELINE') or action not in ('START', 'STOP', 'ABANDON'):
         raise ValueError('EFFORT_ACTION_INVALID')
@@ -72,6 +72,8 @@ def record(repo, project_id, cohort_id, case_key, request_key, *, action,
     with repo.conn() as conn:
         conn.execute('SELECT pg_advisory_xact_lock(%s)', (LOCK_ID,))
         checksum = _scope(conn, project_id, cohort_id, case_key)
+        if expected_protocol_checksum is not None and expected_protocol_checksum != checksum:
+            raise ValueError('EFFORT_PROTOCOL_CHANGED')
         old = conn.execute('SELECT * FROM platform.pilot_effort_event WHERE request_key=%s', (request_key,)).fetchone()
         if old:
             if (str(old['cohort_id']), old['case_key'], old['actor'], old['mode']) != (str(cohort_id), case_key, actor, mode):
@@ -83,6 +85,7 @@ def record(repo, project_id, cohort_id, case_key, request_key, *, action,
             return dict(old)
         rows = _events(conn)
         summary = _summary(rows)
+        now = conn.execute('SELECT clock_timestamp() AS stamp').fetchone()['stamp']
         if action == 'START':
             if summary['open_session']:
                 raise ValueError('EFFORT_OPEN_SESSION_REQUIRES_CLOSE')
@@ -93,12 +96,11 @@ def record(repo, project_id, cohort_id, case_key, request_key, *, action,
             start = next(r for r in reversed(rows) if str(r['session_id']) == str(session_id))
             if (str(start['cohort_id']), start['case_key'], start['actor'], start['mode']) != (str(cohort_id), case_key, actor, mode):
                 raise ValueError('EFFORT_SESSION_BINDING_MISMATCH')
-            now = conn.execute('SELECT clock_timestamp() AS stamp').fetchone()['stamp']
             if (now - start['recorded_at']).total_seconds() > MAX_INTERVAL_SECONDS:
                 action = 'ABANDON'
         row = conn.execute('''INSERT INTO platform.pilot_effort_event
-            (sequence,request_key,session_id,cohort_id,case_key,protocol_checksum,actor,mode,action)
-            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *''',
-            (len(rows)+1, request_key, UUID(str(session_id)), cohort_id, case_key, checksum, actor, mode, action)).fetchone()
+            (sequence,request_key,session_id,cohort_id,case_key,protocol_checksum,actor,mode,action,human_attested,recorded_at)
+            VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *''',
+            (len(rows)+1, request_key, UUID(str(session_id)), cohort_id, case_key, checksum, actor, mode, action,human_attested,now)).fetchone()
         _summary([*rows, row])  # Fail closed on clock reversal or corrupted stream.
         return dict(row)
