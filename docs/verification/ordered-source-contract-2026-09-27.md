@@ -409,3 +409,18 @@ Focused checks: 16 passed. Full isolated regression: 1,398 passed, 48 skipped,
 one warning, 28.04 seconds, exit 0. This code fix has not yet been rebuilt into
 the deployed images; the prepared formal revision remains unapproved. No
 Vertica DDL or live model invocation occurred in this checkpoint.
+
+## DDL deployment and formal input gate
+
+Rebuilt API and pilot-hop-worker images from b1a2852 and updated only API and
+control-worker after verifying zero active leases and zero queued/claimed Hop
+dispatches. Running delivery_compiler SHA-256 matches local source:
+`e6504eb52727b3a0569d7473376c1a9c6a5dd4333b2210828c3852d68ce3ab36`.
+
+The prepared ordered revision's exact input/settings fingerprints were approved
+under the operator's continuation authorization. The approval request initially
+had a delayed tool observation; it was not resubmitted. Its original response
+and subsequent API readback both confirm the saved approval. The control worker
+completed REQUIREMENT_GATE with CHECKED, zero issues and six fully checked CSV
+records. write_started remains false. Next is the explicit SA authorization
+and one real model invocation; no model or Vertica write occurred here.
