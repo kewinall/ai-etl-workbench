@@ -107,7 +107,7 @@ export function RunVersions({taskId}: {taskId: string}) {
       <NamingConfirmation key={'naming-'+detail.run_id} taskId={taskId} editable={detail.matches_current&&!detail.write_started} sourceOrder={detail.input_summary.source_order_v1}/>
       <DeveloperInvocation key={'developer-' + detail.run_id} taskId={taskId} runId={detail.run_id}/>
       <SpecificationHistory key={'spec-' + detail.run_id} taskId={taskId} runId={detail.run_id}/>
-      <HopDispatch key={'hop-'+detail.run_id} taskId={taskId} runId={detail.run_id}/>
+      <HopDispatch key={'hop-'+detail.run_id} taskId={taskId} runId={detail.run_id} onReconciled={async()=>{await load();await open(detail.run_id)}}/>
       {detail.parent_run_id && <p>補正自版本：<button disabled={busy} onClick={() => action(() => open(detail.parent_run_id))}>{detail.parent_run_id}</button>。新版須重新確認，不沿用舊核准。</p>}
       {detail.outcome_code === 'SUPERSEDED_BY_REVISION' && <p>此版本已由補正版本取代；原始輸入、檢查及核准紀錄仍保留。</p>}
       {detail.gate_result && <section aria-label="初步需求檢查結果">

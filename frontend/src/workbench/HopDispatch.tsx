@@ -1,7 +1,8 @@
 import {useEffect,useState} from 'react';
 import {jsonBody,request} from './api';
+import {ExecutionReconciliation} from './ExecutionReconciliation';
 
-export function HopDispatch({taskId,runId}:{taskId:string;runId:string}) {
+export function HopDispatch({taskId,runId,onReconciled}:{taskId:string;runId:string;onReconciled?:()=>Promise<void>}) {
   const base=`/api/tasks/${encodeURIComponent(taskId)}/runs/${runId}/hop-dispatch`;
   const [data,setData]=useState<any>(null),[consent,setConsent]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
   useEffect(()=>{let live=true;request(base).then(value=>{if(live)setData(value)}).catch(e=>{if(live)setError(e.message)});return()=>{live=false}},[base]);
@@ -24,5 +25,6 @@ export function HopDispatch({taskId,runId}:{taskId:string;runId:string}) {
           <button disabled={busy||!consent} onClick={dispatch}>授權並排入 Hop 執行</button>
         </>}
       </>}
+    {data?.request&&['CLAIMED','NEEDS_REVIEW'].includes(data.request.status)&&<ExecutionReconciliation key={base} base={`/api/tasks/${encodeURIComponent(taskId)}/runs/${runId}`} preparation onSaved={async()=>{await refresh();await onReconciled?.()}}/>}
   </section>;
 }
