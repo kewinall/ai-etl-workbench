@@ -89,11 +89,12 @@ class ReviseRun(BaseModel):
     join_contract_v1: JoinContractV1 | None = None
     csv_input_contracts_v1: CsvInputContractsV1 | None = None
     transformation_contract_v1: TransformationContractV1 | None = None
+    qa_revision_checksum: str | None = Field(default=None, pattern=r'^[a-f0-9]{64}$')
 
 
 def public_run(row):
     keys = ('run_id','task_id','project_id','state','phase','input_checksum','write_started',
-            'outcome_code','created_at','updated_at','matches_current','approval','events','gate_result','parent_run_id','failed_revision_available')
+            'outcome_code','created_at','updated_at','matches_current','approval','events','gate_result','parent_run_id','failed_revision_available','qa_revision')
     result = {key: row[key] for key in keys if key in row}
     settings = row['settings_snapshot']
     result['settings_checksum'] = settings['checksum']
@@ -233,7 +234,8 @@ def create_run_router(queue):
                                data.csv_replacement_v1.model_dump(mode='json') if data.csv_replacement_v1 else None,
                                data.join_contract_v1.model_dump() if data.join_contract_v1 else None,
                                data.csv_input_contracts_v1.model_dump() if data.csv_input_contracts_v1 else None,
-                               data.transformation_contract_v1.model_dump(mode='json') if data.transformation_contract_v1 else None))
+                               data.transformation_contract_v1.model_dump(mode='json') if data.transformation_contract_v1 else None,
+                               data.qa_revision_checksum))
 
     @router.get('/{task_id}/runs/{run_id}/sa-invocation')
     def sa_invocation(task_id: str, run_id: UUID):

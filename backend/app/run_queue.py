@@ -116,7 +116,7 @@ class RunQueue:
             self.event(conn, run_id, 'ENQUEUED', 'PREFLIGHT')
             return result
 
-    def revise(self, task_id, parent_id, request_key, input_checksum, requirement_text, target_schema, target_table, requirements_v1=None, source_fields_v1=None, csv_input_contract_v1=None, csv_replacement_v1=None, join_contract_v1=None, csv_input_contracts_v1=None, transformation_contract_v1=None):
+    def revise(self, task_id, parent_id, request_key, input_checksum, requirement_text, target_schema, target_table, requirements_v1=None, source_fields_v1=None, csv_input_contract_v1=None, csv_replacement_v1=None, join_contract_v1=None, csv_input_contracts_v1=None, transformation_contract_v1=None, qa_revision_checksum=None):
         from .source_replacement import replace_csv_source, verify_csv_replacement
         if csv_replacement_v1 is not None and source_fields_v1 is not None:
             raise ValueError('CONFLICTING_SOURCE_CHANGES')
@@ -160,6 +160,12 @@ class RunQueue:
             failed_revision = (parent['state']=='FAILED' and parent['phase']=='HOP_EXECUTION'
                 and parent['write_started'] and parent['lease_token'] is None
                 and parent['outcome_code'] in ('HOP_RESULT_UNKNOWN','HOP_EXECUTION_FAILED'))
+            from .qa_revision import offer as qa_revision_offer
+            qa_revision = qa_revision_offer(self, conn, parent)
+            if qa_revision_checksum is not None and (not qa_revision or qa_revision['checksum'] != qa_revision_checksum):
+                raise RunConflict('QA_REVISION_BINDING_CHANGED')
+            if qa_revision and qa_revision_checksum is None:
+                raise RunConflict('QA_REVISION_CONFIRMATION_REQUIRED')
             reconciliation = None
             if failed_revision:
                 reconciliation=conn.execute('SELECT * FROM platform.execution_reconciliation WHERE run_id=%s',(parent_id,)).fetchone()
@@ -172,6 +178,13 @@ class RunQueue:
                         conn.execute('SELECT 1 FROM platform.platform_sample_table WHERE schema_name=%s AND table_name=%s',
                                      (target_schema,target_table)).fetchone()):
                     raise RunConflict('FAILED_REVISION_NEW_TARGET_REQUIRED')
+            elif qa_revision:
+                previous_target=parent['input_snapshot'].get('target_config') or {}
+                if (target_schema!='ai_sample' or
+                        (target_schema,target_table)==(previous_target.get('schema'),previous_target.get('table')) or
+                        conn.execute('SELECT 1 FROM platform.platform_sample_table WHERE schema_name=%s AND table_name=%s',
+                                     (target_schema,target_table)).fetchone()):
+                    raise RunConflict('QA_REVISION_NEW_TARGET_REQUIRED')
             elif parent['state'] != 'NEEDS_REVIEW' or parent['phase'] != 'REQUIREMENT_GATE' or not parent['gate_result'] or parent['write_started']:
                 raise RunConflict('RUN_NOT_REVISABLE')
             if not self.matches_current(conn, task, parent):
@@ -192,14 +205,17 @@ class RunQueue:
             snapshot, digest = self.input_snapshot(updated_task, overrides)
             # All changes commit together; never reset legacy Task execution or artifacts.
             conn.execute('UPDATE platform.task SET requirement_text=%s,target_config=%s,source_config=%s WHERE task_id=%s', (requirement_text, Jsonb(target), Jsonb(source), task_id))
-            if not failed_revision:
+            if qa_revision:
+                # Cancel only further review of this version; preserve the real execution outcome.
+                conn.execute("UPDATE platform.task_run SET state='CANCELLED',updated_at=now() WHERE run_id=%s", (parent_id,))
+            elif not failed_revision:
                 conn.execute("UPDATE platform.task_run SET state='CANCELLED',outcome_code='SUPERSEDED_BY_REVISION',updated_at=now() WHERE run_id=%s", (parent_id,))
             result = conn.execute('INSERT INTO platform.task_run(run_id,task_id,project_id,request_key,input_snapshot,input_checksum,settings_snapshot,parent_run_id) VALUES(%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *',
                 (uuid4(), task_id, task['project_id'], request_key, Jsonb(snapshot), digest, Jsonb(resolved['snapshot']), parent_id)).fetchone()
-            self.event(conn, parent_id, 'FAILED_REVISION_LINKED' if failed_revision else 'SUPERSEDED_BY_REVISION', parent['phase'])
+            self.event(conn, parent_id, 'QA_REVISION_LINKED' if qa_revision else 'FAILED_REVISION_LINKED' if failed_revision else 'SUPERSEDED_BY_REVISION', parent['phase'], qa_revision)
             self.event(conn, result['run_id'], 'REVISION_CREATED', 'PREFLIGHT',
                 {'reconciliation_id':str(reconciliation['reconciliation_id']),'automatic_retry_allowed':False}
-                if failed_revision else None)
+                if failed_revision else qa_revision)
             return result
 
     @staticmethod
@@ -288,8 +304,9 @@ class RunQueue:
                 and run['outcome_code'] in ('HOP_RESULT_UNKNOWN','HOP_EXECUTION_FAILED')
                 and conn.execute('SELECT 1 FROM platform.execution_reconciliation WHERE run_id=%s',(run_id,)).fetchone() is not None
                 and conn.execute('SELECT 1 FROM platform.task_run WHERE parent_run_id=%s',(run_id,)).fetchone() is None)
+            from .qa_revision import offer as qa_revision_offer
             return {**run, 'approval': approval, 'matches_current': self.matches_current(conn, task, run),
-                    'failed_revision_available':failed_revision_available,'events': events}
+                    'failed_revision_available':failed_revision_available,'qa_revision':qa_revision_offer(self, conn, run),'events': events}
 
     def heartbeat(self, run_id, token, lease_seconds=60):
         if type(lease_seconds) is not int or not 10 <= lease_seconds <= 300:
