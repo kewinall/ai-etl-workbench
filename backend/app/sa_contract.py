@@ -30,6 +30,15 @@ class SAReviewV1(BaseModel):
     issues: list[SAIssueV1] = Field(max_length=100)
 
 
+def sa_output_schema(context):
+    """Expose only this captured context's citation IDs; validation remains authoritative."""
+    schema = SAReviewV1.model_json_schema()
+    ids = [item['id'] for item in context['evidence']]
+    for node in (schema['properties']['evidence_ids'], schema['$defs']['SAIssueV1']['properties']['evidence_ids']):
+        node['items']['enum'] = list(ids)
+    return schema
+
+
 def build_sa_context(run):
     snapshot = run['input_snapshot']
     target = snapshot.get('target_config') or {}

@@ -5,6 +5,19 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 第十五案前置：SA 引用限定 Schema（2026-09-27）
+
+首次 SA 真實回傳因 SA_UNKNOWN_EVIDENCE 於 RESULT_PERSISTENCE 被拒絕；
+用量保存為 PARTIAL，零工具／零自動重試，未寫入。模型原文沒有保存，
+不推測具體錯誤 ID，也不將失敗改為成功。
+
+新增依 captured context.evidence[].id 產生 SA 輸出 Schema 的 enum，涵蓋
+頂層與每個 issue 的 evidence_ids；Schema 指紋同時用於授權、保存與 gateway。
+SA prompt v5 明示欄位 ref、metric ID、JSON path 不是證據 ID；既有伺服器
+未知引用拒絕維持。舊授權／輸出不回寫，重新審查使用新 revision。
+完整隔離回歸 1215 passed／46 skipped／1 warning（26.34s），exit 0；API／
+Worker 同版建置部署，部署前無待領取／活躍工作。正式集合仍 14／20。
+
 ### 第十四案：零列門檻植錯與修正交付（2026-09-27）
 
 正式 semantic-empty-result 完成。將真實 Developer 提案副本的 GT 100 改為

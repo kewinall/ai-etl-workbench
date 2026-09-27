@@ -1,15 +1,16 @@
 """SA outbox on the existing invocation journal. Never reclaims an uncertain call."""
 from uuid import uuid4
 from .run_queue import RunConflict
-from .sa_contract import build_sa_context, digest, SAReviewV1
+from .sa_contract import build_sa_context, digest, sa_output_schema
 from .sa_gateway import PROMPT, PROMPT_VERSION
 
 
 def authorization_offer(run):
+    context = build_sa_context(run)
     identity = {
             'input_checksum': run['input_checksum'], 'settings_checksum': run['settings_snapshot']['checksum'],
-            'context_checksum': build_sa_context(run)['context_checksum'],
-            'prompt_checksum': digest(PROMPT), 'schema_checksum': digest(SAReviewV1.model_json_schema())}
+            'context_checksum': context['context_checksum'],
+            'prompt_checksum': digest(PROMPT), 'schema_checksum': digest(sa_output_schema(context))}
     if run['settings_snapshot']['ai']['provider_type'] == 'LOCAL_COPILOT':
         return {**identity, 'consent': True, 'policy_version': 'copilot-cli-once-v1',
                 'max_cli_sessions': 1, 'automatic_retries': 0, 'token_cap_supported': False}

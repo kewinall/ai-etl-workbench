@@ -1,6 +1,6 @@
 from copy import deepcopy
 import pytest
-from app.sa_contract import build_sa_context, validate_sa_review
+from app.sa_contract import build_sa_context, validate_sa_review, sa_output_schema, digest
 
 
 def run():
@@ -35,6 +35,21 @@ def test_fake_evidence_rejected():
     payload['evidence_ids'].append('invented-source')
     with pytest.raises(ValueError, match='SA_UNKNOWN_EVIDENCE'):
         validate_sa_review(payload, context)
+
+
+def test_context_bound_schema_lists_only_actual_citation_ids_without_mutating_context():
+    context = build_sa_context(run())
+    before = deepcopy(context)
+    schema = sa_output_schema(context)
+    ids = [item['id'] for item in context['evidence']]
+    assert schema['properties']['evidence_ids']['items']['enum'] == ids
+    assert schema['$defs']['SAIssueV1']['properties']['evidence_ids']['items']['enum'] == ids
+    assert context == before and 'private' not in str(schema)
+    schema['properties']['evidence_ids']['items']['enum'].append('fake')
+    assert sa_output_schema(context)['properties']['evidence_ids']['items']['enum'] == ids
+    changed = deepcopy(context)
+    changed['evidence'].append({'id':'transformation.conditions','kind':'TEST','value':{}})
+    assert digest(sa_output_schema(changed)) != digest(sa_output_schema(context))
 
 
 def test_cannot_override_deterministic_failure():

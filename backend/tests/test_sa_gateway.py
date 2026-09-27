@@ -46,9 +46,10 @@ def test_stage_scoped_prompt_is_sent_and_versioned_without_removing_requirements
         assert next(e['value'] for e in context['evidence'] if e['id'] == 'requirement') == requirement
         return response(**kwargs)
     _, trace = complete_sa_review(run, profile, completion=inspect)
-    assert PROMPT_VERSION == trace['prompt_version'] == 4
+    assert PROMPT_VERSION == trace['prompt_version'] == 5
     assert 'READY_FOR_REVIEW requires issues=[]' in PROMPT
     assert 'Never discard a genuine unresolved issue' in PROMPT
+    assert 'allowed by the schema enum' in PROMPT
     assert trace['prompt_checksum'] == digest(PROMPT)
     # This checks wiring only; real model acceptance is separately recorded.
 

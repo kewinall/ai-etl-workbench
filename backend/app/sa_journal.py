@@ -2,7 +2,7 @@
 from uuid import uuid4
 from psycopg.types.json import Jsonb
 from .run_queue import RunConflict
-from .sa_contract import build_sa_context, validate_sa_review, digest, SAReviewV1
+from .sa_contract import build_sa_context, validate_sa_review, digest, sa_output_schema
 from .sa_gateway import PROMPT, PROMPT_VERSION
 from .sa_failure import failure_trace, FAILURE_CODES, FAILURE_STAGES
 
@@ -71,8 +71,9 @@ class SAJournal:
                     raise RunConflict('SA_AUTHORIZATION_VERSION_MISMATCH')
             settings = run['settings_snapshot']
             invocation_id = uuid4()
+            schema = sa_output_schema(context)
             payload = {'context': context, 'prompt': PROMPT, 'prompt_checksum': digest(PROMPT),
-                       'schema': SAReviewV1.model_json_schema(), 'schema_checksum': digest(SAReviewV1.model_json_schema())}
+                       'schema': schema, 'schema_checksum': digest(schema)}
             status = 'SA_QUEUED' if authorization is not None else 'DISPATCH_RESERVED'
             if authorization is not None:
                 payload.update(authorization=authorization, operator_id=str(approval['operator_id']))
