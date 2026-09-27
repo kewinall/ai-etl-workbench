@@ -3,6 +3,7 @@ from typing import Literal
 from pydantic import BaseModel,ConfigDict,Field
 from .sa_contract import digest
 from .source_binding import source_set_checksum
+from .etl_specification import SourceOrderV1
 
 
 class PortabilityEvidenceV1(BaseModel):
@@ -29,9 +30,24 @@ class PortabilityEvidenceV2(PortabilityEvidenceV1):
     source_checksums: dict[str,str]
 
 
-def validate_portability(row,candidate,source_checksum,*,expected_checksum,expected_count,source_checksums=None):
+class PortabilityEvidenceV3(PortabilityEvidenceV1):
+    version: Literal[3]
+    comparison: Literal['EXACT_SOURCE_SEQUENCE']
+    source_order: SourceOrderV1
+    result_query_checksum: str=Field(pattern=r'^[a-f0-9]{64}$')
+    position_mismatch_count: int=Field(strict=True,ge=0,le=0)
+
+
+def validate_portability(row,candidate,source_checksum,*,expected_checksum,expected_count,source_checksums=None,
+                         source_order=None,result_query_checksum=None):
     if not row or row['status']!='PASS':raise ValueError('RELEASE_PORTABILITY_REQUIRED')
-    evidence=(PortabilityEvidenceV2 if source_checksums is not None else PortabilityEvidenceV1).model_validate(row['evidence']).model_dump()
+    ordered=source_order is not None
+    if (ordered and (source_checksums is not None or result_query_checksum is None)) or (not ordered and result_query_checksum is not None):
+        raise ValueError('RELEASE_PORTABILITY_ORDER_BINDING_REQUIRED')
+    evidence=(PortabilityEvidenceV3 if ordered else PortabilityEvidenceV2 if source_checksums is not None else PortabilityEvidenceV1).model_validate(row['evidence']).model_dump()
+    if ordered and (evidence['source_order']!=SourceOrderV1.model_validate(source_order).model_dump()
+                    or evidence['result_query_checksum']!=result_query_checksum):
+        raise ValueError('RELEASE_PORTABILITY_ORDER_CHANGED')
     if source_checksums is not None:
         if (evidence['source_checksums'] != source_checksums
                 or source_set_checksum(source_checksums) != source_checksum):

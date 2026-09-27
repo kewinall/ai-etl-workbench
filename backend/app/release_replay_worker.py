@@ -129,14 +129,22 @@ def replay(queue,repo,task_id,run_id,candidate_id,*,root=None):
             comparison=compare_oracle_document(oracle['content'],rows,document_checksum=oracle['document_checksum'],
                 specification_checksum=digest(spec),naming_checksum=spec['naming']['checksum'])
             if comparison['status']!='MATCH':raise ValueError('PORTABILITY_RESULT_MISMATCH')
-            evidence=dict(version=2 if multi else 1,candidate_checksum=candidate['checksum'],**source_binding,
+            ordered=spec['version']==3
+            order_binding=({'source_order':spec['source_order'],'result_query_checksum':query['checksum']} if ordered else {})
+            if ordered and (comparison['comparison']!='EXACT_SOURCE_SEQUENCE'
+                    or comparison['ordinal_column']!=spec['source_order']['ordinal_column']):
+                raise ValueError('PORTABILITY_ORDER_CONTRACT_MISMATCH')
+            evidence=dict(version=3 if ordered else 2 if multi else 1,candidate_checksum=candidate['checksum'],**source_binding,
                 hop_log_checksum=hop['result']['log_checksum'],result_expected_checksum=comparison['expected_checksum'],
                 result_actual_checksum=comparison['actual_checksum'],expected_count=comparison['expected_count'],actual_count=comparison['actual_count'],
                 exit_code=0,isolated_target_created=True,original_artifacts_unmodified=True,workflow_completed=hop['workflow_completed'],
                 **{kind.lower()+'_checksum':sha256(parts[MEMBERS[kind]]).hexdigest() for kind in ('HPL','HWF','DDL')})
+            if ordered:
+                evidence.update(**order_binding,comparison=comparison['comparison'],
+                                position_mismatch_count=comparison['position_mismatch_count'])
             validate_portability({'status':'PASS','evidence':evidence,'checksum':digest(evidence)},candidate,source_binding['source_checksum'],
                 expected_checksum=comparison['expected_checksum'],expected_count=comparison['expected_count'],
-                source_checksums=source_binding.get('source_checksums'))
+                source_checksums=source_binding.get('source_checksums'),**order_binding)
             with queue.conn() as conn:
                 current=replay_context(queue,repo,conn,task_id,run_id,candidate_id,root)
                 if current[0]['checksum']!=candidate['checksum']:raise ValueError('PORTABILITY_UPSTREAM_CHANGED')

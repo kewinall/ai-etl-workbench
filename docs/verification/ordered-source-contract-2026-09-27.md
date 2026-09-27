@@ -135,3 +135,24 @@ end-to-end release. Public V3 creation remains closed. Next: integrate the
 generated ordinal into SDM/portable replay, then input editing, model proposal
 schema and UI before the real corrected-case acceptance. No previously
 accepted Run or frozen cohort definition was changed.
+
+## Portable replay contract checkpoint
+
+Fixed source binding to distinguish specification version from source count:
+V3 is a single CSV source, not three sources. The portable replay worker and
+release approval gate now require portability evidence V3 for an ordered
+specification. It binds the exact source-order contract, pinned result query,
+ordered comparison mode, zero position mismatches and the existing artifact,
+source, result checksum and row-count checks. Legacy unordered proof cannot
+substitute for ordered proof. V1/V2 binding remains unchanged.
+
+Focused Windows run: 28 passed, two setup errors caused by denied access to
+the shared pytest temporary directory. No pass was inferred for those errors.
+The complete isolated container rerun finished with 1,370 passed, 48 skipped,
+one warning, 27.93 seconds, exit 0, including the replay-worker unit tests.
+
+No actual ordered portable replay or release approval occurred. The SDM
+generated-column representation and workbook visual inspection remain pending,
+as do input/model/UI integration and real corrected-case acceptance. The
+spreadsheet instructions were inspected, but no workbook was authored or
+claimed visually verified in this checkpoint.

@@ -15,14 +15,14 @@ def source_set_checksum(checksums):
 def execution_sources(config, specification_version):
     """Canonical input binding; this does not grant execution permission."""
     sources = config.get('sources') or []
-    if (type(specification_version) is not int or specification_version not in (1, 2)
-            or len(sources) != specification_version
+    if (type(specification_version) is not int or specification_version not in (1, 2, 3)
+            or len(sources) != (2 if specification_version == 2 else 1)
             or any(source.get('type') != 'CSV' or not source.get('upload_id') for source in sources)):
         raise ValueError('VERIFIED_UPLOADED_CSV_REQUIRED')
     checksums = {f'source.{i}': source.get('checksum') for i, source in enumerate(sources)}
     if any(not isinstance(value, str) or not re.fullmatch('[a-f0-9]{64}', value) for value in checksums.values()):
         raise ValueError('SOURCE_BINDING_REQUIRED')
-    if specification_version == 1:
+    if specification_version != 2:
         return {'source_checksum': checksums['source.0']}
     return {'source_checksums': checksums, 'source_checksum': source_set_checksum(checksums)}
 
