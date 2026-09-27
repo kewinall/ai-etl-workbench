@@ -5,7 +5,17 @@ test('人工核對表單：明確確認、檔案只取指紋、重載與衝突�
  const task=process.env.WORKBENCH_BOUND_RESULT_TASK,run=process.env.WORKBENCH_BOUND_RESULT_RUN,project=process.env.WORKBENCH_BOUND_RESULT_PROJECT;
  test.skip(!task||!run||!project,'Requires existing navigation');
  const base=`/api/tasks/${task}/runs/${run}`;
- const original=await (await request.get(base)).json();
+ const reference=process.env.WORKBENCH_READONLY_REFERENCE_ORIGIN;
+ if(reference){
+   expect(reference).toBe('http://127.0.0.1:5183');
+   await page.route('**/api/**',async route=>{
+     expect(route.request().method()).toBe('GET');
+     const url=new URL(route.request().url());
+     const response=await request.get(reference+url.pathname+url.search);
+     await route.fulfill({response});
+   });
+ }
+ const original=await (await request.get((reference||'')+base)).json();
  let closed=false,conflict=false,posts=0;
  const bytes=Buffer.from('Synthetic inspection evidence; no database query performed');
  const hash=createHash('sha256').update(bytes).digest('hex');
@@ -34,13 +44,15 @@ test('人工核對表單：明確確認、檔案只取指紋、重載與衝突�
  };
  await fill();await save.click();
  await expect(panel.getByRole('status')).toContainText('已人工結案，未重跑');
- await page.reload();await expect(panel.getByRole('status')).toContainText('已人工結案');
+ await page.waitForLoadState('networkidle');await page.reload();await expect(panel.getByRole('status')).toContainText('已人工結案');
  expect(posts).toBe(1);
- closed=false;conflict=true;await page.reload();await fill();await save.click();
+ closed=false;conflict=true;await page.waitForLoadState('networkidle');await page.reload();await fill();await save.click();
  await expect(panel.getByRole('alert')).toContainText('版本已變更');
  await expect(save).toHaveCount(0);
- closed=false;conflict=false;await page.reload();
+ closed=false;conflict=false;await page.waitForLoadState('networkidle');await page.reload();
  await page.setViewportSize({width:390,height:900});
  await expect(panel).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true);
+ await page.waitForLoadState('networkidle');
+ await page.unrouteAll({behavior:'wait'});
 });

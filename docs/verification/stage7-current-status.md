@@ -2,6 +2,26 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 程序死亡保留 DB 的網站結案與 SQL 回讀
+
+新增 opt-in `compose.claim-review.yml`，只連先前專用 synthetic claim-death
+DB 的 external internal network，無 Worker，全部派發 false，網站綁本機
+5196。套 056 後使用實際 UI／API／DB 對該唯一 CLAIMED 工作完成結案。
+證據明示 SYNTHETIC_CONTROL_ONLY_NO_VERTICA：owner 已 kill，死於 target
+preparation 前，從未呼叫外部 DB；不將「不存在」聲明包裝成真實 Vertica 查詢。
+
+Playwright **1 passed（2.0 秒）**，無 route mock，瀏覽器僅一個結案 POST，
+重載仍顯示結果。獨立 SQL 查核：reconciliation 1、closure event 1、target
+claim 0、write_started=false、Run FAILED、dispatch NEEDS_REVIEW。
+fixture 為一次性保留證據，不對已結案工作再次執行測試或重設狀態。
+
+共享原 execution reconciliation 表單另在新網站回歸（合成 API、正式參考
+僅 GET）：**1 passed（4.9 秒）**，保留確認、指紋、重載、409 與窄版斷言。
+初次數次失敗為測試在最後頁面讀取未完成時 unroute 導致重複回填；trace
+定位後等待最後載入完成才清理，不忽略錯誤、不刪除斷言。
+專用網站與 DB 測試後停止，保留資料。正式部署仍未執行；Vertica 部分寫入
+中斷仍未驗收，不以此控制平面 E2E 取代。
+
 ## 準備失聯核對網站表單（隔離網站驗證）
 
 Hop 單次執行區的 CLAIMED／NEEDS_REVIEW 請求可讀取準備失聯核對狀態，

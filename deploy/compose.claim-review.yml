@@ -1,0 +1,37 @@
+# Manual opt-in UI for the retained synthetic owner-death database only.
+# Start its existing postgres container separately; never attach a Pilot network.
+name: ai-etl-claim-review
+services:
+  migrate:
+    image: ai-etl-workbench-api:dev
+    environment: &environment
+      DATABASE_URL: postgresql://workbench@postgres:5432/workbench
+      PLATFORM_SETTINGS_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      WORKBENCH_EXECUTION_ENABLED: 'false'
+      WORKBENCH_SA_DISPATCH_ENABLED: 'false'
+      WORKBENCH_DEVELOPER_DISPATCH_ENABLED: 'false'
+      WORKBENCH_QA_DISPATCH_ENABLED: 'false'
+    command: [python, -m, app.migrations]
+    networks: [retained-test]
+  api:
+    image: ai-etl-workbench-api:dev
+    environment: *environment
+    networks: [retained-test]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/api/ready', timeout=3)"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+  web:
+    image: ai-etl-workbench-web:latest
+    ports: ['127.0.0.1:5196:8080']
+    networks: [retained-test, browser-only]
+    depends_on:
+      api: {condition: service_healthy}
+networks:
+  retained-test:
+    external: true
+    name: ai-etl-claim-death-20260928_test-only
+  browser-only: {}
