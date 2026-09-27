@@ -1,5 +1,8 @@
 .wb-projects{display:grid;grid-template-columns:240px minmax(0,1fr);gap:20px;align-items:start}
 .wb-project-list{padding:18px;position:static;min-width:0}
+.wb-project-list{max-height:70vh;overflow-y:auto;overscroll-behavior:contain}
+.wb-project-list>label{display:grid;gap:6px;width:100%;min-width:0;margin-bottom:12px}
+.wb-project-list>label input{width:100%;min-width:0;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:8px}
 .wb-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:20px}
 .wb-heading h2{margin:4px 0;font-size:20px;overflow-wrap:anywhere}
 .wb-project-list .wb-heading{padding:0 0 16px}
@@ -22,6 +25,7 @@
 .wb-back{margin-bottom:16px}
 @media(max-width:1000px){.wb-projects{grid-template-columns:minmax(0,1fr)}.wb-project-list{display:flex;gap:8px;flex-wrap:wrap}.wb-project-list>button{width:auto;max-width:100%}.wb-project-list .wb-heading{width:100%}}
 @media(max-width:620px){.wb-fields{grid-template-columns:1fr}.wb-alias{grid-template-columns:1fr}.wb-project-form,.wb-history{padding:16px}}
+@media(max-width:1000px){.wb-project-list{max-height:260px;display:block}.wb-project-list>button{width:100%}}
 .wb-project-home{padding:24px;min-width:0}
 .wb-project-home>label{display:grid;gap:8px;max-width:540px;margin:20px 0}
 .wb-project-home-list{display:grid;gap:12px}
