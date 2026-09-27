@@ -5,6 +5,20 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### LEFT JOIN 案正式交付（2026-09-27）
+
+第 3 案在第 1 次準備完成：真實 SA READY_FOR_REVIEW、Developer 提案保存並
+核准。兩來源命名含限定 source 名稱，左右同名 customer_id 不衝突。
+核對 LEFT／NEVER_MATCH／EXPAND／CASE_SENSITIVE_NO_TRIM，以及只輸出左鍵
+與右 order_code；固定目錄 definition、oracle checksum 先核對後才保存答案。
+真實 Hop 單次執行 EXACT_MULTISET MATCH：預期 4／實際 4、缺少 0／額外 0，
+包含一對多及未配對左列的 NULL；另有 BOUND_PLATFORM_TARGET 證據。
+單次真實 QA PASS、無 issue，隔離可攜驗證 PASS，正式交付 RELEASE_READY。
+下載 ZIP 指紋符合 API，六項 allowlist 產物與內容檢查通過，未重跑原目標。
+
+正式集合目前 3／20 案完成上述執行與交付核對；尚餘 17 案、完整量測與
+UI 補充回歸及第 7 階段。不可用三個成功交付直接推算整體首次通過率。
+
 ### 日期邊界案正式交付（2026-09-27）
 
 第 2 案首次 SA 指出通用「全部期間」文字與指定日期案例易混淆，保存
