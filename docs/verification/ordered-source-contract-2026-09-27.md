@@ -455,3 +455,32 @@ and read back the exact specification fingerprint; approval is effective but
 execution_authorized remains false. No Hop or Vertica write occurred. Next:
 create the independent V2 ordered oracle from the approved source extension,
 preserving the original frozen unordered case, then complete execution gates.
+
+## Formal ordered execution and release
+
+Saved, reviewed and approved a new V2 EXACT_SOURCE_SEQUENCE oracle from the
+independent six-record synthetic fixture, with source_position 1 through 6.
+The original frozen unordered oracle and failed/review history remain unchanged.
+One authorized Hop attempt completed against a new managed test target. Persisted
+comparison: MATCH, expected 6, actual 6, missing 0, unexpected 0 and position
+mismatches 0; provenance is separately bound to the managed target and query.
+
+One genuine configured Copilot gpt-5.4 QA session (prompt V10, context V13)
+returned PASS with zero issues. It cited the specification, execution, comparison,
+source and four nodes, retaining parser and external-DBA limitations. Duration
+15,766 ms; PARTIAL usage: 5.01065 AI credits, one premium request, one CLI session,
+zero retries/tools and unavailable token counts. No currency cost is inferred.
+
+Approved the exact QA binding under the operator's authorization, generated the
+bound SDM and candidate, and executed the candidate once in the independent
+portability environment. Portability returned PASS. Formal approval then returned
+RELEASE_READY. Download returned HTTP 200, 10,353 bytes, with a SHA-256 equal to
+the saved release checksum and exactly the six allowed members: pipeline HPL,
+workflow HWF, DDL, SDM.xlsx, parameter example and manifest.
+
+This is acceptance of the operator-confirmed source-order extension, not a
+retroactive first-pass success for the frozen unordered cohort. Released-workbook
+visual review, extension-aware evaluation, human baseline measurement, complete UI
+regression, persistent-worker/restart and backup/restore verification remain open.
+Knowledge-workspace synchronization remains unresolved; this repository record
+does not claim that synchronization has occurred.
