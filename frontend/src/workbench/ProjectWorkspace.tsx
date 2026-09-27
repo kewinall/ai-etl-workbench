@@ -3,6 +3,7 @@ import {request, jsonBody} from './api';
 import './project-workspace.css';
 import {ProjectDefaults} from './ProjectDefaults';
 import {ProjectSummary} from './ProjectSummary';
+import {ProjectEvaluation} from './ProjectEvaluation';
 
 type Project = {project_id: string; project_name: string; description: string; default_ai_profile: string; default_connection: string; naming_rules: Record<string, any>; updated_at: string};
 type Props = {projectId?: string; tab?: string; navigate: (path: string) => void; onError: (message: string) => void};
@@ -137,10 +138,11 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
       {(creating || (selected && loadedProjectId === projectId && !loading)) && <>
         {!creating&&projectId&&<ProjectSummary key={projectId} projectId={projectId}/>}
         <div className="wb-tabs" role="tablist" aria-label="專案頁籤">
-          <button role="tab" aria-selected={tab !== 'history'} disabled={busy} onClick={() => navigate(`/projects/${projectId}/settings`)}>設定</button>
+          <button role="tab" aria-selected={tab === 'settings'} disabled={busy} onClick={() => navigate(`/projects/${projectId}/settings`)}>設定</button>
           <button role="tab" aria-selected={tab === 'history'} disabled={creating || busy} onClick={() => leave(`/projects/${projectId}/history`)}>歷史 Task</button>
+          <button role="tab" aria-selected={tab === 'evaluation'} disabled={creating || busy} onClick={() => leave(`/projects/${projectId}/evaluation`)}>Pilot 評估</button>
         </div>
-        {tab !== 'history' ? <form className="panel wb-project-form" onSubmit={save}>
+        {tab === 'evaluation' && projectId ? <ProjectEvaluation projectId={projectId} navigate={navigate}/> : tab !== 'history' ? <form className="panel wb-project-form" onSubmit={save}>
           <fieldset disabled={busy} aria-label="專案設定欄位" style={{border:0,padding:0,margin:0,minWidth:0}}>
           <h3>基本設定</h3>
           {dirty && <p role="status">有未儲存的專案設定</p>}

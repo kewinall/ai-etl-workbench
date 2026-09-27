@@ -66,6 +66,15 @@ def create_project_router(repo) -> APIRouter:
         except Exception:
             raise HTTPException(503,detail={'code':'PROJECT_SUMMARY_UNAVAILABLE','message':'專案摘要暫時無法讀取，請重試；不代表沒有 Task。'}) from None
 
+    @router.get('/{project_id}/evaluation')
+    def evaluation(project_id: UUID):
+        from .project_evaluation import read
+        get_project(project_id)
+        try:
+            return read(repo,str(project_id))
+        except Exception:
+            raise HTTPException(503,detail={'code':'PROJECT_EVALUATION_UNAVAILABLE','message':'專案評估證據暫時無法讀取，不代表沒有案例。'}) from None
+
     @router.post('', status_code=201)
     def create_project(data: ProjectPayload):
         try:
