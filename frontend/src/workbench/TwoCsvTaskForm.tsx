@@ -1,4 +1,5 @@
-import React, {useState} from 'react';
+import React, {useRef,useState} from 'react';
+import {OperationLatch} from './operationLatch';
 import {useTaskDraft} from './TaskDraftBoundary';
 
 type Props={projectId?:string; onCreated:(task:any)=>void; onError:(message:string)=>void};
@@ -12,6 +13,7 @@ async function request(url:string, init?:RequestInit){
 }
 
 export function TwoCsvTaskForm({projectId,onCreated,onError}:Props){
+  const operation=useRef(new OperationLatch());
   const [name,setName]=useState(''),[requirement,setRequirement]=useState('');
   const [sources,setSources]=useState<any[]>([null,null]);
   const [contracts,setContracts]=useState<CsvContract[]>([emptyContract(),emptyContract()]);
@@ -25,6 +27,7 @@ export function TwoCsvTaskForm({projectId,onCreated,onError}:Props){
   };
   const upload=async(index:number,file:File)=>{
     if(!file.name.toLowerCase().endsWith('.csv')){onError('雙 CSV Join 僅接受 .csv 檔案');return;}
+    if(!operation.current.acquire())return;
     setUploading(index);setConfirmed(false);
     try{
       const body=new FormData();body.append('file',file);
@@ -33,12 +36,12 @@ export function TwoCsvTaskForm({projectId,onCreated,onError}:Props){
       setSources(old=>old.map((source,i)=>i===index?{...value,type:'CSV',has_actual_data:true,alias:index===0?'left_source':'right_source'}:source));
       setContracts(old=>old.map((contract,i)=>i===index?{...contract,encoding:String(value.encoding).toUpperCase(),delimiter:value.delimiter}:contract));
       setKeys(old=>old.map((key,i)=>i===index?'':key));
-    }catch(error:any){onError(error.message)}finally{setUploading(null)}
+    }catch(error:any){onError(error.message)}finally{operation.current.release();setUploading(null)}
   };
   const valid=!!projectId&&name.trim().length>=2&&requirement.trim().length>=5&&sources.every(Boolean)&&
     keys.every(Boolean)&&!!joinType&&confirmed&&/^[a-z_][a-z0-9_]*$/.test(schema)&&/^[a-z_][a-z0-9_]*$/.test(table);
   const submit=async()=>{
-    if(!valid||busy)return;
+    if(!valid||!operation.current.acquire())return;
     setBusy(true);
     try{
       const payload={name:name.trim(),requirement,category:'DW_DM',source_type:'CSV',operation:'NEW',
@@ -49,7 +52,7 @@ export function TwoCsvTaskForm({projectId,onCreated,onError}:Props){
           keys:[{left_column:keys[0],right_column:keys[1]}],null_key_policy:'NEVER_MATCH',
           duplicate_key_policy:'EXPAND',string_comparison:'CASE_SENSITIVE_NO_TRIM'}]}}};
       onCreated(await request(`/api/projects/${projectId}/tasks`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}));
-    }catch(error:any){onError(error.message)}finally{setBusy(false)}
+    }catch(error:any){onError(error.message)}finally{operation.current.release();setBusy(false)}
   };
   return <section className="panel form wb-two-csv">
     <h2>建立雙 CSV Join Task</h2>
