@@ -73,3 +73,26 @@ The operator explicitly deferred the real human baseline on 2026-09-27. Keep it
 unmeasured, along with improvement rate; do not substitute agent operation time.
 This is a deferred evaluation dependency, not evidence that P3 value comparison
 has been completed. Continue the remaining engineering and acceptance work.
+
+## Formal deployment and read-only acceptance
+
+Deployed the report implementation through commit `76c46af` to the formal API,
+control-worker and web after confirming zero active leases and zero queued/claimed
+Hop requests. No schema migration or ETL/model replay was performed. Existing
+portability containers were preserved.
+
+- Existing formal measurement browser regression: **1 passed (9.7 seconds)**.
+- New formal report browser acceptance: **1 passed (6.8 seconds)**. Every case's
+  release checksum, scenario status and available precondition event identifier
+  matched fresh measurement data. Model coverage denominators matched; all 20
+  articles rendered at 390/768/1440 widths without horizontal overflow.
+- No browser mutation requests or uncaught page errors. Each inspected run's
+  event history was identical before and after.
+- Database event count remained **2,861**, effort events **0**, active leases **0**,
+  pending Hop requests **0**. Formal API-origin CSP matched the configured policy.
+- Printed-style first viewport was visually reviewed. This does not establish
+  complete paginated print acceptance; the Windows HTTP CSP difference remains
+  unresolved and its test remains failing.
+
+The feature is now deployed; earlier statements that it was not deployed describe
+the earlier chronological checkpoints, not current deployment state.
