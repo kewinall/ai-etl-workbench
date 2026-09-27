@@ -156,3 +156,25 @@ generated-column representation and workbook visual inspection remain pending,
 as do input/model/UI integration and real corrected-case acceptance. The
 spreadsheet instructions were inspected, but no workbook was authored or
 claimed visually verified in this checkpoint.
+
+## Input revision checkpoint
+
+Added typed `source_order_v1` to the existing revision API and persisted input
+snapshot. Public run details show the contract and generated ordinal reference.
+The deterministic requirement gate rejects unsupported source counts/types,
+invalid order declarations, absent transformation intent, missing ordinal
+output and filter/aggregation combinations. Absence retains legacy behavior;
+order is never inferred from prose or ascending record IDs.
+
+Actual isolated PostgreSQL/API test verified a new child revision, changed
+input checksum, identical-request idempotency, conflicting request rejection,
+unchanged parent snapshot, absent inherited approval, and the requirement gate
+running only after new input approval. No ETL write occurred.
+
+Focused tests: 23 passed. Full isolated backend suite: 1,380 passed,
+48 skipped, one warning, 27.96 seconds, exit 0.
+
+Public V3 specification/model execution is still unavailable. Remaining work
+includes SA/Developer evidence and schema, UI controls, SDM generated-column
+documentation, deployment and genuine ordered-case acceptance. This checkpoint
+does not claim the user-facing feature is complete or that case 19 passed.

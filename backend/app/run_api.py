@@ -10,6 +10,8 @@ from .join_contract import JoinContractV1, join_evidence
 from .source_revision import SourceFieldsV1, editable_source
 from .source_replacement import CsvReplacementV1
 from .transformation_contract import TransformationContractV1, intent_evidence, source_refs
+from .etl_specification import SourceOrderV1
+from .source_order_input import order_evidence
 from .csv_contract import (CsvInputContractV1, CsvInputContractsV1, editable_csv_source,
                           csv_evidence, editable_csv_sources, csv_sources_evidence)
 
@@ -90,6 +92,7 @@ class ReviseRun(BaseModel):
     csv_input_contracts_v1: CsvInputContractsV1 | None = None
     transformation_contract_v1: TransformationContractV1 | None = None
     qa_revision_checksum: str | None = Field(default=None, pattern=r'^[a-f0-9]{64}$')
+    source_order_v1: SourceOrderV1 | None = None
 
 
 def public_run(row):
@@ -107,6 +110,10 @@ def public_run(row):
     result['input_summary']['requirements_v1'] = target.get('requirements_v1')
     result['input_summary']['transformation_contract_v1'] = intent_evidence(row['input_snapshot'])
     result['input_summary']['transformation_source_refs'] = source_refs(row['input_snapshot'])
+    order_input=order_evidence(row['input_snapshot'])
+    if order_input is not None:
+        result['input_summary']['source_order_v1']=order_input
+        result['input_summary']['transformation_source_refs'].append('$source_order.source.0')
     join_input = join_evidence(row['input_snapshot'])
     if join_input is not None:
         result['input_summary']['join_contract_v1'] = join_input
@@ -235,7 +242,8 @@ def create_run_router(queue):
                                data.join_contract_v1.model_dump() if data.join_contract_v1 else None,
                                data.csv_input_contracts_v1.model_dump() if data.csv_input_contracts_v1 else None,
                                data.transformation_contract_v1.model_dump(mode='json') if data.transformation_contract_v1 else None,
-                               data.qa_revision_checksum))
+                               data.qa_revision_checksum,
+                               data.source_order_v1.model_dump() if data.source_order_v1 else None))
 
     @router.get('/{task_id}/runs/{run_id}/sa-invocation')
     def sa_invocation(task_id: str, run_id: UUID):

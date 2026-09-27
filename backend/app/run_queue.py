@@ -116,7 +116,7 @@ class RunQueue:
             self.event(conn, run_id, 'ENQUEUED', 'PREFLIGHT')
             return result
 
-    def revise(self, task_id, parent_id, request_key, input_checksum, requirement_text, target_schema, target_table, requirements_v1=None, source_fields_v1=None, csv_input_contract_v1=None, csv_replacement_v1=None, join_contract_v1=None, csv_input_contracts_v1=None, transformation_contract_v1=None, qa_revision_checksum=None):
+    def revise(self, task_id, parent_id, request_key, input_checksum, requirement_text, target_schema, target_table, requirements_v1=None, source_fields_v1=None, csv_input_contract_v1=None, csv_replacement_v1=None, join_contract_v1=None, csv_input_contracts_v1=None, transformation_contract_v1=None, qa_revision_checksum=None, source_order_v1=None):
         from .source_replacement import replace_csv_source, verify_csv_replacement
         if csv_replacement_v1 is not None and source_fields_v1 is not None:
             raise ValueError('CONFLICTING_SOURCE_CHANGES')
@@ -136,6 +136,9 @@ class RunQueue:
             if input_checksum != parent['input_checksum']:
                 raise RunConflict('REVIEW_CHECKSUM_MISMATCH')
             target = {**(parent['input_snapshot'].get('target_config') or {}), 'schema': target_schema, 'table': target_table}
+            if source_order_v1 is not None:
+                from .etl_specification import SourceOrderV1
+                target['source_order_v1']=SourceOrderV1.model_validate(source_order_v1).model_dump()
             from .source_revision import revise_source
             from .csv_contract import revise_csv_contract, revise_csv_contracts
             source = revise_source(parent['input_snapshot'].get('source_config') or {}, source_fields_v1)

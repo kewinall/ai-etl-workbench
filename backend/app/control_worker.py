@@ -14,8 +14,9 @@ from .qa_recovery import reap_expired_qa
 
 
 def check_requirements(snapshot):
+    from .source_order_input import order_issues
     task = {**snapshot, 'requirement': snapshot.get('requirement_text', '')}
-    issues = requirement_issues(task) + condition_issues(snapshot) + csv_contract_issues(snapshot)
+    issues = requirement_issues(task) + condition_issues(snapshot) + csv_contract_issues(snapshot) + order_issues(snapshot)
     return {'version': 1, 'scope': 'INITIAL_DETERMINISTIC_CHECK_ONLY',
             'status': 'NEEDS_INPUT' if issues else 'CHECKED', 'issues': issues}
 
