@@ -58,6 +58,14 @@ run_count 0。未授權模型、未執行 Hop 或建立 Vertica 表；保留該 
 
 ## 後續階段邊界
 
+設定解析追查：execution_settings.resolve_settings 明確採 Task overrides → Project
+→ 平台；不是從來源內 connection 字串或環境變數猜連線。25 項定向測試通過，
+涵蓋 precedence、無效明確選擇不得 fallback、舊 reference 不使用 environment、
+禁止平台 PostgreSQL 作 ETL 目標、TLS 與機密版本快照。測試 cache 寫入因權限
+警告，不影響 exit 0。此為設定解析單元證據，不是所有来源實際執行通過。
+新建表單的 Vertica source factory 仍帶舊 connection='vertica-poc' 標記，需核對
+舊來源設定到新版規格的映射，避免 UI 與 execution snapshot 語意不一致；尚未修改。
+
 成果頁追加實測：Default Project 的空案例明確顯示尚無 Task，不顯示成功率。
 390px 下專案選單原右緣約 404px，長名稱撐出容器；限制 select 最小／最大寬度
 後，build／部署通過，右緣約 358px，落在 viewport 內。讀取失敗分支仍未實測。
