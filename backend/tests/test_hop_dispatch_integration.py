@@ -20,7 +20,8 @@ from test_specification_api_integration import prepared,pytestmark
 from oracle_fixture import approved_answer
 
 
-def test_website_hop_request_requires_lineage_and_is_single_consumption(context,tmp_path,monkeypatch):
+@pytest.mark.parametrize('reconcile_target', [None, False, True])
+def test_website_hop_request_requires_lineage_and_is_single_consumption(context,tmp_path,monkeypatch,reconcile_target):
     monkeypatch.setattr(task_uploads,'UPLOAD_ROOT',tmp_path)
     upload=task_uploads.save_and_profile('input.csv','類別,金額\nA,101.25\n'.encode())
     source={**upload,'type':'CSV','has_actual_data':True,'fields':[{'name':'類別','type':'VARCHAR(32)'},{'name':'金額','type':'NUMERIC(12,2)'}]}
@@ -74,7 +75,26 @@ def test_website_hop_request_requires_lineage_and_is_single_consumption(context,
             assert claim(q,task,run['run_id']) is None
             assert not conn.execute('SELECT write_started FROM platform.task_run WHERE run_id=%s',(run['run_id'],)).fetchone()['write_started']
             with pytest.raises(ValueError):finish(q,{**job,'claim_token':uuid4()},'COMPLETED','HOP_EXECUTED_QA_REQUIRED')
-            finish(q,job,'NEEDS_REVIEW','HOP_PREPARATION_OR_COMPARISON_FAILED')
+            if reconcile_target is None:
+                finish(q,job,'NEEDS_REVIEW','HOP_PREPARATION_OR_COMPARISON_FAILED')
+            else:
+                reconcile=f'/api/tasks/{task}/runs/{run["run_id"]}/hop-preparation-reconciliation'
+                offered=api.get(reconcile);assert offered.status_code==200
+                close_body=dict(binding_checksum=offered.json()['binding']['checksum'],evidence_sha256='d'*64,
+                    target_exists=reconcile_target,observed_row_count=3 if reconcile_target else None,
+                    engine_stopped=True,target_checked=True,confirmed=True)
+                assert api.post(reconcile,json={**close_body,'engine_stopped':False}).status_code==409
+                assert api.post(reconcile,json={**close_body,'binding_checksum':'0'*64}).status_code==409
+                closed=api.post(reconcile,json=close_body);assert closed.status_code==200,closed.text
+                assert closed.json()['status']=='CLOSED_WITHOUT_RETRY'
+                assert closed.json()['automatic_retry_allowed'] is False
+                assert api.post(reconcile,json=close_body).json()==closed.json()
+                assert api.post(reconcile,json={**close_body,'evidence_sha256':'a'*64}).status_code==409
+                assert api.get(reconcile).json()==closed.json()
+                assert conn.execute('SELECT state FROM platform.task_run WHERE run_id=%s',(run['run_id'],)).fetchone()['state']=='FAILED'
+                with pytest.raises(ValueError):finish(q,job,'COMPLETED','HOP_EXECUTED_QA_REQUIRED')
+                with pytest.raises(psycopg.Error):
+                    with conn.transaction():conn.execute('DELETE FROM platform.hop_preparation_reconciliation WHERE request_id=%s',(job['request_id'],))
             assert api.get(url).json()['request']['status']=='NEEDS_REVIEW'
             assert claim(q,task,run['run_id']) is None
             for sql in ("UPDATE platform.hop_dispatch_request SET status='QUEUED' WHERE run_id=%s",

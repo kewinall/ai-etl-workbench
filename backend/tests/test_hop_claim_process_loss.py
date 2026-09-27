@@ -40,7 +40,7 @@ scenario.claim=claimed_then_wait
 fixture=context.__wrapped__()
 scope=next(fixture)
 scenario.test_website_hop_request_requires_lineage_and_is_single_consumption(
-    scope,Path(sys.argv[1]),pytest.MonkeyPatch())
+    scope,Path(sys.argv[1]),pytest.MonkeyPatch(),None)
 '''
     child = subprocess.Popen([sys.executable, '-c', script, str(tmp_path)],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)

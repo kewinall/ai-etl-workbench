@@ -13,6 +13,17 @@ class DispatchHop(BaseModel):
     binding_checksum: str=Field(pattern=r'^[a-f0-9]{64}$')
 
 
+class ReconcilePreparation(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    binding_checksum: str=Field(pattern=r'^[a-f0-9]{64}$')
+    evidence_sha256: str=Field(pattern=r'^[a-f0-9]{64}$')
+    target_exists: StrictBool
+    observed_row_count: int|None=Field(default=None,strict=True,ge=0,le=9223372036854775807)
+    engine_stopped: StrictBool
+    target_checked: StrictBool
+    confirmed: StrictBool
+
+
 def read(queue,task_id,run_id):
     with queue.conn() as conn:
         queue.locked_task(conn,task_id)
@@ -46,4 +57,11 @@ def create_hop_dispatch_router(queue):
     @router.post('/{task_id}/runs/{run_id}/hop-dispatch')
     def dispatch(task_id:str,run_id:UUID,data:DispatchHop):
         return call(lambda:enqueue(queue,task_id,run_id,data.specification_id,data.binding_checksum,data.confirmed))
+    from . import hop_preparation_reconciliation as reconciliation
+    @router.get('/{task_id}/runs/{run_id}/hop-preparation-reconciliation')
+    def reconciliation_status(task_id:str,run_id:UUID):
+        return call(lambda:reconciliation.read(queue,task_id,run_id))
+    @router.post('/{task_id}/runs/{run_id}/hop-preparation-reconciliation')
+    def reconcile(task_id:str,run_id:UUID,data:ReconcilePreparation):
+        return call(lambda:reconciliation.close(queue,task_id,run_id,data.model_dump()))
     return router

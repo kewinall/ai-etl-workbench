@@ -2,6 +2,28 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 準備階段失聯人工結案：後端實作，未部署
+
+新增 migration 056 的 immutable `hop_preparation_reconciliation`，綁原
+request／claim 指紋、Run 版本、Operator、證據 SHA-256、目標存在與查核筆數。
+新增 GET／POST `hop-preparation-reconciliation`（位於 Task Run 路徑）。
+僅接受 CLAIMED、Run NEEDS_REVIEW、未開始寫入且無 lease；明確确认程序停止、
+目標已查核及同意才可結案。目標不存在時筆數必須 null，不能以 0 冒充查無表。
+
+結案只將原 dispatch 變 NEEDS_REVIEW、Run 變 FAILED，保留所有 binding／
+authorization，不建立新工作、不刪表、不宣稱 SQL rollback 或 QA 通過。
+資料是 OPERATOR_ATTESTATION，不冒充平台自動偵測程序死亡或獨立 SQL。
+Task／Run／request 交易鎖及 checksum 防止競爭；原 worker finish 被拒絕。
+同值重送冪等，不同證據衝突，結案紀錄禁止 update／delete。
+
+隔離 PostgreSQL 定向測試 **3 passed、1 warning（2.66 秒）**：原流程、
+不存在目標、存在且有筆數目標。首次完整測試因 pytest 參數含預設值與
+parametrize 衝突，在 collection 中止；修正測試與呼叫者後重跑，不算通過。
+尚未提供網站操作表單，正式 DB 未套 056、正式 API 未部署此功能；真實失聯
+副本的人工結案 E2E 及 Vertica 中斷仍待驗證。
+修正後完整隔離回歸 **1,477 passed、50 skipped、1 warning（30.84 秒）**，
+exit 0；增加的 skip 是需明確啟用的原生 Hop 中斷及專用 DB 程序死亡測試。
+
 ## 領取後／執行前的真實程序死亡
 
 新增 opt-in `test_hop_claim_process_loss.py`，只在新的專用隔離 Compose DB
