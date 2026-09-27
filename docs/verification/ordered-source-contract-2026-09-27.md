@@ -322,3 +322,18 @@ Seven focused frontend logic tests passed (403 ms), covering ordered SDM guards
 and oracle serialization regressions. TypeScript/Vite build passed. These tests
 do not launch a browser or prove rendered layout, real API roundtrip or XLSX
 visual correctness. The deployment and formal Pilot data remain unchanged.
+
+## Ordered browser interaction checkpoint
+
+Extended the existing read-only-navigation browser test with synthetic intercepted
+specification history and SDM responses. It verifies the source-order summary,
+generated ordinal label, absence of the incorrect row-count description, and
+rejection of malformed ordinal lineage. A rejected SDM hides candidate creation.
+Widths 390, 768 and 1440 have no horizontal document overflow.
+
+The browser test passed (one test, 5.1 seconds) on the latest built frontend at
+a temporary preview port. All writes remained intercepted; no real Task revision,
+naming confirmation, model request, Hop execution or candidate creation occurred.
+The preview process was identity-checked and stopped; deployed services remain
+unchanged. This supplies UI interaction evidence, not ordered XLSX visual or
+live end-to-end acceptance. Those gates remain pending.

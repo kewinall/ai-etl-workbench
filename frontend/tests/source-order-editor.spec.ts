@@ -50,5 +50,29 @@ test('來源順序修訂與命名互動（攔截写入，不執行 ETL）',async
  await region.getByLabel('我已核對原名、英文名稱與型別').check();
  await region.getByRole('button',{name:'確認並保存命名版本',exact:true}).click();
  await expect.poll(()=>naming?.columns.length).toBe(2);
+ const spec={version:3,source_ref:'source.0',source_order:order,target_schema:'ai_sample',target_table:'synthetic_only',
+   write_mode:'APPEND',naming:{version:1,checksum:'b'.repeat(64)},filters:[],aggregation:null,output_columns:['record_id','source_position']};
+ await page.route('**'+base+'/specifications',route=>route.fulfill({json:{items:[{specification_id:'order-ui-only',version:1,
+   spec_json:spec,content_checksum:'a'.repeat(64),reviewable:true,approval_id:'synthetic-only',approval_effective:true}]}}));
+ let invalidSdm=false;
+ await page.route('**'+base+'/specifications/order-ui-only/sdm-preview',route=>route.fulfill({json:{
+   status:'SDM_CANDIDATE_NOT_RELEASED',qa_passed:false,release_ready:false,checksum:'c'.repeat(64),
+   document:{version:3,document_type:'SDM_CANDIDATE',specification_checksum:'a'.repeat(64),source_ref:'source.0',source_order:order,
+     target:{schema:'ai_sample',table:'synthetic_only',write_mode:'APPEND'},filter_logic:'ALL',filter_null_policy:'EXCLUDE_UNKNOWN',
+     filters:[],aggregation:null,naming:spec.naming,mappings:[{position:1,target_column:'source_position',target_type:'BIGINT',
+       operation:invalidSdm?'DIRECT':'SOURCE_ORDINAL',source_columns:[]}]}}}));
+ const history=page.getByRole('region',{name:'ETL 規格版本',exact:true});
+ await history.getByRole('button',{name:'載入規格版本',exact:true}).click();
+ await expect(history.getByRole('region',{name:'來源順序設定',exact:true})).toContainText('source_position');
+ const sdm=history.getByRole('region',{name:'SDM 欄位對照預覽',exact:true});
+ await sdm.getByRole('button',{name:'預覽 SDM 欄位對照',exact:true}).click();
+ await expect(sdm).toContainText('系統產生來源序號');
+ await expect(sdm).toContainText('CSV 邏輯資料列位置（非原始欄位）');
+ await expect(sdm).not.toContainText('整筆資料計數');
+ for(const width of [390,768,1440]){await page.setViewportSize({width,height:950});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true)}
+ invalidSdm=true;
+ await sdm.getByRole('button',{name:'預覽 SDM 欄位對照',exact:true}).click();
+ await expect(sdm.getByRole('alert')).toContainText('來源順序契約或系統序號對照不完整');
+ await expect(sdm.getByRole('button',{name:'產生／取得 SDM 候選 Excel',exact:true})).toHaveCount(0);
  expect(unexpected).toEqual([]);
 });
