@@ -5,6 +5,18 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 首案正式交付（2026-09-27）
+
+隔離可攜資料庫唯讀預檢成功；候選包在獨立目標僅執行一次，
+可攜驗證 PASS。依使用者委託完成指定候選版本核准，狀態 RELEASE_READY。
+實際下載 ZIP 的 SHA-256 與交付 API 保存值一致；六個頂層產物為
+HPL、HWF、DDL、SDM、參數範例及 manifest，無來源 CSV。
+未重跑原始 Hop 目標。首案仍是第 3 次準備才成功，不計首次通過。
+以下較早的 PORTABILITY_REQUIRED 敘述保留為歷史，不代表目前狀態。
+
+下一步：其餘 19 案的真實驗證、20 案成效彙整及第 7 階段維運／還原。
+knowledge-workspace 同步仍受前次安全審查限制，尚未完成；不以本文件替代同步。
+
 已補安全失敗代碼／階段保存；若已收到且驗證過綁定的 provider trace，保存
 用量與 checksum，標記 RECEIVED_NOT_ACCEPTED，不保存失敗模型文字或例外
 原文。網站可顯示失敗階段，舊 unknown 紀錄明確顯示未保存、無法追溯。
