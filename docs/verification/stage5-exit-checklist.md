@@ -58,6 +58,14 @@ run_count 0。未授權模型、未執行 Hop 或建立 Vertica 表；保留該 
 
 ## 後續階段邊界
 
+成果讀取失敗分支已做實際瀏覽器故障注入：readonly_fault_server.py 僅綁定本機
+5194、只支援 GET，不接受寫入。第一次專案清單及 evaluation 各回 503，畫面
+顯示 UI_FAULT_INJECTION_ONCE，未冒稱空清單；分別按重試後讀回真實 API，
+顯示正確空案例訊息。未停止原平台、未修改 DB。測試服務已停止並返回原入口。
+此為真實瀏覽器＋合成 503 的 UI 恢復測試，不是資料庫故障或 ETL E2E 驗收。
+重現：先 frontend build，再以 Python 執行 frontend/tests/readonly_fault_server.py；
+訪問 5194 的 /#/pilot，完成測試後 Ctrl+C 結束，勿作正式服務使用。
+
 來源映射追查完成：source_binding.execution_sources 只接受已上傳 CSV，
 hop_connection_runtime 使用 settings snapshot 的 connection_id 與同版機密。
 舊 source.connection 不是此執行路徑的連線來源；沒有據此修改或重跑歷史。

@@ -1,0 +1,57 @@
+"""Local UI fault injection; GET only, no credentials, no production listener.
+
+Run with Python from any directory; browse http://127.0.0.1:5194.
+First project list/evaluation requests fail once; retry reads real local API.
+Never use this server as the Pilot deployment.
+"""
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from threading import Lock
+from urllib.request import urlopen
+from urllib.error import HTTPError
+
+DIST = Path(__file__).resolve().parents[1] / 'dist'
+seen = set()
+lock = Lock()
+
+
+class Handler(SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=str(DIST), **kwargs)
+
+    def log_message(self, *_):
+        pass
+
+    def do_GET(self):
+        if not self.path.startswith('/api/'):
+            return super().do_GET()
+        if self.path == '/api/projects' or self.path.endswith('/evaluation'):
+            with lock:
+                fail = self.path not in seen
+                seen.add(self.path)
+            if fail:
+                self.send_response(503)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                self.wfile.write(b'{"detail":"UI_FAULT_INJECTION_ONCE"}')
+                return
+        try:
+            with urlopen('http://127.0.0.1:5183' + self.path, timeout=15) as response:
+                data = response.read()
+                self.send_response(response.status)
+                self.send_header('Content-Type', response.headers.get('Content-Type', 'application/json'))
+                self.send_header('Cache-Control', 'no-store')
+                self.end_headers()
+                self.wfile.write(data)
+        except HTTPError as exc:
+            self.send_error(exc.code)
+        except Exception:
+            self.send_error(502, 'Local upstream unavailable')
+
+
+if __name__ == '__main__':
+    if not (DIST / 'index.html').is_file():
+        raise SystemExit('Build frontend first')
+    print('Read-only UI fault server on 127.0.0.1:5194', flush=True)
+    ThreadingHTTPServer(('127.0.0.1', 5194), Handler).serve_forever()
