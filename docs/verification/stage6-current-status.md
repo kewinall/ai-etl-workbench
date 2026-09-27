@@ -5,6 +5,19 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 缺漏日期迄日案正式交付（2026-09-27）
+
+第 7 案原版實測 NEEDS_INPUT，指出 end_date_exclusive 缺漏，未開始寫入。
+此次回讀後建立子 revision，確認 2026-02-01 不包含、起日 2026-01-01 包含，
+補明輸出 BIGINT／NULL、ALL／EXCLUDE_UNKNOWN 與保留重複列。新 Gate 重跑
+CHECKED，真實 SA／Developer 通過；核對 GE／LT DATE 常數與直接投影後核准。
+標準答案依登錄 definition／checksum 核對，未變更固定資料或答案。
+
+真實 Hop 單次執行 MATCH 4／4，缺少 0／額外 0，來源 BOUND_PLATFORM_TARGET。
+單次真實 QA PASS、隔離可攜驗證 PASS，正式 RELEASE_READY；ZIP 指紋符合
+API、六項 allowlist 與內容檢查通過。原目標不重跑，原缺口／修訂 lineage 保留。
+正式集合目前 7／20 案完成執行與交付核對，其餘 13 案與後續整體驗收仍未完成。
+
 ### 缺漏寫入模式案正式交付（2026-09-27）
 
 第 6 案原始 Gate 已實測 NEEDS_INPUT，精確指出 requirements_v1.write_mode
