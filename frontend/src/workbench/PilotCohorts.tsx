@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {request,jsonBody} from './api';
 import {OperationLatch} from './operationLatch';
+import {PilotEffort} from './PilotEffort';
 
 const scenarioNames:Record<string,string>={SUCCESS:'正常成功',REQUIREMENT_GAP:'需求缺口',SEMANTIC_DEFECT:'語意缺陷',EXECUTION_RECOVERY:'失敗修復'};
 
@@ -103,6 +104,7 @@ export function PilotCohorts({projectId,navigate}:{projectId:string;navigate:(pa
                 :'順序需求比較尚未驗證。'}</span>{' '}
             <button onClick={()=>navigate(`/projects/${projectId}/tasks/${encodeURIComponent(item.task_id)}/execution/${run.run_id}`)}>查看此 Run 證據</button>
           </p>)}
+          <PilotEffort projectId={projectId} cohortId={cohort.cohort_id} caseKey={item.case_key}/>
         </details>})}
       </article>)}
     </>}
