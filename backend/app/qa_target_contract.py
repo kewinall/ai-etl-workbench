@@ -4,10 +4,10 @@ from .etl_specification import _type
 
 
 def expected_target(spec, details):
-    columns = [dict(name=n, type=_type(details['output_types'][n])[1], nullable=True)
+    columns = [dict(name=n, type=_type(details['output_types'][n])[1], nullable=not(spec['version']==3 and n==spec['source_order']['ordinal_column']))
                for n in spec['output_columns']]
     ddl = (f'CREATE TABLE "{spec["target_schema"]}"."{spec["target_table"]}" (\n'
-           + ',\n'.join(f'  "{c["name"]}" {c["type"]}' for c in columns) + '\n);\n')
+           + ',\n'.join(f'  "{c["name"]}" {c["type"]}' + ('' if c['nullable'] else ' NOT NULL') for c in columns) + '\n);\n')
     return dict(version=1, scope='COMPILER_DDL_MATCHES_PERSISTED_TARGET_CLAIM_NOT_CURRENT_CATALOG',
                 checksum=sha256(ddl.encode()).hexdigest(), columns=columns,
                 primary_key=[], defaults=[], constraints=[], write_mode=spec['write_mode'],

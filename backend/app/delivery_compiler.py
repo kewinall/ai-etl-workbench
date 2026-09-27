@@ -33,7 +33,8 @@ def compile_delivery_components(payload, run, naming):
         declared = _type(compiled['output_types'][name])
         if declared is None:
             raise ValueError('DELIVERY_UNSUPPORTED_TYPE')
-        columns.append(f'  "{name}" {declared[1]}')
+        required = spec['version']==3 and name==spec['source_order']['ordinal_column']
+        columns.append(f'  "{name}" {declared[1]}' + (' NOT NULL' if required else ''))
     ddl = (f'CREATE TABLE "{spec["target_schema"]}"."{spec["target_table"]}" (\n'
            + ',\n'.join(columns) + '\n);\n')
     return {**compiled, 'ddl': ddl, 'ddl_checksum': sha256(ddl.encode()).hexdigest(),

@@ -11,10 +11,10 @@ def expected_contract(spec, details):
     names = [field['source_name'] for field in source['fields']]
     if details['csv_structure_validation'].get('source_columns_checksum') != digest(names):
         raise ValueError('QA_SOURCE_COLUMN_BINDING_CHANGED')
-    columns = [dict(name=name, type=_type(details['output_types'][name])[1], nullable=True)
+    columns = [dict(name=name, type=_type(details['output_types'][name])[1], nullable=not(spec['version']==3 and name==spec['source_order']['ordinal_column']))
                for name in spec['output_columns']]
     ddl = (f'CREATE TABLE "{spec["target_schema"]}"."{spec["target_table"]}" (\n'
-           + ',\n'.join(f'  "{c["name"]}" {c["type"]}' for c in columns) + '\n);\n')
+           + ',\n'.join(f'  "{c["name"]}" {c["type"]}' + ('' if c['nullable'] else ' NOT NULL') for c in columns) + '\n);\n')
     return dict(version=1, runtime_options=expected_options(plan, details['hpl_checksum']),
         header=dict(scope='SAME_BYTES_WHOLE_FILE_PREFLIGHT_NOT_HOP_HEADER_LOOKUP',
                     present=details['csv_input_contract']['header'],

@@ -396,3 +396,16 @@ Do not ask the model to waive this mismatch or reinterpret physical table order.
 Next action: implement/test V3-only ordinal nullability in DDL and verify the
 QA target-contract inspection, then rebuild affected images before approving
 and executing the prepared revision. Other legacy DDL must remain unchanged.
+
+## Ordered ordinal DDL consistency fix
+
+Delivery DDL now emits NOT NULL only for the V3 generated ordinal. Existing
+single-source and target QA DDL reconstructions report the same nullable=false
+column and exact matching checksum. Ordinary fields and V1/V2 DDL behavior
+remain unchanged. Focused tests verify exact compiler/QA checksum equality and
+that only the ordinal gains the constraint, alongside ordered QA checks.
+
+Focused checks: 16 passed. Full isolated regression: 1,398 passed, 48 skipped,
+one warning, 28.04 seconds, exit 0. This code fix has not yet been rebuilt into
+the deployed images; the prepared formal revision remains unapproved. No
+Vertica DDL or live model invocation occurred in this checkpoint.
