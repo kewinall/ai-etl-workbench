@@ -42,6 +42,9 @@
 .worker-status{padding:14px;margin:12px 0;border:1px solid #d5e1ed;border-radius:10px;background:#f5f8fc;min-width:0}
 .worker-status h4{margin:0 0 8px}.worker-status ul{padding-left:20px}.worker-status li{margin:12px 0;overflow-wrap:anywhere}.worker-status small{display:block;color:#536579;margin-top:4px}
 .wb-task-workspace{min-width:0;max-width:100%;overflow-wrap:anywhere}
+fieldset[aria-label="Task 建立表單"]{min-inline-size:0;max-width:100%;box-sizing:border-box}
+.stage-enhanced-wrapper,.stage-enhanced-wrapper>div,.wb-two-csv,.wb-two-csv label{min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
+.wb-two-csv input,.wb-two-csv select,.wb-two-csv textarea{min-width:0;max-width:100%;box-sizing:border-box}
 .wb-task-workspace [hidden]{display:none!important}
 .wb-task-workspace .wb-task-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 0;background:transparent;border:0;height:auto;position:static}
 .wb-task-heading h2{margin:6px 0}.wb-task-heading p{margin:0;color:#52627a}

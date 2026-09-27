@@ -52,8 +52,8 @@ test('專案新增、編輯、取消、重載與 Task 導覽', async ({page, req
   await page.screenshot({path: test.info().outputPath('project-settings.png'), fullPage: true});
   expect(errors).toEqual([]);
   await page.getByRole('button', {name: '建立 Task', exact: true}).click();
-  await page.getByLabel('Task 名稱', {exact: true}).fill('UI實際建立 Task');
-  await page.getByLabel('需求描述', {exact: true}).fill('這是合成 CSV 上傳與專案歸屬驗收，不執行資料庫寫入');
+  await page.getByRole('textbox', {name:'Task 名稱', exact: true}).fill('UI實際建立 Task');
+  await page.getByRole('textbox', {name:'需求描述', exact: true}).fill('這是合成 CSV 上傳與專案歸屬驗收，不執行資料庫寫入');
   await Promise.all([
     page.waitForResponse(r => r.url().endsWith('/api/task-sources/upload') && r.request().method() === 'POST'),
     page.locator('input[type="file"]').setInputFiles({name: 'synthetic.csv', mimeType: 'text/csv', buffer: Buffer.from('customer_id,amount\n001,12.50\n')})

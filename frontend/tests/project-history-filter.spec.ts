@@ -13,7 +13,9 @@ test('專案歷史區分失敗與空清單，狀態及文字可交叉篩選',asy
   await expect(page.getByRole('alert')).toContainText('歷史 Task 讀取失敗');
   await expect(page.getByText('此專案尚無 Task，可使用上方「建立 Task」。',{exact:true})).toHaveCount(0);
   failed=false;await page.getByRole('button',{name:'重新讀取歷史 Task',exact:true}).click();
-  await expect(page.getByRole('status').filter({hasText:'顯示 2 / 2 個 Task'})).toBeVisible();
+  await expect(page.getByRole('status').filter({hasText:'符合 2 / 2 個 Task；本頁顯示 1–2 筆'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'上一頁 Task',exact:true})).toBeDisabled();
+  await expect(page.getByRole('button',{name:'下一頁 Task',exact:true})).toBeDisabled();
   await page.getByLabel('篩選 Task 狀態',{exact:true}).selectOption('FAILED');
   await expect(page.getByRole('button',{name:/失敗來源/})).toBeVisible();
   await expect(page.getByRole('button',{name:/待處理來源/})).toHaveCount(0);

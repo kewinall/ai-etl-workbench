@@ -7,8 +7,8 @@ test('雙 CSV 正常建立、上傳與命名保存（真實 API；不執行 ETL�
   const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto(`/#/projects/${project.project_id}/tasks/new`);
   await page.getByRole('button',{name:'雙 CSV Join',exact:true}).click();
-  await page.getByLabel('Task 名稱',{exact:true}).fill('雙CSV建立驗證');
-  await page.getByLabel('需求描述',{exact:true}).fill('LEFT JOIN 依客戶編號保留左側所有資料，使用 APPEND 寫入測試表。');
+  await page.getByRole('textbox',{name:'Task 名稱',exact:true}).fill('雙CSV建立驗證');
+  await page.getByRole('textbox',{name:'需求描述',exact:true}).fill('LEFT JOIN 依客戶編號保留左側所有資料，使用 APPEND 寫入測試表。');
   await page.getByLabel('左側 CSV',{exact:true}).setInputFiles({name:'left.csv',mimeType:'text/csv',buffer:Buffer.from('客戶編號,名稱\nA,left\n')});
   await expect(page.getByText('left.csv · 2 欄')).toBeVisible();
   await page.getByLabel('右側 CSV',{exact:true}).setInputFiles({name:'right.csv',mimeType:'text/csv',buffer:Buffer.from('客戶編號|名稱\nA|right\n')});
@@ -21,7 +21,7 @@ test('雙 CSV 正常建立、上傳與命名保存（真實 API；不執行 ETL�
   await page.getByLabel('Join 類型',{exact:true}).selectOption('LEFT');
   await page.getByLabel('左側鍵值',{exact:true}).selectOption('客戶編號');
   await page.getByLabel('右側鍵值',{exact:true}).selectOption('客戶編號');
-  await page.getByLabel('Vertica Table',{exact:true}).fill('ui_join_only');
+  await page.getByRole('textbox',{name:'Vertica Table',exact:true}).fill('ui_join_only');
   const confirm=page.getByRole('checkbox');
   await confirm.check();await expect(submit).toBeEnabled();
   await page.getByLabel('Join 類型',{exact:true}).selectOption('INNER');

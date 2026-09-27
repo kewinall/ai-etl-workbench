@@ -4,7 +4,8 @@ test('指南符合 Pilot 限制、導覽正常且窄版無水平溢出',async({p
   await page.goto('/#/guide');
   const guide=page.getByRole('article',{name:'Pilot 操作指南'});
   await expect(guide).toContainText('PostgreSQL 保存平台控制資料');
-  await expect(guide).toContainText('完整 Hop → Vertica → QA → Release 尚未驗收完成');
+  await expect(guide).toContainText('輸入核准或 Task 成功狀態不等於交付核准');
+  await expect(guide).toContainText('只有目前證據核對通過的正式 Release 才提供下載');
   await expect(guide).toContainText('CHECKED／PIPELINE_NOT_READY');
   await expect(guide).toContainText('HOP_RESULT_UNKNOWN');
   await expect(guide).not.toContainText('自行選擇 PostgreSQL 或 Vertica 作為寫入目標');
