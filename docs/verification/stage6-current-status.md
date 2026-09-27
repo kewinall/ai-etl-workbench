@@ -26,7 +26,10 @@ SQL NULL／EXCLUDE_UNKNOWN，不修改樣本或答案。第二次 SA 回覆
 READY_FOR_REVIEW、issues=[]；舊結果及 lineage 保留，不算首次通過。
 真實網站顯示準備嘗試 #1／#2。兩次 SA 各一個 CLI session、無自動重試或
 工具使用；Token 為 PARTIAL，不補零或宣稱已知成本。
-命名契約與 SA 交接已確認，Developer 已授權一次真實提案，結果另行驗證。
+命名契約與 SA 交接已確認，Developer 真實呼叫回報 DEVELOPER_OUTCOME_UNKNOWN，
+沒有可驗證提案／規格或用量。尚未呼叫 Hop，不可宣稱首案通過。現行 Worker
+把例外统一收斂為 unknown，未保存足夠安全錯誤資訊；下一步先修正診斷保存與
+未知結果處理，不重播已消耗的 invocation、不改寫歷史。原始原因尚未證明。
 人工基準、語意故障、修復及 20 案交付仍未完成。
 
 ### 標準案例 Task 準備能力與隔離驗證
@@ -51,7 +54,7 @@ Task、節點、建立請求鍵與案例綁定使用同一 PostgreSQL 交易；�
 2／20，兩個 Task 仍無 Run；API 讀回兩個來源且 Join keys 為空，沒有預先
 補正缺口。隔離驗證不納入正式案例分母。
 
-下一步：取得首案真實 SA／Developer／Hop／QA／Release 證據，再補情境注入與
+下一步：先處理 Developer 未知結果，再取得首案 Hop／QA／Release 證據，補情境注入與
 缺口修訂、其餘案例。人工基準仍未取得；新按鈕等待中跨頁防護與窄版面尚待補驗。
 
 - 專案範圍的 `POST/GET /api/projects/{id}/pilot-cohorts`。
