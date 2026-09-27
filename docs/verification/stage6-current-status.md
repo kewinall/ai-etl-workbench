@@ -5,6 +5,24 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 第十二案：日期迄日語意植錯與修正交付（2026-09-27）
+
+正式 semantic-date-boundaries 已完成。在真實 Developer 提案副本把迄日
+LT 改為 LE；validate／compile-preview／save 全部 INVALID，回報獨立意圖
+filters.1.operator（filter 節點、預期 LT／實際 LE）及日期範圍契約不符。
+未產生 HPL、未新增規格、未寫入；相同保存兩次仍一筆拒絕事件。唯讀網站
+驗收 1 passed（1.6s），確認歷史、差異、390／768／1440px 與瀏覽器返回。
+
+另建修正版後，真實 SA／Developer 重新審查；原始來源與凍結答案不變。
+Hop → Vertica 精確 4／4 MATCH，BOUND_PLATFORM_TARGET，QA prompt v8 真實
+PASS；獨立環境候選包重播 PASS，正式 RELEASE_READY。下載指紋與 API 相符，
+ZIP 僅六個 allowlist 成員且內容檢查通過，未重跑原始目標。
+
+本案共五個 revision：前兩版需求缺口、第三版 SA 未知結果、第四版植錯
+攔截、第五版修正交付。舊未知結果沒有被改為成功或零成本，原始失敗原因
+仍不可由已保存資訊還原。正式集合 12／20：正常五案、需求補正五案、語意
+兩案。仍缺語意三案、執行復原五案、成效／人工基準與第七階段可靠部署。
+
 ### SA 未知結果診斷 checkpoint（2026-09-27）
 
 第十二案在 SA 階段先後補明原生解析失敗／NULL 行為、唯一目標欄位與合成
