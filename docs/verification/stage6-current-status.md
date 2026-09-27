@@ -5,6 +5,19 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 零列案正式交付（2026-09-27）
+
+Worker 已以目前程式重建，沿用 Apache Hop 2.12.0 及相同指紋 JDBC；驅動從
+既有 Worker 取回至 Git 排除的本機建置目錄，未另行下載、更換或提交驅動。
+舊映像保留 rollback tag；本次僅供複製的未啟動暫存容器已移除。
+新 Worker 的 QA format／contract／replay 程式與本機檔案指紋一致。
+
+第 4 案候選包在隔離目標單次可攜驗證 PASS，核准後 RELEASE_READY。
+實際下載 ZIP 指紋與交付 API 一致；六項 allowlist 產物及內容檢查通過。
+原目標未重跑。前兩次 SA NEEDS_INPUT 與 QA v6 NEEDS_REVIEW 均保留，
+不算首次準備成功。正式集合目前 4／20 案完成執行與交付核對；仍待其餘
+16 案、量測與人工基準、UI 補充回歸及第 7 階段維運／備份還原。
+
 ### 日期格式證據補足與真實 QA 複核（2026-09-27）
 
 新增 source_formats 證據，逐一核對 CSVInput 的欄位 format 與已執行 HPL
