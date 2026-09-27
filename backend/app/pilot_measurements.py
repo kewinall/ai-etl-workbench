@@ -63,6 +63,9 @@ def read(repo, project_id):
     cohorts = inventory(repo, project_id)['cohorts']
     queue = RunQueue(repo.url)
     result = [measure(c, lambda task, run: release_status(queue, repo, task, run)) for c in cohorts]
+    from .pilot_usage import read as read_usage
+    for cohort in result:
+        cohort['usage'] = read_usage(repo, project_id, cohort['cohort_id'])
     return {'project_id': str(project_id), 'basis': 'FROZEN_COHORT_CURRENT_DELIVERY_V1',
             'checked_from': started, 'checked_until': datetime.now(timezone.utc), 'cohorts': result,
             'limitations': [

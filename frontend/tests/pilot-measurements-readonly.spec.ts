@@ -22,12 +22,23 @@ test('正式集合量測與逐案 gate 一致，保留分母且無寫入',async(
     }
     expect(cohort.release_ready_count).toBe(ready);
     expect(cohort.first_pass_rate).toBeNull();expect(cohort.human_active_seconds).toBeNull();
+    expect(cohort.usage.basis).toBe('ALL_BOUND_RUN_JOURNAL_RECORDS');
+    expect(cohort.usage.groups.reduce((n:number,g:any)=>n+g.journal_invocations,0)).toBe(
+      Object.values(cohort.usage.cases).reduce((n:number,c:any)=>n+c.journal_invocations,0));
+    for(const group of cohort.usage.groups){
+      expect(group.cost).toBeNull();
+      for(const metric of Object.values(group.metrics) as any[]){
+        expect(metric.reported_invocations+metric.missing_invocations).toBe(group.journal_invocations);
+        if(metric.missing_invocations)expect(metric.complete_sum).toBeNull();
+      }
+    }
   }
   await page.goto(`/#/projects/${project}/evaluation`);
   const region=page.getByRole('region',{name:'正式案例量測',exact:true});
   await region.getByRole('button',{name:'重新量測正式案例',exact:true}).click();
   await expect(region).toContainText(`目前可交付：${measured.cohorts[0].release_ready_count} / 20`);
   await expect(region).toContainText('尚無完整量測');
+  await expect(region.getByRole('region',{name:'模型用量覆蓋'}).first()).toBeVisible();
   for(const width of [390,768,1440]){
     await page.setViewportSize({width,height:1000});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true);
