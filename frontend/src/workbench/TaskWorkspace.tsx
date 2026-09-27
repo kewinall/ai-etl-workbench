@@ -4,6 +4,7 @@ import {ExecutionReadiness} from './ExecutionReadiness';
 import {RunVersions} from './RunVersions';
 import {OracleHistory} from './OracleHistory';
 import {SdmDelivery} from './SdmDelivery';
+import {RunArtifacts} from './RunArtifacts';
 
 const tabs = [['overview','概覽'],['requirements','需求與規格'],['collaboration','協作紀錄'],['artifacts','產物與流程'],['execution','執行與 QA'],['delivery','交付']] as const;
 type Tab = typeof tabs[number][0];
@@ -107,7 +108,8 @@ export function TaskWorkspace({task, tab, navigate, renderSetup, renderValue}: {
       </>}
       {key === 'collaboration' && current === key && <Collaboration taskId={task.id}/>}
       {key === 'artifacts' && <>
-        <section className="panel"><h3>節點狀態</h3><p>保留既有節點紀錄；節點名稱不代表本次曾呼叫 AI。新版編譯流程尚未接通。</p>{nodes.map((n: any, i: number) => <button className="node nodebutton" key={n.key} aria-pressed={nodeKey === n.key} onClick={() => setNodeKey(n.key)}><span>{i + 1}</span><div><b>{n.label}</b><small>{n.status}</small></div></button>)}</section>{nodeDetail}
+        {current==='artifacts'&&<RunArtifacts taskId={task.id}/>}
+        <section className="panel"><h3>舊版節點狀態</h3><p>僅保留既有 Task 節點紀錄，不代表上方 Run 的執行結果；節點名稱不代表曾呼叫 AI。</p>{nodes.map((n: any, i: number) => <button className="node nodebutton" key={n.key} aria-pressed={nodeKey === n.key} onClick={() => setNodeKey(n.key)}><span>{i + 1}</span><div><b>{n.label}</b><small>{n.status}</small></div></button>)}</section>{nodeDetail}
         <section className="panel"><h3>Hop Job 與流程</h3>{!assets ? <p>產物清單尚未讀取成功。</p> : !jobs.length ? <p>尚未產生 Hop Job。</p> : jobs.map((job: any) => <article className="wb-record" key={job.artifact_id}><h4>{job.name}</h4><p>v{job.version} · {job.artifact_type} · 舊版產物（尚未綁定新版交付核准）</p><div className="hpl-canvas">{(job.transforms || []).map((t: any, i: number) => <div className="hpl-transform" key={i}><b>{t.name}</b><small>{t.type}</small></div>)}</div><ul>{(job.hops || []).map((h: any, i: number) => <li key={i}>{h.from} → {h.to}</li>)}</ul><details><summary>XML／完整定義</summary><pre>{job.content}</pre></details></article>)}</section>
         <section className="panel"><h3>所有 SQL</h3>{assets?.sql?.length ? assets.sql.map((sql: any, i: number) => <article key={i}><h4>{sql.artifact} · {sql.node}</h4><pre>{sql.sql}</pre></article>) : <p>{assets ? '目前 Job 沒有內嵌 SQL。' : 'SQL 清單尚未讀取成功。'}</p>}</section>
       </>}

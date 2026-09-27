@@ -160,6 +160,11 @@ def create_run_router(queue):
         from .comparison_store import list_comparisons
         return call(list_comparisons,queue,task_id,run_id)
 
+    @router.get('/{task_id}/runs/{run_id}/artifacts')
+    def run_artifacts(task_id:str,run_id:UUID):
+        from .run_artifacts import read
+        return call(read,queue,task_id,run_id)
+
     @router.get('/{task_id}/runs/{run_id}/reconciliation')
     def read_reconciliation(task_id:str,run_id:UUID):
         from .execution_reconciliation import read
