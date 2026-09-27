@@ -239,3 +239,20 @@ Five focused serialization tests passed (403 ms), including duplicate and
 non-monotonic business IDs, reversed order, missing ordinal, nullable ordinal,
 wrong comparison and version downgrade. TypeScript/Vite build passed.
 These are frontend tests, not deployment, model or database acceptance.
+
+## SDM source-order semantics checkpoint
+
+SDM candidate V3 now carries the confirmed source-order contract. The ordinal
+mapping is SOURCE_ORDINAL with no physical source columns, rather than DIRECT.
+Expected workbook content distinguishes generated ordinals from row counts,
+documents logical CSV records (including quoted newlines and excluded headers),
+and requires explicit ascending ORDER BY when reading results. It does not
+promise physical table order. V1/V2 mapping behavior remains unchanged.
+
+Focused candidate/compiler checks: 19 passed. Full isolated backend regression:
+1,393 passed, 48 skipped, one warning, 27.88 seconds, exit 0. Added tests cover
+generated lineage, contract preservation, deterministic content, no mutation,
+exact expected explanatory cells, invalid order binding and legacy isolation.
+No ordered workbook visual inspection, live model calls, new Pilot writes,
+deployment or portable replay was performed in this checkpoint. Public V3
+specification endpoints remain closed pending the remaining delivery checks.

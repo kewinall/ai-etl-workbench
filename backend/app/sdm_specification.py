@@ -12,6 +12,7 @@ def build_sdm_candidate(payload,run,naming):
     spec=validated['specification']
     by_name={column['english_name']:column for column in naming['contract_json']['columns']}
     aggregate=spec.get('aggregation')
+    order=spec.get('source_order') if spec['version']==3 else None
     metrics={metric['output_column']:metric for metric in aggregate['metrics']} if aggregate else {}
     def source(name):
         column=by_name[name]
@@ -27,7 +28,9 @@ def build_sdm_candidate(payload,run,naming):
     mappings=[]
     for position,name in enumerate(spec['output_columns'],1):
         metric=metrics.get(name)
-        if metric:
+        if order and name==order['ordinal_column']:
+            inputs=[];operation='SOURCE_ORDINAL'
+        elif metric:
             inputs=[source(metric['column'])] if metric['column'] else []
             operation=metric['function']
         else:
@@ -46,6 +49,9 @@ def build_sdm_candidate(payload,run,naming):
         'aggregation':deepcopy(aggregate)}
     if spec['version'] == 2:
         document['version'] = 2
+    elif spec['version'] == 3:
+        document['version'] = 3
+        document['source_order'] = deepcopy(order)
     checksum=sha256(json.dumps(document,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
     return {'status':'SDM_CANDIDATE_NOT_RELEASED','document':document,'checksum':checksum,
             'qa_passed':False,'release_ready':False}

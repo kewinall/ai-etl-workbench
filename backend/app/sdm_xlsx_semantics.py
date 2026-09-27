@@ -10,15 +10,23 @@ from .sdm_xlsx_structure import inspect_sdm_xlsx, NS
 
 def expected_sdm_cells(payload, run, naming, *, release_binding=None):
     candidate=build_sdm_candidate(payload,run,naming);d=candidate['document']
-    labels={'DIRECT':'直接對應','GROUP_KEY':'分組欄位','SUM':'加總','COUNT_ROWS':'計算資料筆數','COUNT_NON_NULL':'計算非空值筆數'}
+    labels={'DIRECT':'直接對應','GROUP_KEY':'分組欄位','SUM':'加總','COUNT_ROWS':'計算資料筆數','COUNT_NON_NULL':'計算非空值筆數','SOURCE_ORDINAL':'系統產生來源序號'}
     rows=[]
     for m in d['mappings']:
         sources=m['source_columns']
         rows.append([m['position'],m['target_column'],m['target_type'],labels[m['operation']],
             '、'.join((s['source_ref'] + '.' if d['version'] == 2 else '') + s['original_name'] for s in sources),
-            '、'.join(s['stream_name'] for s in sources) if sources else '整筆資料計數，無單一來源欄位'])
+            '、'.join(s['stream_name'] for s in sources) if sources else
+            '依 CSV 邏輯資料列位置從 1 產生，非 CSV 原始欄位' if m['operation']=='SOURCE_ORDINAL' else '整筆資料計數，無單一來源欄位'])
     rules=[['來源識別','、'.join(d['source_refs']) if d['version'] == 2 else d['source_ref']],['目標表',f'{d["target"]["schema"]}.{d["target"]["table"]}'],
         ['寫入模式','APPEND（附加資料）'],['篩選邏輯','ALL（全部成立）；EXCLUDE_UNKNOWN（排除比較結果未知的資料）']]
+    if d['version']==3:
+        order=d['source_order']
+        rules.extend([
+            ['來源序號',order['ordinal_column']+'（BIGINT，不可為 NULL）'],
+            ['序號規則','CSV 邏輯資料列位置，從 1 連續遞增；標頭不計入，含換行的引號欄位仍為同一筆資料'],
+            ['結果排序',order['ordinal_column']+' ASC；查詢須明確 ORDER BY，資料表實體儲存順序不構成保證'],
+            ['答案比對','EXACT_SOURCE_SEQUENCE：逐列比對內容及序號，不忽略列序，不依業務鍵重新排序']])
     for join in d.get('joins', []):
         prefix = 'Join ' + join['id']
         rules.extend([[prefix, f'{join["left_source"]} {join["join_type"]} JOIN {join["right_source"]}'],
