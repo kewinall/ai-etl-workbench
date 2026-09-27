@@ -81,6 +81,7 @@ function ProfileEditor({profile, onSaved, onDirty}: {profile: any; onSaved: () =
 
 export function AIProfiles() {
   const [profiles, setProfiles] = useState<any[]>([]);
+  const [query,setQuery] = useState('');
   const [error, setError] = useState('');
   const [dirtyIds,setDirtyIds] = useState<Set<string>>(new Set());
   const onDirty = useCallback((id: string, dirty: boolean) => setDirtyIds(old => {const next=new Set(old); if(dirty)next.add(id);else next.delete(id);return next}),[]);
@@ -101,5 +102,12 @@ export function AIProfiles() {
     setProfiles(old => old.map(item => item.profile_id === savedId ? saved : item));
   };
   useEffect(() => {load().catch(error => setError(error.message))}, []);
-  return <div><h2>AI 連線與角色模型</h2>{!!dirtyIds.size&&<p role="status">有 {dirtyIds.size} 個 AI Profile 尚未儲存</p>}{error && <p role="alert">{error}</p>}{profiles.map(profile => <ProfileEditor key={profile.profile_id} profile={profile} onSaved={() => load(profile.profile_id)} onDirty={onDirty}/>)}</div>;
+  const matches=(profile:any)=>`${profile.display_name} ${profile.profile_id} ${profile.provider_type}`.toLowerCase().includes(query.trim().toLowerCase());
+  return <div><h2>AI 連線與角色模型</h2>
+    <label>搜尋 AI Profile<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="名稱、Profile ID 或供應商"/></label>
+    <p>顯示 {profiles.filter(matches).length} / {profiles.length} 個 Profile。搜尋只隱藏表單，不丟棄草稿；清空搜尋可查看全部。</p>
+    {!!dirtyIds.size&&<p role="status">有 {dirtyIds.size} 個 AI Profile 尚未儲存（包含搜尋隱藏的表單）</p>}
+    {error && <p role="alert">{error}</p>}
+    {profiles.map(profile => <div key={profile.profile_id} hidden={!matches(profile)}><ProfileEditor profile={profile} onSaved={() => load(profile.profile_id)} onDirty={onDirty}/></div>)}
+  </div>;
 }
