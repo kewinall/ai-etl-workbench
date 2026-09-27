@@ -50,6 +50,13 @@ ETL、改寫核准或放寬校驗。缺失不能當成零。完成後停止隔�
 
 ## 驗證範圍
 
+另有 `app.recovery_http.verify_http(base_url, project_id, cohort_id, expected_releases)`
+供已隔離的 API 使用。它只送 GET，關閉環境 proxy、redirect，核對 20 案與
+實際下載的標頭、checksum、ZIP；不負責建立隔離或啟動服務。呼叫前仍須
+核對無外部網路、全部副本及派發關閉，並在呼叫前後獨立核對資料庫事件。
+`transport` 參數僅供合成測試；使用 mock 的結果不可標為真實 HTTP 驗收。
+最新 loopback TCP 實测與限制見 [第 7 階段](verification/stage7-current-status.md)。
+
 - 解密已還原的 secret entries，只檢查非空，不輸出明文。
 - 固定 20 案集合的現有 Release gate 和 expected release count。
 - 實際 download service 的 checksum、六個 ZIP 成員及 CRC。

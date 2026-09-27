@@ -2,6 +2,25 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 最新：隔離復原 API 真實 HTTP 下載驗證
+
+在既有 network-none、migration 055 復原 DB 上啟動實際 `app.main`，使用
+Uvicorn 的 loopback TCP listener，不是 TestClient 或 mock API。沒有 host port、
+Worker、外部路由；所有派發旗標 false，副本 volumes 與 root filesystem 唯讀。
+額外 middleware 拒絕非 GET；只呼叫量測與已交付版本下載，不呼叫核准或重跑。
+API image 為 `sha256:7e275291ae80ff321932f6ff3287920cbeb9ce672fabdbbaa972ce2e604858fc`，
+另以唯讀 bind 使用本次 checkout 的 backend；不宣稱這些新增工具已建入正式 image。
+
+新增 `app.recovery_http.verify_http`：拒絕非 loopback URL、環境代理及轉址，
+驗證固定 20 案、交付數、每份 ZIP 的 checksum、六個成員、CRC、content-type、
+attachment filename、no-store 與 nosniff。合成 transport 正反向測試 **11 passed**；
+它們不代替以下真實驗證。
+
+真實 TCP HTTP 結果：**PASS，20 份下載、19 個原凍結情境匹配**。Run event
+與 effort event 數量前後不變；未重播 ETL。API 正常關閉、隔離 DB 容器已停止，
+副本保留。正式服務未重建或停止。此驗證未涵蓋瀏覽器、完整 readiness／啟動
+腳本、roles／ACL、全部歷史檔案、異機復原或真實寫入中斷。
+
 ## 真實程序終止後的佇列恢復測試
 
 新增 `test_run_queue_process_loss.py`：隔離 PostgreSQL 合成 Task 經 enqueue／
