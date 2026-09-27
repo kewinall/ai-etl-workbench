@@ -13,6 +13,13 @@ def build_result_query_plan(payload, run, naming):
     compiled = compilation_plan(payload, run, naming)
     if compiled['status'] != 'VALIDATED_NOT_APPROVED':
         raise ValueError('RESULT_QUERY_VALID_SPECIFICATION_REQUIRED')
+    return compiled_result_query_plan(compiled)
+
+
+def compiled_result_query_plan(compiled):
+    """Internal helper for a freshly revalidated compiler result, never HTTP input."""
+    if compiled.get('status') != 'VALIDATED_NOT_APPROVED':
+        raise ValueError('RESULT_QUERY_VALID_SPECIFICATION_REQUIRED')
     spec = compiled['specification']
     # Identifiers have passed the specification's strict identifier validator.
     # Read the entire target, not the source predicates: re-filtering would hide

@@ -2,7 +2,7 @@
 from typing import Literal
 from pydantic import BaseModel,ConfigDict,Field
 from .sa_contract import digest
-from .etl_specification import EtlSpecificationV1,EtlSpecificationV2
+from .etl_specification import EtlSpecificationV1,EtlSpecificationV2,EtlSpecificationV3
 from .requirement_contract import RequirementConditionsV1
 from .csv_contract import CsvInputContractV1
 from .join_contract import JoinContractV1
@@ -40,6 +40,15 @@ class QASemanticsV1(BaseModel):
     nodes: list[QANodeV1]=Field(min_length=1,max_length=200)
     execution_details: QAExecutionDetailsV1 | None=None
     transformation_intent: TransformationContractV1 | None=None
+
+
+class QAExecutionDetailsV3(QAExecutionDetailsV1):
+    source_order_evidence: dict
+
+
+class QASemanticsV3(QASemanticsV1):
+    specification: EtlSpecificationV3
+    execution_details: QAExecutionDetailsV3
 
 
 class QAExecutionDetailsV2(BaseModel):
@@ -110,7 +119,8 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
     context={'version':1,'run_id':identity,'specification_checksum':specification_checksum,'evidence':values}
     if semantics is not None:
         multi = (semantics.get('specification') or {}).get('version') == 2
-        value=(QASemanticsV2 if multi else QASemanticsV1).model_validate(semantics).model_dump(mode='json')
+        ordered = (semantics.get('specification') or {}).get('version') == 3
+        value=(QASemanticsV3 if ordered else QASemanticsV2 if multi else QASemanticsV1).model_validate(semantics).model_dump(mode='json')
         if multi and value['join_conditions']['joins'] != value['specification']['joins']:
             raise ValueError('QA_JOIN_SEMANTICS_CHANGED')
         # Keep historic v2 JSON/checksums byte-for-byte compatible.
@@ -187,6 +197,10 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
             context['version'] = 10 if multi else 9
         if multi and details and 'target_contract' in details:
             context['version'] = 12 if intent is not None else 11
+        if ordered:
+            from .qa_source_order import validate_order_details
+            validate_order_details(value['specification'],details,{c['id']:c for c in values})
+            context['version']=13
     return {**context,'context_checksum':digest(context)}
 
 

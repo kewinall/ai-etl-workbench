@@ -43,7 +43,7 @@ def load_qa_context(queue,task_id,run_id,comparison_id,*,connection=None):
         from .qa_source_formats import inspect_formats, should_enrich
         if should_enrich(latest):
             details['source_formats']=inspect_formats(compiled)
-        if row['spec_json']['version'] == 1:
+        if row['spec_json']['version'] != 2:
             if not preserve_reviewed_context(latest):
                 claim=conn.execute('SELECT * FROM platform.task_run_target_claim WHERE run_id=%s FOR SHARE',
                                    (run_id,)).fetchone()
@@ -54,6 +54,9 @@ def load_qa_context(queue,task_id,run_id,comparison_id,*,connection=None):
                 claim=conn.execute('SELECT * FROM platform.task_run_target_claim WHERE run_id=%s FOR SHARE',
                                    (run_id,)).fetchone()
                 details['target_contract']=inspect_target(compiled,details,claim)
+        if row['spec_json']['version']==3:
+            from .qa_source_order import inspect_order
+            details['source_order_evidence']=inspect_order(compiled,evidence,comparison['checksum'],pinned['result_query_checksum'])
     root=ET.fromstring(compiled['hpl'])
     names=[node.findtext('name') for node in root.findall('transform')]
     errors=validate_pipeline_graph(root)
@@ -73,7 +76,8 @@ def load_qa_context(queue,task_id,run_id,comparison_id,*,connection=None):
         dict(id='hop_execution',status='PASS' if execution['result']['status']=='COMPLETED' else 'FAIL',checksum=pinned['hop_log_checksum'],
             summary=f'已保存的成功退出證據與解密日誌一致；預期 {len(names)} 個節點，完整節點紀錄：{execution["complete_node_evidence"]}。'),
         dict(id='result_comparison',status='PASS' if evidence['status']=='MATCH' else 'FAIL',checksum=comparison['checksum'],
-            summary=f'EXACT_MULTISET：預期 {evidence["expected_count"]}、實際 {evidence["actual_count"]}、缺少 {evidence["missing_count"]}、多出 {evidence["unexpected_count"]}。'),
+            summary=f'{evidence["comparison"]}：預期 {evidence["expected_count"]}、實際 {evidence["actual_count"]}、缺少 {evidence["missing_count"]}、多出 {evidence["unexpected_count"]}。'
+                    +(f'位置不符 {evidence["position_mismatch_count"]}；來源序號 {evidence["ordinal_column"]}。' if evidence['version']==2 else '')),
         dict(id='result_source',status='PASS' if source_valid else 'MISSING',checksum=pinned['result_query_checksum'],
             summary='已保存平台管理目標、空表及固定連線查詢來源證據；不保證外部 DBA 未改資料。' if source_valid else '沒有符合此比對版本的受控來源證據。')]
     semantics={'requirement':run['input_snapshot']['requirement_text'],

@@ -3,12 +3,12 @@
 No inference from results/oracles, model output, or user-supplied PASS labels.
 The QA loader separately reconstructs HPL and verifies the executed checksum.
 """
-from .etl_specification import EtlSpecificationV1, EtlSpecificationV2
+from .etl_specification import EtlSpecificationV1, EtlSpecificationV2, EtlSpecificationV3
 from .transformation_contract import validate_intent
 
 
 def check_intent(contract, specification, plan):
-    model = EtlSpecificationV2 if specification.get('version') == 2 else EtlSpecificationV1
+    model = EtlSpecificationV3 if specification.get('version') == 3 else EtlSpecificationV2 if specification.get('version') == 2 else EtlSpecificationV1
     spec = model.model_validate(specification)
     multi = spec.version == 2
     stages = plan.get('stages') or []
@@ -37,5 +37,11 @@ def check_intent(contract, specification, plan):
     if len({c['source_name'] for c in columns}) != len(columns) or len({c['english_name'] for c in columns}) != len(columns):
         raise ValueError('QA_TRANSFORMATION_MAPPING_INVALID')
     snapshot = {'source_config': {'sources': source_items}, 'target_config': {'transformation_contract_v1': contract}}
+    if spec.version==3:
+        ordinal=spec.source_order.ordinal_column
+        if sources[0].get('ordinal_column')!=ordinal or any(c['english_name']==ordinal for c in columns):
+            raise ValueError('QA_TRANSFORMATION_MAPPING_INVALID')
+        columns.append({'source_name':'$source_order.source.0','english_name':ordinal})
+        snapshot['target_config']['source_order_v1']=spec.source_order.model_dump()
     if validate_intent(spec, snapshot, {'contract_json': {'columns': columns}}):
         raise ValueError('QA_TRANSFORMATION_INTENT_MISMATCH')

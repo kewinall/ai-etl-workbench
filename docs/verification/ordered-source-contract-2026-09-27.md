@@ -114,3 +114,24 @@ the fixture was corrected to the actual V1 document format before full rerun.
 No production migration, model invocation, original Task replay, Vertica write
 or release approval occurred in this checkpoint. QA context, public editing,
 ordered portable replay and the real corrected case still require integration.
+
+## QA context checkpoint
+
+QA context V13 now binds V3 specifications to ordered comparison evidence,
+the independently pinned query checksum, the original Hop log checksum,
+the generated ordinal mapping and the fully checked source record count.
+The loader rechecks the executed HPL ordinal/sort options. An order-only
+MISMATCH remains a deterministic FAIL that model PASS cannot override.
+Existing unordered context serialization and summaries remain unchanged.
+
+Tests cover substituted query/comparison/log checksums, absent order evidence,
+changed source counts, generated-field mappings and sort columns, and modified
+HPL options with recalculated HPL checksums. Focused QA tests: 28 passed.
+Full isolated backend suite: 1,360 passed, 48 skipped, one warning,
+27.80 seconds, exit 0.
+
+This is deterministic QA-context validation, not a new real-model review or
+end-to-end release. Public V3 creation remains closed. Next: integrate the
+generated ordinal into SDM/portable replay, then input editing, model proposal
+schema and UI before the real corrected-case acceptance. No previously
+accepted Run or frozen cohort definition was changed.
