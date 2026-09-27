@@ -46,7 +46,7 @@ function App(){
    <section className="content">
     {executionEnabled===false&&<div className="notice" role="status">容器部署驗證階段：ETL 執行與範例表重建暫停；可管理專案、編輯設定及查看歷史。</div>}
     {notice&&<div className="notice error" role="alert"><AlertTriangle/>{notice}<button onClick={()=>setNotice('')}>×</button></div>}
-    {page==='pilot'&&<><PilotHome/><details className="panel wb-project-home"><summary>查看模型用量紀錄（不是 Pilot 成效）</summary><Usage/></details></>}
+    {page==='pilot'&&<><PilotHome navigate={navigate}/><details className="panel wb-project-home"><summary>查看模型用量紀錄（不是 Pilot 成效）</summary><Usage/></details></>}
     {page==='projects'&&<WorkbenchProjects projectId={route.projectId} tab={route.tab} navigate={navigate} onError={setNotice}/>}
     {page==='new'&&<><button className="wb-back" onClick={()=>navigate('/projects/'+route.projectId+'/settings')}>← 返回專案設定</button><StageEnhancedTaskForm projectId={route.projectId} onCreated={async(t:Task)=>{await reload();openTask(t)}} onError={setNotice}/></>}
     {page==='task'&&<><button className="wb-back" onClick={()=>navigate('/projects/'+route.projectId+'/history')}>← 返回此專案歷史 Task</button>{selected?<TaskWorkspace key={selected.id} task={selected} tab={route.tab} navigate={navigate} renderSetup={t=><CompleteTaskSetup task={t}/>} renderValue={value=><PrettyValue value={value}/>}/>:<Empty text={notice?'無法載入 Task':'正在載入完整 Task 詳情'}/>}</>}
