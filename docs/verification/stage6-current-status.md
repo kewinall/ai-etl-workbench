@@ -5,6 +5,15 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 執行復原前置：凍結案例範圍檢查（2026-09-27）
+
+新增純函式 pilot_recovery_scope，限定五個既定 EXECUTION_RECOVERY 定義、
+CSV 指紋與欄位、ai_sample 新目標命名、APPEND、未寫入且非衍生 Run，以及
+當前 dispatch binding。16 項單元測試通過；本機 pytest cache 寫入警告不影響
+測試結果。函式不執行 SQL、不授予 ALTER 權限，尚未連接故障執行入口或部署。
+後續仍須在鎖定下核對 cohort 綁定、同專案／Task 登錄、全新空表，保存真實
+Hop 失敗與新連線查詢結果，再以新目標及 revision 復原。正式通過數仍 15／20。
+
 ### 第十五案：NULL 聚合語意攔截與修正交付（2026-09-27）
 
 正式 semantic-null-group 完成。真實 Developer 提案副本將 COUNT_ROWS 改為
