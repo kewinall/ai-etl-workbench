@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react';
 import {request, jsonBody} from './api';
 import {ConnectionTest} from './ConnectionTest';
 import {ControlDatabaseStatus} from './ControlDatabaseStatus';
+import {SettingsComparison} from './SettingsComparison';
 
 function toolValues(result:any):Record<string,string> {
   const value=result?.values?.execution_tool_paths;
@@ -67,6 +68,7 @@ export function ExecutionSettings({group}:{group:string}) {
         <button onClick={()=>{setTools(saved||{});setToolMessage('')}}>取消路徑修改</button>
       </fieldset>
       {toolMessage&&<p role="status">{toolMessage}</p>}
+      {saved!==null&&<SettingsComparison group="execution_tool_paths" draft={tools} disabled={busy} onAdopt={(value,revision)=>{setTools(value);setSaved(value);setVersion(revision);setToolMessage('已採用比較版本，尚未寫入設定')}}/>}
       {saved===null&&toolMessage&&<button onClick={()=>setLoadAttempt(attempt=>attempt+1)}>重新讀取工具路徑</button>}
     </section>
     <section hidden={group!=='security'} className="panel setting-card">

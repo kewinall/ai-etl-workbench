@@ -53,5 +53,12 @@ export function useSettingsDraft() {
     setV((current:any)=>({...current,[group]:saved[group]}));setMsg('');
   };
   const retryLoad=()=>{if(v===null)setLoadAttempt(attempt=>attempt+1)};
-  return {v,setV,msg,busy,dirty,save,cancel,retryLoad};
+  const adopt=(group:string,value:any,version:string)=>{
+    if(busy)return;
+    setV((current:any)=>({...current,[group]:value}));
+    setSaved((current:any)=>({...current,[group]:value}));
+    setVersions(current=>({...current,[group]:version}));
+    setMsg('已採用此分類的比較版本，其他分類草稿保留；尚未寫入設定。');
+  };
+  return {v,setV,msg,busy,dirty,save,cancel,retryLoad,adopt};
 }
