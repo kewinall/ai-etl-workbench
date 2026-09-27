@@ -2,6 +2,22 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 2026-09-28：真實 Hop 處理中取消
+
+新增 opt-in `test_hop_interruption_native.py`。每次使用新 network-none Worker
+容器、合成 CSV、既有 compiler HPL 與 Dummy sink；Java probe 在 target 真正
+讀到第一列後寫容器內 marker，等待中的 Python 才觸發取消。不是僅 sleep 的
+假引擎，也沒有修改正式 Task、連線 Vertica 或重跑交付。
+
+實際 `run_managed` 終止 Hop 程序並回收，reason=CANCELLED、exit<0，沒有
+collector 成功結尾；`hop_log_evidence` 判 UNKNOWN、qa_passed=false。
+同時重跑原有 header／無 header 的正常列序案例，**3 passed（13.88 秒）**。
+Java 探針僅接受明確 `--interrupt-probe`，既有不帶參數流程保持正常。
+
+這是實際引擎 in-flight 取消及保守結果判定證據；不是 owner 強制死亡、
+Vertica 已提交部分資料、佇列失聯後不重跑與獨立 SQL 核對的完整 E2E。
+後者仍是未完成驗收，不以本項替代。
+
 ## 2026-09-28：migration-aware readiness 已部署
 
 部署前查核正式控制 DB：active leases 0、pending Hop 0、Run events 2,861。

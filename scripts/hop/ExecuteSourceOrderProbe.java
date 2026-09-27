@@ -15,7 +15,8 @@ import org.apache.hop.pipeline.transform.RowAdapter;
 /** Synthetic ordered collector. Never sorts rows and never connects to a DB. */
 class ExecuteSourceOrderProbe {
   public static void main(String[] args) throws Exception {
-    if (args.length != 0) throw new IllegalArgumentException("No arguments accepted");
+    boolean interruptProbe = args.length == 1 && "--interrupt-probe".equals(args[0]);
+    if (args.length != 0 && !interruptProbe) throw new IllegalArgumentException("Unexpected arguments");
     HopEnvironment.init();
     var factory = DocumentBuilderFactory.newInstance();
     factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
@@ -44,6 +45,12 @@ class ExecuteSourceOrderProbe {
           values.add(Base64.getEncoder().encodeToString(row[i].toString().getBytes(StandardCharsets.UTF_8)));
         }
         rows.add(String.join("|", values));
+        if (interruptProbe && rows.size() == 1) {
+          try {
+            java.nio.file.Files.writeString(Path.of("/tmp/hop-interruption-ready"), "synthetic row observed");
+            Thread.sleep(60_000);
+          } catch (Exception error) { throw new IllegalStateException("Interruption probe failed", error); }
+        }
       }
     });
     engine.startThreads();
