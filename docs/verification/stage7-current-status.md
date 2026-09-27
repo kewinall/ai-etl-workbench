@@ -2,6 +2,18 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 2026-09-28：既有核心服務手動恢復工具
+
+新增 `scripts/start-pilot.ps1`，僅支援已部署 postgres/api/web 三個精確名稱，
+核對 Compose project/service 與狀態後才 start，禁止寬泛標籤選取測試容器。
+CheckOnly 唯讀；預設不啟動任何 Worker、不改 dispatch、不執行 migration。
+
+PowerShell 真正執行、外部命令替身測試涵蓋已運行、已停止、錯誤身分、
+paused、inspect 失敗、CheckOnly；加舊入口測試共 **8 passed（2.04 秒）**。
+正式環境 CheckOnly 三個 running；執行啟動工具回 Pilot ready，既有容器
+均不執行 start。這是正式熱狀態冪等驗證，冷啟動順序目前只有替身測試，
+不宣稱真實冷啟動、Worker 恢復或 WSL 持久運行已驗收。
+
 ## 2026-09-28：舊啟停入口安全阻擋
 
 舊 `scripts/start.ps1` 會執行示範資料程式並啟動舊 Worker；舊
