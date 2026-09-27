@@ -2,6 +2,22 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 領取後／執行前的真實程序死亡
+
+新增 opt-in `test_hop_claim_process_loss.py`，只在新的專用隔離 Compose DB
+啟用 `WORKBENCH_HOP_CLAIM_DEATH_TEST=dedicated-disposable-database`，不得對
+正式或一般回歸 DB 執行。合成角色及核准資料由子程序建立，Hop claim 真正
+commit 後通知父程序；父程序實際 kill 並 wait 回收。沒有啟動 Hop 或 Vertica。
+
+死亡後以另一程序的 connection 查核：僅一筆 CLAIMED、write_started=false、
+lease_token=null、target claim 0。reap_expired=0，兩次再 claim 皆 None，事件
+數不變。**1 passed（2.74 秒）**，專用 DB 停止並保留合成證據，不反覆重用。
+
+重要限制：這證明準備階段 owner 死亡不會重領，**不證明已復原**。請求仍卡在
+CLAIMED，現有 Run lease reaper 不處理它；需要明確的失聯查核／人工結案流程，
+綁定原 request 與可能 DDL 副作用，不能單憑逾時直接重設 QUEUED。
+真實建表後或資料提交中死亡及獨立 SQL 核對仍未驗證。
+
 ## 中斷驗收的兩個領取階段
 
 程式查核：`hop_dispatch.claim` 先將請求標為 CLAIMED，之後
