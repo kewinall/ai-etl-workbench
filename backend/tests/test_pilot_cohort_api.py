@@ -61,3 +61,17 @@ def test_template_and_synthetic_download_require_project(client_repo):
     with ZipFile(BytesIO(download.content)) as archive:
         assert 'plan.json' in archive.namelist()
         assert 'Not a Release' in archive.read('README.txt').decode()
+
+
+def test_preparation_scope_conflict_and_safe_failure(client_repo, monkeypatch):
+    client, _ = client_repo
+    def fail(*args): raise RuntimeError('synthetic-secret@private.example')
+    monkeypatch.setattr('app.pilot_prepare_service.prepare', fail)
+    assert client.post(f'/api/projects/{uuid4()}/pilot-cohorts/{uuid4()}/cases/any/prepare').status_code == 404
+    project = client.post('/api/projects', json={'project_name': 'Preparation errors'}).json()
+    url = f"/api/projects/{project['project_id']}/pilot-cohorts/{uuid4()}/cases/any/prepare"
+    response = client.post(url)
+    assert response.status_code == 503 and 'synthetic-secret' not in response.text
+    def conflict(*args): raise PilotEnrollmentConflict('案例指紋不一致')
+    monkeypatch.setattr('app.pilot_prepare_service.prepare', conflict)
+    assert client.post(url).status_code == 409

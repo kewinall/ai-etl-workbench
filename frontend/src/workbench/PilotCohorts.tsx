@@ -30,6 +30,16 @@ export function PilotCohorts({projectId,navigate}:{projectId:string;navigate:(pa
       setData(updated);setMessage('案例已綁定並重新讀取；這不代表執行或驗收通過。');
     }catch(e:any){setMessage(e.message)}finally{latch.current.release();setBusy(false)}
   };
+  const prepare=async(cohortId:string,caseKey:string)=>{
+    if(!latch.current.acquire())return;
+    setBusy(true);setMessage('');
+    try{
+      const result=await request(`/api/projects/${projectId}/pilot-cohorts/${cohortId}/cases/${encodeURIComponent(caseKey)}/prepare`,jsonBody('POST',{}));
+      const [updated,items]=await Promise.all([request(`/api/projects/${projectId}/pilot-cohorts`),request(`/api/projects/${projectId}/tasks`)]);
+      if(updated.project_id!==projectId||!Array.isArray(updated.cohorts)||!Array.isArray(items))throw Error('準備後回讀不完整；可重試同一案例，不會重複建立 Task。');
+      setData(updated);setTasks(items);setMessage(result.message);
+    }catch(e:any){setMessage(e.message)}finally{latch.current.release();setBusy(false)}
+  };
   const previewTemplate=async()=>{
     if(!latch.current.acquire())return;
     setBusy(true);setMessage('');setConfirmed(false);
@@ -75,7 +85,9 @@ export function PilotCohorts({projectId,navigate}:{projectId:string;navigate:(pa
           <p>樣本：{item.definition.fixture_reference}；答案：{item.definition.oracle_reference}</p>
           <p>樣本指紋：<code>{item.definition.fixture_checksum||'缺少'}</code></p>
           <p>答案指紋：<code>{item.definition.oracle_checksum||'缺少'}</code></p>
-          {item.task_id?<p>Task：{item.task_id}</p>:<fieldset disabled={busy}>
+          {item.task_id?<p>Task：{item.task_id} <button disabled={busy} onClick={()=>navigate(`/projects/${projectId}/tasks/${encodeURIComponent(item.task_id)}/overview`)}>開啟案例 Task</button></p>:<fieldset disabled={busy}>
+            <p>標準案例可自動核對樣本、建立並固定綁定新 Task；保留需求缺口，不執行模型、故障或 ETL。自訂案例仍可選擇既有 Task。</p>
+            <button onClick={()=>prepare(cohort.cohort_id,item.case_key)}>準備案例 {item.case_key} 的 Task</button>
             <label>選擇案例 {item.case_key} 的 Task<select value={selection[key]||''} onChange={e=>setSelection({...selection,[key]:e.target.value})}>
               <option value="">請明確選擇（已開始的 Task 會被伺服器拒絕）</option>
               {tasks.map(task=><option key={task.id} value={task.id}>{task.name} · {task.id}</option>)}

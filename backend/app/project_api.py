@@ -141,6 +141,20 @@ def create_project_router(repo) -> APIRouter:
             raise HTTPException(503, detail={'code': 'PILOT_ENROLLMENT_UNAVAILABLE',
                 'message': '案例綁定未確認完成；可重送同一 Task，不會重複納入。'}) from None
 
+    @router.post('/{project_id}/pilot-cohorts/{cohort_id}/cases/{case_key}/prepare')
+    def prepare_case(project_id: UUID, cohort_id: UUID, case_key: str):
+        from .pilot_prepare_service import prepare
+        try:
+            get_project(project_id)
+            return prepare(repo, str(project_id), str(cohort_id), case_key)
+        except HTTPException:
+            raise
+        except PilotEnrollmentConflict as exc:
+            raise HTTPException(409, detail={'code': 'PILOT_PREPARATION_CONFLICT', 'message': str(exc)}) from None
+        except Exception:
+            raise HTTPException(503, detail={'code': 'PILOT_PREPARATION_UNAVAILABLE',
+                'message': '案例準備未確認完成；可重送同一案例，已固定的 Task 不會重複建立。'}) from None
+
     @router.put('/{project_id}')
     def update_project(project_id: UUID, data: ProjectPayload):
         get_project(project_id)
