@@ -2,6 +2,22 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 復原工具加入後的完整回歸
+
+以 commit `8266acc` 的 checkout 執行既有隔離 PostgreSQL Compose suite：
+**1,464 passed、48 skipped、1 warning，35.69 秒，exit 0**。
+資料庫與測試容器隨程序完成停止，保留隔離資料卷；不使用正式 DB。
+警告為 Starlette TestClient 的 AnyIO BlockingPortal 棄用訊息，未抑制。
+資料庫 log 的 immutable／duplicate 拒絕是負向測試的預期行為，suite 判定通過。
+
+48 skipped 不能計為通過，包含原生 Hop、既有真實 QA／執行證據及 Git checkout
+可見性檢查。另在 Windows checkout 顯式啟用 network-none 原生 Hop 驗證：
+`test_source_order_native.py` 與 `test_hop_final_metrics_native.py`，
+**8 passed，36.19 秒**。涵蓋有／無 header、跨行 CSV、重複值來源序號，
+以及 HPL／HWF 的零 discard、空來源、缺來源失敗之最終節點 counters。
+所有輸出使用 Dummy sink，不連線 Vertica，不能代替真實寫入中斷驗收。
+未重跑正式 Task、未呼叫模型，也不將這 8 項之外的 opt-in 跳過案例算入通過。
+
 ## 全部既有副本檔案比對
 
 新增 `app.recovery_files`，在 network-none、root readonly 的 helper 中逐組
