@@ -53,6 +53,19 @@ test('正式集合量測與逐案 gate 一致，保留分母且無寫入',async(
     }
   }
   await page.goto(`/#/projects/${project}/evaluation`);
+  const inventory=await (await request.get(`/api/projects/${project}/pilot-cohorts`)).json();
+  const changed=inventory.cohorts.flatMap((c:any)=>c.cases).filter((c:any)=>
+    c.runs.some((r:any)=>r.source_order_scope==='CHANGED_REQUIRES_PROTOCOL_REVIEW'));
+  for(const item of changed){
+    const details=page.locator('details').filter({has:page.locator('summary', {hasText:`${item.ordinal}. ${item.definition.title}`})});
+    await details.locator('summary').click();
+    await expect(details).toContainText('順序需求已變更：須另行審核，不代表原凍結案例通過。');
+    for(const width of [390,768,1440]){
+      await page.setViewportSize({width,height:1000});
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true);
+    }
+    await details.locator('summary').click();
+  }
   const region=page.getByRole('region',{name:'正式案例量測',exact:true});
   await region.getByRole('button',{name:'重新量測正式案例',exact:true}).click();
   await expect(region).toContainText(`目前可交付：${measured.cohorts[0].release_ready_count} / 20`);

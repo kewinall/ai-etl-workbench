@@ -505,3 +505,21 @@ Frontend production build passed. An initial review caught the nested snapshot
 path requirement; the corrected target_config lookup is covered by the actual
 database integration test, not only a helper test. New UI annotation is not yet
 deployed or browser-accepted; that remains the next verification step.
+
+### Deployed scope annotations and real browser acceptance
+
+Built and deployed API/control-worker/web from 1c87b0b after verifying zero
+active leases and zero queued/claimed Hop requests. No database migration,
+model invocation or ETL replay was performed. API readback for the ordered case
+retains all three attempts: failed, cancelled and current review-state Run;
+only the third carries CHANGED_REQUIRES_PROTOCOL_REVIEW. Run lifecycle state is
+not substituted for the separately verified formal Release status.
+
+Extended and ran the read-only Playwright measurement regression against the
+deployed formal cohort: one test passed in 12.4 seconds. It checks every selected
+Run's release gate against the metrics API, all frozen-scenario proof references,
+usage coverage, null unmeasured values, changed-order history text, navigation
+and browser return, and 390/768/1440px overflow. No browser mutation requests or
+page errors occurred; Run event histories were identical before and after.
+This completes deployment/browser verification for this annotation, not all
+platform UI or P3 measurement requirements.
