@@ -12,6 +12,7 @@ function toolValues(result:any):Record<string,string> {
 export function ExecutionSettings({group}:{group:string}) {
   const [tools,setTools]=useState<Record<string,string>>({});
   const [saved,setSaved]=useState<Record<string,string>|null>(null);
+  const [version,setVersion]=useState('');
   const [connectionId,setConnectionId]=useState('vertica-default');
   const [secret,setSecret]=useState('');
   const [busy,setBusy]=useState(false);
@@ -22,7 +23,7 @@ export function ExecutionSettings({group}:{group:string}) {
   const dirty=(saved!==null && JSON.stringify(tools)!==JSON.stringify(saved)) || !!secret;
   useEffect(()=>{let active=true;setToolMessage('');request('/api/settings/groups').then(x=>{
     const value=toolValues(x);
-    if(active){setTools(value);setSaved(value);}
+    if(active){setTools(value);setSaved(value);setVersion(x.versions?.execution_tool_paths||'');}
   }).catch(e=>{if(active)setToolMessage(e.message)});return()=>{active=false}},[loadAttempt]);
   useEffect(()=>{
     if(!dirty&&!busy)return;
@@ -39,8 +40,12 @@ export function ExecutionSettings({group}:{group:string}) {
   const saveTools=async()=>{
     if(busy||saved===null)return;setBusy(true);setToolMessage('');
     try {
-      await request('/api/settings/groups/execution_tool_paths',jsonBody('PUT',tools));
-      const value=toolValues(await request('/api/settings/groups'));
+      if(!version)throw new Error('缺少設定版本，請重新載入設定後再儲存');
+      const options=jsonBody('PUT',tools);
+      await request('/api/settings/groups/execution_tool_paths',{...options,headers:{...options.headers,'X-Settings-Version':version}});
+      const result=await request('/api/settings/groups');
+      const value=toolValues(result);
+      setVersion(result.versions?.execution_tool_paths||'');
       setTools(value);setSaved(value);setToolMessage('執行環境設定已儲存並重新讀取');
     }catch(e:any){setToolMessage('儲存或回讀未完成：'+e.message)}finally{setBusy(false)}
   };

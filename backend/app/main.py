@@ -4,12 +4,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from xml.etree import ElementTree as ET
 from typing import Any
-from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile, Header
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-from .repository import PostgresRepository, TaskCreationConflict
+from .repository import PostgresRepository, TaskCreationConflict, SettingsConflict
 from .project_api import create_project_router
 from .execution_settings import resolve_settings
 from .ai_profile_api import create_ai_profile_router
@@ -734,11 +734,14 @@ def task_execution_settings(task_id:str):
 def settings_groups():
  return {'AI 供應商與模型策略':'ai_provider_model_strategy','資料連線與目標':'data_connections_targets','執行環境與工具路徑':'execution_tool_paths','資料治理與命名規則':'data_governance_naming_rules','驗證與交付策略':'validation_release_policy','安全密鑰保管庫':'security_secret_vault'}
 @app.get('/api/settings/groups')
-def get_setting_groups():return {'groups':settings_groups(),'values':{key:repo.setting(key,{}) for key in settings_groups().values()}}
+def get_setting_groups():
+ rows={row['key']:row for row in repo.settings()}
+ return {'groups':settings_groups(),'values':{key:rows.get(key,{}).get('value',{}) for key in settings_groups().values()},'versions':{key:rows.get(key,{}).get('updated_at','missing') for key in settings_groups().values()}}
 @app.put('/api/settings/groups/{group_key}')
-def update_setting_group(group_key:str,value:dict[str,Any]):
+def update_setting_group(group_key:str,value:dict[str,Any],x_settings_version:str|None=Header(default=None)):
  if group_key not in settings_groups().values():raise HTTPException(404,'Setting group not found')
- try:return {'key':group_key,'value':repo.update_setting(group_key,value)}
+ try:return {'key':group_key,'value':repo.update_setting(group_key,value,expected_version=x_settings_version)}
+ except SettingsConflict as exc:raise HTTPException(409,str(exc)) from exc
  except ValueError as exc:raise HTTPException(422,str(exc)) from exc
 app.include_router(create_ai_profile_router(repo))
 from .connection_test_api import create_connection_test_router

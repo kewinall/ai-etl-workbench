@@ -14,6 +14,9 @@ STEPS=[('router','Rule Router'),('profiler','Source Profiler'),('sa','Requiremen
 class TaskCreationConflict(ValueError):
  pass
 
+class SettingsConflict(ValueError):
+ pass
+
 class PostgresRepository:
  def __init__(self,url:str): self.url=url
  def conn(self): return psycopg.connect(self.url,row_factory=dict_row)
@@ -179,17 +182,28 @@ class PostgresRepository:
  def setting(self,key,default=None):
   with self.conn() as c:r=c.execute("select setting_value from platform.system_setting where setting_key=%s",(key,)).fetchone()
   return r['setting_value'] if r else default
- def update_setting(self,key,value):
+ def update_setting(self,key,value,expected_version=None):
   allowed={'feature_flags','upload_policy','validation_policy','storage_policy','vertica_stage_paths','ai_provider_model_strategy','data_connections_targets','execution_tool_paths','data_governance_naming_rules','validation_release_policy','security_secret_vault'}
   if key not in allowed:raise ValueError('Setting is not editable')
+  value=validate_setting(key,value)
   if key=='data_connections_targets':
    previous=self.setting(key,{}) or {}
    if value.get('platform')!=previous.get('platform'):raise ValueError('平台 PostgreSQL 由部署設定管理，不可透過網頁變更')
    for item in value.values():
     if isinstance(item,dict) and any(k.lower() in {'password','api_key','token','secret','secret_value','secret_ref'} for k in item):raise ValueError('連線機密必須透過安全密鑰保管庫保存')
-  value=validate_setting(key,value)
-  with self.conn() as c:c.execute("insert into platform.system_setting(setting_key,setting_value,updated_at) values(%s,%s,now()) on conflict(setting_key) do update set setting_value=excluded.setting_value,updated_at=now()",(key,json.dumps(value)))
-  return self.setting(key)
+  with self.conn() as c:
+   c.execute('select pg_advisory_xact_lock(271828,2)')
+   row=c.execute('select setting_value,updated_at from platform.system_setting where setting_key=%s for update',(key,)).fetchone()
+   version=row['updated_at'].isoformat() if row else 'missing'
+   if expected_version is not None and expected_version!=version:
+    raise SettingsConflict('設定已被更新，草稿未覆蓋伺服器。請重新讀取後比對再儲存。')
+   if key=='data_connections_targets':
+    previous=(row['setting_value'] if row else {}) or {}
+    if value.get('platform')!=previous.get('platform'):raise ValueError('平台 PostgreSQL 由部署設定管理，不可透過網頁變更')
+    for item in value.values():
+     if isinstance(item,dict) and any(k.lower() in {'password','api_key','token','secret','secret_value','secret_ref'} for k in item):raise ValueError('連線機密必須透過安全密鑰保管庫保存')
+   c.execute("insert into platform.system_setting(setting_key,setting_value,updated_at) values(%s,%s,clock_timestamp()) on conflict(setting_key) do update set setting_value=excluded.setting_value,updated_at=excluded.updated_at",(key,json.dumps(value)))
+  return value
  def list_projects(self):
   with self.conn() as c:rows=c.execute("select project_id,project_name,description,default_ai_profile,default_connection,naming_rules,created_at,updated_at from platform.project order by project_name").fetchall()
   return [{**dict(r),'project_id':str(r['project_id']),'created_at':r['created_at'].isoformat(),'updated_at':r['updated_at'].isoformat()} for r in rows]
