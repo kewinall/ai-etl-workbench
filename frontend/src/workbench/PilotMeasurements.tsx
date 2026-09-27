@@ -19,6 +19,7 @@ export function PilotMeasurements({projectId,navigate}:{projectId:string;navigat
     <h3>正式案例量測</h3>
     <p>重新檢查各案例最新版的交付證據，不執行模型或 ETL。交付數不等於情境驗收率；人工工時與改善率仍待實測。</p>
     <button disabled={busy} onClick={refresh}>{busy?'正在核對交付證據…':'重新量測正式案例'}</button>
+    <p><a href={`/api/projects/${encodeURIComponent(projectId)}/pilot-report`} target="_blank" rel="noopener noreferrer">開啟可列印成果報告</a>（重新核對證據；可用瀏覽器列印或另存 HTML）</p>
     {error&&<p role="alert">{error}</p>}
     {data&&<><p>核對區間：{new Date(data.checked_from).toLocaleString()} ～ {new Date(data.checked_until).toLocaleString()}</p>
       <ul>{data.limitations.map((v:string)=><li key={v}>{v}</li>)}</ul>

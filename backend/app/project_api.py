@@ -169,6 +169,21 @@ def create_project_router(repo) -> APIRouter:
             raise HTTPException(503, detail={'code': 'PILOT_MEASUREMENTS_UNAVAILABLE',
                 'message': '正式案例量測暫時無法完成；不代表案例為零或全部通過。'}) from None
 
+    @router.get('/{project_id}/pilot-report')
+    def pilot_report(project_id: UUID):
+        from .pilot_report import render
+        data = pilot_measurements(project_id)
+        try:
+            content = render(data)
+        except Exception:
+            raise HTTPException(503, detail={'code': 'PILOT_REPORT_UNAVAILABLE',
+                'message': '報告暫時無法產生，不代表案例為零或全部通過。'}) from None
+        return Response(content, media_type='text/html', headers={
+            'Cache-Control': 'no-store',
+            'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'",
+            'X-Content-Type-Options': 'nosniff',
+        })
+
     @router.post('/{project_id}/pilot-cohorts/{cohort_id}/cases/{case_key}/task')
     def enroll_task(project_id: UUID, cohort_id: UUID, case_key: str, data: PilotTaskBinding):
         from .pilot_cohort import bind_task

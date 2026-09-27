@@ -1,0 +1,61 @@
+from copy import deepcopy
+from unittest.mock import Mock
+from uuid import uuid4
+
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+import pytest
+
+from app.pilot_report import render
+from app.project_api import create_project_router
+from test_pilot_measurements import cohort, measure, ready
+
+
+def snapshot():
+    group = measure(cohort(), ready)
+    group['scenario_evidence_matched_count'] = 19
+    return {'project_id': str(uuid4()), 'checked_from': 'start', 'checked_until': 'end',
+            'limitations': ['固定分母，不排除失敗'], 'cohorts': [group]}
+
+
+def test_escape_allowlist_fixed_denominator_and_unknowns():
+    data = snapshot()
+    data['cohorts'][0]['name'] = '<script>alert(1)</script>'
+    data['cohorts'][0]['cases'][0]['private_log'] = 'SECRET_MARKER'
+    original = deepcopy(data)
+    html = render(data)
+    assert '<script>' not in html and '&lt;script&gt;' in html
+    assert 'SECRET_MARKER' not in html
+    assert html.count('<article>') == 20
+    assert '可交付 20 / 20' in html and '凍結情境證據 19 / 20' in html
+    assert '尚無完整量測' in html and '非人工工時' in html
+    assert data == original
+
+
+def test_invalid_population_rejected():
+    data = snapshot()
+    data['cohorts'][0]['cases'].pop()
+    with pytest.raises(ValueError, match='POPULATION_INVALID'):
+        render(data)
+
+
+def test_report_route_scope_headers_and_safe_failure(monkeypatch):
+    data = snapshot()
+    repo = Mock()
+    repo.get_project.return_value = {'project_id': data['project_id']}
+    app = FastAPI()
+    app.include_router(create_project_router(repo))
+    client = TestClient(app)
+    read = Mock(return_value=data)
+    monkeypatch.setattr('app.pilot_measurements.read', read)
+    url = f'/api/projects/{data["project_id"]}/pilot-report'
+    response = client.get(url)
+    assert response.status_code == 200
+    assert response.headers['cache-control'] == 'no-store'
+    assert "default-src 'none'" in response.headers['content-security-policy']
+    read.assert_called_once_with(repo, data['project_id'])
+    read.side_effect = RuntimeError('SECRET_MARKER')
+    response = client.get(url)
+    assert response.status_code == 503 and 'SECRET_MARKER' not in response.text
+    repo.get_project.return_value = None
+    assert client.get(url).status_code == 404
