@@ -5,6 +5,20 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 第十五案：NULL 聚合語意攔截與修正交付（2026-09-27）
+
+正式 semantic-null-group 完成。真實 Developer 提案副本將 COUNT_ROWS 改為
+COUNT_NON_NULL(category)，validate／compile-preview／save 均拒絕，指出
+aggregate 節點、函式及欄位差異；沒有新增規格、HPL 或寫入，重複保存只一筆
+拒絕事件。唯讀網站回歸 1 passed（4.1s），歷史差異、窄版面及返回通過。
+
+新 revision 經 SA v5／Developer v4，真實 Hop → Vertica 精確 2／2 MATCH，
+包含 NULL 組兩列及 A 組一列，來源 BOUND_PLATFORM_TARGET；QA v8 PASS。
+候選包隔離重播 PASS，正式 RELEASE_READY；下載 ZIP 指紋與 API 一致，
+六個 allowlist 成員及內容檢查通過。首次 SA 未知引用、植錯與修正歷史保留，
+未重跑原目標。正式集合達 15／20，尚缺五個執行失敗復原案例、成效量測、
+完整維運驗收及 knowledge-workspace 同步，不代表整體目標完成。
+
 ### 第十五案前置：SA 引用限定 Schema（2026-09-27）
 
 首次 SA 真實回傳因 SA_UNKNOWN_EVIDENCE 於 RESULT_PERSISTENCE 被拒絕；
