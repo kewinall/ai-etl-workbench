@@ -5,6 +5,20 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 語意植錯前置盤點（2026-09-27，尚未驗收）
+
+直接呼叫現行 validate_specification，使用既有測試 fixture 的已確認需求，
+將 GT 改為 GE、以及 COUNT_ROWS 改為 COUNT_NON_NULL(category)，兩種設計
+仍回覆 VALIDATED_NOT_APPROVED。這是可重現的程式層缺口，不是正式集合
+中的真實模型／API 植錯驗收，也不代表已授權執行。
+
+原因：目前日期範圍與 Join 有獨立已確認契約可比較，但一般數值門檻、
+聚合函數及輸出語意主要仍靠文字審查；型別合法不等於符合需求。
+下一步須提供版本綁定、可供使用者確認的結構化轉換意圖，讓共用 validator
+比較設計並回報規格路徑／節點／預期與實際值；不能寫死測試答案或只在
+Pilot 測試腳本攔截。新契約需納入 revision、SA／Developer context、網站
+確認與負向測試，保留舊版 checksum／已交付成果，再繼續正式語意五案。
+
 ### 缺漏 CSV 編碼案正式交付（2026-09-27）
 
 第 10 案原版 Gate 實測 CSV 契約不合法、NEEDS_INPUT，未寫入；目前錯誤
