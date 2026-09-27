@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from app.project_api import create_project_router
 from app.pilot_cohort import PilotCohortPlan, register
+from app.pilot_effort_coverage import read as read_coverage
 from test_pilot_cohort import plan_payload
 
 pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1', reason='Isolated PostgreSQL required')
@@ -57,3 +58,10 @@ def test_http_records_bound_server_time_and_recovers(actor):
                 seconds=saved['summary']['totals']['WORKBENCH']['recorded_human_seconds']
                 if actor=='FUNCTIONAL_TEST': assert seconds is None
                 else: assert isinstance(seconds,(float,int)) and seconds>=0
+                coverage=read_coverage(repo,project,cohort['cohort_id'])
+                assert coverage['denominator']==20 and coverage['complete_case_count']==0
+                work=coverage['modes']['WORKBENCH']
+                assert work['recorded_seconds']==seconds
+                assert work['cases_with_recorded_intervals']==(1 if actor=='HUMAN_SELF_REPORTED' else 0)
+                assert coverage['comparison_ready'] is False
+                with pytest.raises(ValueError): read_coverage(repo,uuid4(),cohort['cohort_id'])

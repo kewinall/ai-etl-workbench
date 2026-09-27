@@ -66,6 +66,11 @@ def read(repo, project_id):
     from .pilot_usage import read as read_usage
     for cohort in result:
         cohort['usage'] = read_usage(repo, project_id, cohort['cohort_id'])
+        from .pilot_effort_coverage import read as read_effort
+        try:
+            cohort['effort'] = read_effort(repo, project_id, cohort['cohort_id'])
+        except Exception:
+            cohort['effort'] = {'status':'CHECK_UNAVAILABLE','comparison_ready':False}
     from .pilot_scenario import check as check_scenario
     for original, measured in zip(cohorts, result):
         for case, row in zip(original['cases'], measured['cases']):

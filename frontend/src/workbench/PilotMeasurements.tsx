@@ -27,6 +27,20 @@ export function PilotMeasurements({projectId,navigate}:{projectId:string;navigat
         <h4>{c.name}</h4><p>目前可交付：{c.release_ready_count} / {c.denominator}；無法確認：{c.unverified_count}。準備版本 {c.attempt_count}，補正版本 {c.revision_count}。</p>
         <p>符合凍結情境證據：{c.scenario_evidence_matched_count??'尚未核對'} / {c.denominator}（包含來源指紋、固定答案、前置攔截／失敗修正與目前交付；不代表工時改善）。</p>
         <p>首次通過率、人工操作工時、人工基準、改善率與成本：尚無完整量測。</p>
+        <section aria-label="操作時間覆蓋">
+          <h5>已記錄操作區間（不是完整案例工時）</h5>
+          {c.effort?.status==='RECORDED_INTERVALS_ONLY'?<>
+            <p>真人來源為自行聲明、未驗證身分；有區間紀錄不等於全案已量測，不能據此推算改善率。</p>
+            {(['WORKBENCH','MANUAL_BASELINE'] as const).map(mode=>{
+              const m=c.effort.modes[mode];return <p key={mode}>
+                {mode==='WORKBENCH'?'工作台操作':'人工基準'}：{m.recorded_seconds===null?'尚未量測':`已記錄 ${m.recorded_seconds.toFixed(1)} 秒`}；
+                有區間紀錄 {m.cases_with_recorded_intervals} / {c.effort.denominator} 案，未記錄 {m.cases_without_recorded_intervals} 案。
+              </p>;
+            })}
+            <p>排除代理／功能測試 {c.effort.excluded_nonhuman_sessions} 段，放棄 {c.effort.abandoned_sessions} 段。
+              {c.effort.has_open_session?'仍有未結束區間，不計入小計。':''}</p>
+          </>:<p>計時覆蓋暫時無法核對，不代表零工時。</p>}
+        </section>
         {c.usage&&<section aria-label="模型用量覆蓋">
           <h5>模型用量（含所有版本）</h5>
           <ul>{c.usage.limitations.map((v:string)=><li key={v}>{v}</li>)}</ul>
