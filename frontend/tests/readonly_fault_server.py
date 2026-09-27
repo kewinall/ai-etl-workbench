@@ -1,12 +1,14 @@
-"""Local UI fault injection; GET only, no credentials, no production listener.
+"""Local UI fault injection; read-only upstream, no production listener.
 
 Run with Python from any directory; browse http://127.0.0.1:5194.
 First project list/evaluation requests fail once; retry reads real local API.
+Uploads are consumed locally, delayed and rejected; never forwarded or stored.
 Never use this server as the Pilot deployment.
 """
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Lock
+from time import sleep
 from urllib.request import urlopen
 from urllib.error import HTTPError
 
@@ -21,6 +23,22 @@ class Handler(SimpleHTTPRequestHandler):
 
     def log_message(self, *_):
         pass
+
+    def do_POST(self):
+        # Fault injection only: never forward a write to the real API.
+        if self.path != '/api/task-sources/upload':
+            self.send_error(405)
+            return
+        length = int(self.headers.get('Content-Length', '0'))
+        if not 0 < length <= 1024 * 1024:
+            self.send_error(413)
+            return
+        self.rfile.read(length)
+        sleep(15)
+        self.send_response(503)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(b'{"detail":"UI_DELAYED_UPLOAD_FAULT_NO_WRITE"}')
 
     def do_GET(self):
         if not self.path.startswith('/api/'):
