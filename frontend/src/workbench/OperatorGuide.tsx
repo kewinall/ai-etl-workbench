@@ -2,18 +2,19 @@ export function OperatorGuide({navigate}:{navigate:(path:string)=>void}) {
   return <article className="wb-project-content" aria-label="Pilot 操作指南">
     <section className="panel"><h2>從專案開始的 ETL 工程工作台</h2>
       <p>本機單一 Operator、多專案的內部 Pilot。PostgreSQL 保存平台控制資料；Vertica 是 ETL 測試來源與目標；Apache Hop 是唯一 ETL 執行引擎。</p>
-      <p>目前可管理專案、設定、需求與版本、檢視歷史及來源證據。完整 Hop → Vertica → QA → Release 尚未驗收完成；輸入核准或 Task 成功狀態都不等於交付核准。</p>
+      <p>可管理專案、設定、需求與版本，查閱 Hop、Vertica 比對、QA 與正式 Release 證據。個別案例交付需依該版本的即時核對結果；輸入核准或 Task 成功狀態不等於交付核准，也不代表整个平台驗收完成。</p>
       <div className="wb-actions"><button onClick={()=>navigate('/projects')}>選擇專案開始操作</button><button onClick={()=>navigate('/system')}>開啟平台設定中心</button></div>
     </section>
     <section className="panel"><h3>1. 設定工作範圍</h3>
       <ol><li>在專案工作區新增或選擇專案；第一頁「設定」維護名稱、說明、預設 AI／資料連線及中英命名字典。</li>
         <li>設定解析依序為 Task 明確選擇 → 專案預設 → 平台預設。沒有有效設定時停止，不隱含使用開發機連線。</li>
-        <li>第二頁「歷史 Task」可搜尋與篩選 Task 狀態。點選 Task 查看完整內容；「建立 Task」前往獨立建立畫面。</li></ol>
+        <li>第二頁「歷史 Task」可搜尋與篩選最新 Run 狀態。點選 Task 查看完整內容；「建立 Task」前往獨立建立畫面。</li>
+        <li>第三頁「Pilot 評估」保留全部 Run，包括失敗與取消；點選證據入口會選中該 Run，不使用最新成功版本代替。</li></ol>
       <p>修改後請儲存並確認結果。離開未儲存表單前會提醒；儲存失敗保留輸入，請先查看原因。</p>
     </section>
     <section className="panel"><h3>2. 設定 AI、連線與執行環境</h3>
       <ul><li>AI 供應商與模型：編輯 Profile、區域及角色路由；儲存設定不會自動呼叫模型。實際測試須明確授權並可能消耗額度。</li>
-        <li>資料連線與目標：設定 Vertica。平台 PostgreSQL 屬部署設定，不是可切換的 ETL 目標。</li>
+        <li>資料連線與目標：設定 Vertica 與明確 TLS 模式。保存後可做 SELECT 1 連線測試；不代表寫入或 ETL 已驗收。平台 PostgreSQL 屬部署設定，頁面僅顯示就緒狀態與變更指引。</li>
         <li>執行環境與路徑：指定 Worker 可存取的 Hop 與工作目錄；Windows 路徑不代表容器內存在相同檔案。</li>
         <li>機密與部署安全：連線機密僅可寫入；勿貼到需求、對話或一般設定欄位。加密主金鑰由部署環境提供。</li></ul>
       <p>本機 Copilot 使用 Windows 登入的獨立 Worker；容器不會自動借用該登入。每次真實驗收須依當次授權，不能沿用已消耗的一次性同意。</p>
@@ -29,7 +30,7 @@ export function OperatorGuide({navigate}:{navigate:(path:string)=>void}) {
     <section className="panel"><h3>4. 查閱歷史與處理失敗</h3>
       <p>Task 六頁籤：概覽、需求與規格、協作紀錄、產物與流程、執行與 QA、交付。節點、原始設定、Hop／SQL 及既有下載保留；歷史產物不等同新版核准交付。</p>
       <p>看到 HOP_RESULT_UNKNOWN 時，先人工核對是否已寫入；不可直接重跑。NEEDS_REVIEW 需要查看具體阻擋原因，不能視為已完成。</p>
-      <p>Release ZIP 目前因版本綁定 QA、人工交付核准與完整內容檢查未接通而暫停；原始歷史檔案未刪除。</p>
+      <p>交付頁分別顯示 QA 關聯 SDM、候選包、隔離可攜驗證與正式交付核准。只有目前證據核對通過的正式 Release 才提供下載；歷史交付數量不保證目前核准有效。</p>
     </section>
     <section className="panel"><h3>驗收與使用邊界</h3>
       <p>真實模型與 Vertica 驗收需要可用設定及明確測試範圍。測試收集器、模型 mock、單元測試或單獨網站成功，不可替代完整 ETL 驗收。</p>
