@@ -1,4 +1,4 @@
-import {useRef,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {jsonBody,request} from './api';
 
 export function PilotEffortControls({data,reload}:{data:any;reload:()=>Promise<void>}){
@@ -13,6 +13,17 @@ export function PilotEffortControls({data,reload}:{data:any;reload:()=>Promise<v
   });
   const active=data.recovery?data.events.find((e:any)=>e.action==='START'&&e.session_id===data.recovery.session_id):null;
   const expired=data.recovery?.status==='EXPIRED_REQUIRES_ABANDON';
+  const interruptionKey=`effort-interrupted:${endpoint}:${active?.session_id||'none'}`;
+  const [interrupted,setInterrupted]=useState(()=>{
+    try{return !navigator.onLine||localStorage.getItem(interruptionKey)==='true'}catch{return true}
+  });
+  useEffect(()=>{
+    if(!active)return;
+    const interrupt=()=>{setInterrupted(true);setActiveOnly(false);
+      try{localStorage.setItem(interruptionKey,'true')}catch{/* Fail closed in this page. */}};
+    window.addEventListener('offline',interrupt);window.addEventListener('pagehide',interrupt);
+    return()=>{window.removeEventListener('offline',interrupt);window.removeEventListener('pagehide',interrupt)};
+  },[interruptionKey,active?.session_id]);
   async function send(body:any){
     if(latch.current)return;
     latch.current=true;setBusy(true);setMessage('');
@@ -29,7 +40,7 @@ export function PilotEffortControls({data,reload}:{data:any;reload:()=>Promise<v
   function submit(action:string){
     if(!confirmed||pending)return;
     const selectedActor=action==='START'?actor:active?.actor;
-    if(!selectedActor||action==='STOP'&&(!activeOnly||expired))return;
+    if(!selectedActor||action==='STOP'&&(!activeOnly||expired||interrupted))return;
     void send({request_key:crypto.randomUUID(),action,actor:selectedActor,
       mode:action==='START'?mode:active.mode,session_id:action==='START'?null:active.session_id,
       expected_protocol_checksum:data.protocol_checksum,confirmed:true,
@@ -39,6 +50,7 @@ export function PilotEffortControls({data,reload}:{data:any;reload:()=>Promise<v
     <legend>記錄短操作區間</legend>
     <p>每段最多 120 秒。等待、離開頁面或無法確認全程操作時請放棄；目前不會自動追蹤操作或扣除閒置。</p>
     <p>真人來源僅為自行聲明，未驗證身分；功能測試及代理操作不列入真人工時。</p>
+    {active&&interrupted&&<p role="status">此區間曾離線或離開頁面，連續操作無法確認；請放棄本區間，不列入有效工時。</p>}
     {pending?<>
       <p role="status">有待確認請求，先重試原請求並回讀；不要另開區間。</p>
       <button disabled={pending.unreadable} onClick={()=>void send(pending)}>重試原計時請求</button>
@@ -57,7 +69,7 @@ export function PilotEffortControls({data,reload}:{data:any;reload:()=>Promise<v
       <label><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>我確認操作者來源及區間；本人操作為自行聲明</label>
       {data.recovery?<>
         <label><input type="checkbox" checked={activeOnly} onChange={e=>setActiveOnly(e.target.checked)}/>本段全程主動操作，未含等待或閒置</label>
-        <button disabled={!active||!confirmed||!activeOnly||expired} onClick={()=>submit('STOP')}>結束並保存區間</button>
+        <button disabled={!active||!confirmed||!activeOnly||expired||interrupted} onClick={()=>submit('STOP')}>結束並保存區間</button>
         <button disabled={!active||!confirmed} onClick={()=>submit('ABANDON')}>放棄本區間</button>
       </>:<button disabled={!actor||!confirmed||data.other_case_open} onClick={()=>submit('START')}>開始操作區間</button>}
     </>}

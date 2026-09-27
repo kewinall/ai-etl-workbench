@@ -14,7 +14,7 @@ test('計時檢視：空值、逾時、案例錯配與讀取失敗不可假裝�
     if(url.pathname===path&&route.request().method()==='POST'&&mode==='controls'){
       const body=route.request().postDataJSON();posts.push(body);
       if(posts.length===1)return route.fulfill({status:503,json:{detail:'synthetic response uncertainty'}});
-      const saved={...body,cohort_id:cohort.cohort_id,case_key:item.case_key,session_id:'synthetic-session',
+      const saved={...body,cohort_id:cohort.cohort_id,case_key:item.case_key,session_id:body.session_id||`synthetic-session-${events.length}`,
         sequence:events.length+1,recorded_at:'2026-09-27T12:00:00+08:00'};
       events.push(saved);return route.fulfill({json:saved});
     }
@@ -23,7 +23,7 @@ test('計時檢視：空值、逾時、案例錯配與讀取失敗不可假裝�
       if(mode==='error')return route.fulfill({status:503,json:{detail:'計時證據暫時無法讀取；不代表零工時'}});
       return route.fulfill({json:{project_id:mode==='wrong'?'wrong-project':project,cohort_id:cohort.cohort_id,case_key:item.case_key,
         protocol_checksum:'a'.repeat(64),comparison_ready:false,human_recording_enabled:mode==='controls',events,other_case_open:false,
-        recovery:mode==='expired'?{status:'EXPIRED_REQUIRES_ABANDON'}:events.length===1?{status:'OPEN_REQUIRES_EXPLICIT_CLOSE',session_id:'synthetic-session'}:null,
+        recovery:mode==='expired'?{status:'EXPIRED_REQUIRES_ABANDON'}:events.at(-1)?.action==='START'?{status:'OPEN_REQUIRES_EXPLICIT_CLOSE',session_id:events.at(-1).session_id}:null,
         summary:{totals:{WORKBENCH:{recorded_human_seconds:null},MANUAL_BASELINE:{recorded_human_seconds:null}},
           excluded_nonhuman_sessions:0,abandoned_sessions:0}}});
     }
@@ -60,7 +60,23 @@ test('計時檢視：空值、逾時、案例錯配與讀取失敗不可假裝�
   await region.getByLabel('本段全程主動操作，未含等待或閒置').check();
   await region.getByRole('button',{name:'結束並保存區間',exact:true}).click();
   await expect(start).toBeVisible();
-  expect(posts[2].action).toBe('STOP');expect(posts[2].session_id).toBe('synthetic-session');
+  expect(posts[2].action).toBe('STOP');expect(posts[2].session_id).toBe('synthetic-session-0');
   expect(events).toHaveLength(2);
+  await region.getByRole('combobox',{name:/^操作者來源/}).selectOption('FUNCTIONAL_TEST');
+  await region.getByLabel('我確認操作者來源及區間；本人操作為自行聲明').check();
+  await start.click();
+  await expect(region.getByRole('button',{name:'放棄本區間',exact:true})).toBeVisible();
+  await page.evaluate(()=>window.dispatchEvent(new Event('offline')));
+  await expect(region).toContainText('此區間曾離線或離開頁面');
+  await page.reload();
+  await page.locator('summary').filter({hasText:`${item.ordinal}. ${item.definition.title}`}).click();
+  await load.click();
+  await expect(region).toContainText('此區間曾離線或離開頁面');
+  await region.getByLabel('我確認操作者來源及區間；本人操作為自行聲明').check();
+  await region.getByLabel('本段全程主動操作，未含等待或閒置').check();
+  await expect(region.getByRole('button',{name:'結束並保存區間',exact:true})).toBeDisabled();
+  await region.getByRole('button',{name:'放棄本區間',exact:true}).click();
+  await expect(start).toBeVisible();
+  expect(events.at(-1).action).toBe('ABANDON');
   expect(mutations).toEqual([]);
 });
