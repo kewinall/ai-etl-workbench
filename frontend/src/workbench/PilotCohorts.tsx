@@ -95,7 +95,7 @@ export function PilotCohorts({projectId,navigate}:{projectId:string;navigate:(pa
             <button disabled={!selection[key]} onClick={()=>bind(cohort.cohort_id,item.case_key)}>確認固定綁定案例 {item.case_key}</button>
           </fieldset>}
           {!item.runs.length?<p>尚無 Run 證據；不算通過。</p>:item.runs.map((run:any)=><p key={run.run_id}>
-            {run.state} · {run.outcome_code||'尚無結果'} · {run.run_id}{' '}
+            {run.attempt_ordinal?`準備嘗試 #${run.attempt_ordinal}`:'舊版本次序未驗證'} · {run.state} · {run.outcome_code||'尚無結果'} · {run.run_id}{' '}
             <button onClick={()=>navigate(`/projects/${projectId}/tasks/${encodeURIComponent(item.task_id)}/execution/${run.run_id}`)}>查看此 Run 證據</button>
           </p>)}
         </details>})}

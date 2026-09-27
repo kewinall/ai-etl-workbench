@@ -38,10 +38,15 @@ def test_binding_preserves_cancelled_and_all_revisions_and_blocks_reassignment(c
             assert bind_task(repo, project, cohort, 'case-00', task_id) == first
             saved = inventory(repo, project)['cohorts'][0]
             assert saved['registered_cases'] == 20 and saved['bound_cases'] == 1
-            # Both are created inside one rollback-only transaction, so now() ties.
-            # Inventory must retain both; UUID tie-breaking does not prove first-attempt order.
+            # Tied now() values cannot affect the transactionally assigned order.
             assert {str(row['run_id']):row['state'] for row in saved['cases'][0]['runs']} == {
                 str(run['run_id']):'CANCELLED', str(second['run_id']):'QUEUED'}
+            assert saved['cases'][0]['attempt_order_verified'] is True
+            assert [str(row['run_id']) for row in saved['cases'][0]['runs']] == [str(run['run_id']), str(second['run_id'])]
+            assert [row['attempt_ordinal'] for row in saved['cases'][0]['runs']] == [1, 2]
+            assert queue.enqueue(task_id, 'pilot-binding-second')['run_id'] == second['run_id']
+            assert conn.execute('SELECT count(*) n FROM platform.pilot_case_attempt WHERE cohort_id=%s',
+                                (cohort,)).fetchone()['n'] == 2
             assert all(case['runs'] == [] for case in saved['cases'][1:])
             with pytest.raises(PilotEnrollmentConflict):
                 bind_task(repo, uuid4(), cohort, 'case-00', task_id)
@@ -50,6 +55,8 @@ def test_binding_preserves_cancelled_and_all_revisions_and_blocks_reassignment(c
             for sql, args in [
                 ('DELETE FROM platform.pilot_case_task WHERE task_id=%s', (task_id,)),
                 ('UPDATE platform.task SET project_id=%s WHERE task_id=%s', (uuid4(), task_id)),
+                ('UPDATE platform.pilot_case_attempt SET attempt_ordinal=3 WHERE run_id=%s', (run['run_id'],)),
+                ('DELETE FROM platform.pilot_case_attempt WHERE run_id=%s', (run['run_id'],)),
             ]:
                 with pytest.raises(psycopg.Error):
                     with conn.transaction(): conn.execute(sql, args)

@@ -5,7 +5,25 @@
 
 ## 已實作的前置能力
 
-### 最新：標準案例 Task 準備（尚未部署原 Pilot）
+### 最新：正式案例準備與首次嘗試次序
+
+案例準備版本已部署原 Pilot。正式集合 20／20 Task 已固定綁定；真實網站
+回讀一致。來源 bytes 唯讀核對符合固定樣本；缺編碼案例如預期呈現
+CSV_CONTRACT_INVALID，而不是補入預設值。此結果不代表 20 案已執行通過。
+
+新增 053 migration：已綁定案例的每個新 Run，在相同 Task lock／交易內
+分配不可改寫的 attempt_ordinal；重送不增號，取消與修訂都保留。既有無
+序號的歷史不回填猜測次序；若存在無序號舊 Run，拒絕為它續編新號碼。
+這是「準備嘗試」次序，不把 Gate、模型或 Hop 各自的結果混為首次成功。
+隔離 PostgreSQL 1148 passed／46 skipped／1 warning（25.32 秒），build
+通過。先新增私人控制 DB 備份，再套用 migration／部署；未更新既有 Run。
+
+正式首案及五個缺口案例已各建立第 1 次 Run、保存輸入核准並由控制 Worker
+執行 Gate。五案均為 REQUIREMENT_NEEDS_INPUT，首案初檢 CHECKED；未寫入
+Vertica。首案已授權一次既定 Copilot gpt-5.4 SA，模型結果另行驗證，不
+把排隊或授權當作模型通過。人工基準、語意故障、修復及 20 案交付仍未完成。
+
+### 標準案例 Task 準備能力與隔離驗證
 
 新增案例 `prepare` API 與網站按鈕：精確核對已登錄 definition、fixture／oracle
 指紋，透過原上傳服務保存固定合成 CSV，核對回傳檔名／大小／checksum／欄位，
@@ -21,14 +39,14 @@ Task、節點、建立請求鍵與案例綁定使用同一 PostgreSQL 交易；�
 回歸發現上傳政策讀取方法不存在，已改用既有 setting 介面後全數通過。
 隔離真實 UI 已建立一個標準合成 Task、回讀綁定 1／20、開啟六頁籤 Task
 工作區，狀態 CREATED 且無 Run；HTTP 重送 created=false、Task 相同。
-這不是正式 20 案驗收，原 Pilot 正式集合仍為 0／20 Task。
+這不是正式 20 案驗收；當次隔離驗證時原 Pilot 正式集合仍為 0／20 Task。
 
 後續隔離 UI 已通過返回／重載：再準備一個雙 CSV Join 缺口案例，已綁定
 2／20，兩個 Task 仍無 Run；API 讀回兩個來源且 Join keys 為空，沒有預先
 補正缺口。隔離驗證不納入正式案例分母。
 
-下一步：部署後逐案準備正式 Task；再補首次嘗試次序與情境注入證據，才開始
-正式 Run。人工基準仍未取得；新按鈕等待中跨頁防護與窄版面尚待補驗。
+下一步：取得首案真實 SA／Developer／Hop／QA／Release 證據，再補情境注入與
+缺口修訂、其餘案例。人工基準仍未取得；新按鈕等待中跨頁防護與窄版面尚待補驗。
 
 - 專案範圍的 `POST/GET /api/projects/{id}/pilot-cohorts`。
 - 固定 20 案，必須包含成功、需求缺口、語意缺陷、失敗修復四類。

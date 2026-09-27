@@ -85,9 +85,13 @@ def inventory(repo, project_id):
                 raise ValueError('PILOT_COHORT_INCOMPLETE')
             for case in cases:
                 # No latest-only selection: failed/cancelled and every revision remain visible.
-                case['runs'] = [dict(row) for row in conn.execute('''SELECT run_id,parent_run_id,
-                    state,phase,outcome_code,created_at FROM platform.task_run
-                    WHERE task_id=%s ORDER BY created_at,run_id''', (case['task_id'],)).fetchall()] if case['task_id'] else []
+                case['runs'] = [dict(row) for row in conn.execute('''SELECT r.run_id,r.parent_run_id,
+                    r.state,r.phase,r.outcome_code,r.created_at,a.attempt_ordinal
+                    FROM platform.task_run r LEFT JOIN platform.pilot_case_attempt a USING(run_id)
+                    WHERE r.task_id=%s ORDER BY a.attempt_ordinal NULLS LAST,r.created_at,r.run_id''',
+                    (case['task_id'],)).fetchall()] if case['task_id'] else []
+                case['attempt_order_verified'] = bool(case['runs']) and all(
+                    run['attempt_ordinal'] == index for index, run in enumerate(case['runs'], 1))
             result.append({**dict(cohort), 'registered_cases': 20,
                            'bound_cases': sum(case['task_id'] is not None for case in cases),
                            'cases': [dict(case) for case in cases],
