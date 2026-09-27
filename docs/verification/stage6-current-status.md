@@ -20,8 +20,14 @@ CSV_CONTRACT_INVALID，而不是補入預設值。此結果不代表 20 案已�
 
 正式首案及五個缺口案例已各建立第 1 次 Run、保存輸入核准並由控制 Worker
 執行 Gate。五案均為 REQUIREMENT_NEEDS_INPUT，首案初檢 CHECKED；未寫入
-Vertica。首案已授權一次既定 Copilot gpt-5.4 SA，模型結果另行驗證，不
-把排隊或授權當作模型通過。人工基準、語意故障、修復及 20 案交付仍未完成。
+Vertica。首案第一次 Copilot gpt-5.4 SA 真實回覆 NEEDS_INPUT：缺目標欄位
+型別及來源 NULL 語意。已保存第 2 次 revision，補明欄位型別／映射與
+SQL NULL／EXCLUDE_UNKNOWN，不修改樣本或答案。第二次 SA 回覆
+READY_FOR_REVIEW、issues=[]；舊結果及 lineage 保留，不算首次通過。
+真實網站顯示準備嘗試 #1／#2。兩次 SA 各一個 CLI session、無自動重試或
+工具使用；Token 為 PARTIAL，不補零或宣稱已知成本。
+命名契約與 SA 交接已確認，Developer 已授權一次真實提案，結果另行驗證。
+人工基準、語意故障、修復及 20 案交付仍未完成。
 
 ### 標準案例 Task 準備能力與隔離驗證
 
