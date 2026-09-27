@@ -1,6 +1,19 @@
 export type OracleColumn={name:string;kind:'TEXT'|'INTEGER'|'DECIMAL'|'BOOLEAN';nullable:boolean};
 export type OracleCell={value:string;isNull:boolean};
 export function oracleDocument(context:any,columns:OracleColumn[],rows:OracleCell[][]):string {
+  const version=context.version ?? 1;
+  if(version!==1&&version!==2)throw new Error('不支援的答案格式版本');
+  const ordered=version===2;
+  if(ordered){
+    const ordinal=columns.findIndex(column=>column.name===context.ordinal_column);
+    if(context.comparison!=='EXACT_SOURCE_SEQUENCE'||ordinal<0||columns[ordinal].kind!=='INTEGER'||columns[ordinal].nullable)
+      throw new Error('來源順序答案須包含不可為 NULL 的整數序號欄位');
+    rows.forEach((row,index)=>{
+      const cell=row[ordinal];
+      if(!cell||cell.isNull||!/^\d+$/.test(cell.value)||BigInt(cell.value)!==BigInt(index+1))
+        throw new Error(`第 ${index+1} 筆來源序號必須為 ${index+1}；不會自動排序答案`);
+    });
+  }else if(context.comparison!==undefined||context.ordinal_column!==undefined)throw new Error('舊版答案不能包含來源順序設定');
   if(rows.length>context.max_rows)throw new Error('答案筆數超過上限');
   const values=rows.map((row,index)=>'{'+columns.map((column,i)=>{
     const cell=row[i];let value:string;
@@ -34,7 +47,8 @@ export function oracleDocument(context:any,columns:OracleColumn[],rows:OracleCel
     }
     return JSON.stringify(column.name)+':'+value;
   }).join(',')+'}');
-  const header=JSON.stringify({version:1,specification_checksum:context.specification_checksum,naming_checksum:context.naming_checksum,columns});
+  const header=JSON.stringify({version,specification_checksum:context.specification_checksum,naming_checksum:context.naming_checksum,columns,
+    ...(ordered?{comparison:context.comparison,ordinal_column:context.ordinal_column}:{})});
   const document=header.slice(0,-1)+',"rows":['+values.join(',')+']}';
   if(new TextEncoder().encode(document).length>context.max_document_bytes)throw new Error('答案文件超過容量上限');
   return document;

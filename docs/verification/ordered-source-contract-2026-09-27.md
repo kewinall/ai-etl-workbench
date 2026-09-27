@@ -225,3 +225,17 @@ Still required: SDM generated-field semantics/visual verification, public V3
 specification editor and oracle UI compatibility, deployment, genuine revised
 case execution and independent portable replay. knowledge-workspace remains
 unsynchronized.
+
+## Ordered oracle editor serialization checkpoint
+
+The browser serializer previously always emitted oracle document V1, dropping
+the ordered context returned by the backend. It now preserves V2 comparison
+and ordinal bindings, rejects unknown versions/downgrades and requires the
+non-null INTEGER ordinal to equal each row's one-based position. It never
+sorts answers or business keys. The editor explains these rules explicitly.
+Legacy V1 documents retain their original field set and precision handling.
+
+Five focused serialization tests passed (403 ms), including duplicate and
+non-monotonic business IDs, reversed order, missing ordinal, nullable ordinal,
+wrong comparison and version downgrade. TypeScript/Vite build passed.
+These are frontend tests, not deployment, model or database acceptance.

@@ -51,6 +51,7 @@ export function OracleEditor({base,onHistory}:{base:string;onHistory:(items:any[
   };
   return <section aria-label="標準答案輸入"><h4>建立標準答案版本</h4>
     <p>依已核准規格輸入預期結果。筆數為零代表預期沒有任何輸出；空文字與 NULL 不同。小數與大整數會保留精度。</p>
+    {context?.version===2&&<p>本版逐列驗證來源順序。請依 CSV 原始資料列順序填寫，序號欄位 <code>{context.ordinal_column}</code> 必須從 1 連續遞增且不可為 NULL；系統不會自動排序答案。</p>}
     {loading&&<p role="status">正在檢查規格與欄位…</p>}
     {error&&<p role="alert">{error}</p>}{message&&<p role="status">{message}</p>}
     {!context&&!loading&&<button onClick={()=>setAttempt(n=>n+1)}>重新檢查答案欄位</button>}
