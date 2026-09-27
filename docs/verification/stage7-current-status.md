@@ -4,6 +4,14 @@
 
 ## 最新：隔離復原 API 真實 HTTP 下載驗證
 
+後續已整合為 `python -m app.recovery_verify ... --http`，不再需要臨時啟動腳本。
+同一復原副本以該 CLI 再驗 PASS：secret 1、download 20、frozen match 19、
+Run 與 effort 事件不變、HTTP true、ETL replay false，exit 0。短生命週期
+server 使用有界啟停，只允許兩類唯讀路徑；復原 DB 另行停止保留副本。
+相關定向測試 21 passed（3.03 秒）。初次兩項關閉測試因 Windows 對已關閉
+埠回 ConnectTimeout 而非 ConnectError 失敗；增加重新 bind 原埠的直接證據，
+並接受這兩種不可連線結果後通過，不放寬 server thread 必須終止的要求。
+
 在既有 network-none、migration 055 復原 DB 上啟動實際 `app.main`，使用
 Uvicorn 的 loopback TCP listener，不是 TestClient 或 mock API。沒有 host port、
 Worker、外部路由；所有派發旗標 false，副本 volumes 與 root filesystem 唯讀。

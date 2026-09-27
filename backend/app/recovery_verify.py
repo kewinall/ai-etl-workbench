@@ -67,6 +67,7 @@ def main():
     parser.add_argument('--project', required=True, type=UUID)
     parser.add_argument('--cohort', required=True, type=UUID)
     parser.add_argument('--expected-releases', required=True, type=int, choices=range(1, 21))
+    parser.add_argument('--http', action='store_true', help='Also verify real loopback HTTP downloads; no Worker is started')
     args = parser.parse_args()
     try:
         url = os.environ.get('DATABASE_URL', '')
@@ -84,7 +85,27 @@ def main():
         os.environ['PLATFORM_SETTINGS_ENCRYPTION_KEY'] = Path('/run/workbench-secrets/settings_key').read_text().strip()
         os.environ['WORKBENCH_ARTIFACT_ROOT'] = '/app/outputs'
         from .repository import PostgresRepository
-        result = verify(PostgresRepository(url), str(args.project), str(args.cohort), args.expected_releases)
+        repo = PostgresRepository(url)
+        result = verify(repo, str(args.project), str(args.cohort), args.expected_releases)
+        if args.http:
+            for flag in ('WORKBENCH_EXECUTION_ENABLED', 'WORKBENCH_SA_DISPATCH_ENABLED',
+                         'WORKBENCH_DEVELOPER_DISPATCH_ENABLED', 'WORKBENCH_QA_DISPATCH_ENABLED'):
+                os.environ[flag] = 'false'
+            from .main import app
+            from .recovery_server import serve
+            from .recovery_http import verify_http
+            def counts():
+                with repo.conn() as conn:
+                    return tuple(conn.execute(f'SELECT count(*) AS n FROM platform.{table}').fetchone()['n']
+                                 for table in ('task_run_event', 'pilot_effort_event'))
+            before = counts()
+            with serve(app) as base_url:
+                http_result = verify_http(base_url, str(args.project), str(args.cohort), args.expected_releases)
+            if counts() != before:
+                raise ValueError('RECOVERY_HTTP_HISTORY_CHANGED')
+            if any(http_result[key] != result[key] for key in ('downloads_verified', 'frozen_scenario_matches')):
+                raise ValueError('RECOVERY_HTTP_SERVICE_MISMATCH')
+            result.update(http_result, effort_events_unchanged=True)
     except Exception:
         # No exception text: database errors may contain paths or credentials.
         print(json.dumps({'status': 'FAILED', 'detail': 'Recovery scope or evidence check failed; inspect the isolated environment.'}))

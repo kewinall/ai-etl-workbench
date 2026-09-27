@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 REQUIRED = [
     'backend/app/recovery_verify.py',
     'backend/app/recovery_http.py',
+    'backend/app/recovery_server.py',
     'backend/app/pilot_report.py',
     'docs/recovery-verification.md',
     'docs/staged-completion.md',

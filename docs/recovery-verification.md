@@ -50,6 +50,14 @@ ETL、改寫核准或放寬校驗。缺失不能當成零。完成後停止隔�
 
 ## 驗證範圍
 
+在上述 CLI 加上 `--http`，可在原隔離檢查通過後自動啟動短生命週期的
+Uvicorn loopback TCP server，完成 HTTP 檢查並關閉。它使用實際 `app.main`，
+四項派發旗標固定 false、不啟動 Worker，僅允許量測與 Release download 的
+GET 路徑；其他方法與路徑拒絕。啟動最多等待 5 秒、關閉最多等待 10 秒。
+HTTP 與 service-layer 案數需一致，且 Run／effort 事件數不得改變。
+沒有 `--http` 時仍保留原 service-layer 檢查。此短生命週期 server 不取代
+部署 entrypoint、migration readiness 或操作網站的完整復原驗收。
+
 另有 `app.recovery_http.verify_http(base_url, project_id, cohort_id, expected_releases)`
 供已隔離的 API 使用。它只送 GET，關閉環境 proxy、redirect，核對 20 案與
 實際下載的標頭、checksum、ZIP；不負責建立隔離或啟動服務。呼叫前仍須
