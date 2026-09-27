@@ -4,6 +4,7 @@ import {SpecificationEditor} from './SpecificationEditor';
 import {SdmPreview} from './SdmPreview';
 import {SdmHistory} from './SdmHistory';
 import {JoinSummary} from './JoinSummary';
+import {SourceOrderSummary} from './SourceOrder';
 
 const operators: Record<string, string> = {EQ: '等於', NE: '不等於', GT: '大於', GE: '大於或等於', LT: '小於', LE: '小於或等於', IS_NULL: '為空值', IS_NOT_NULL: '非空值'};
 const functions: Record<string, string> = {SUM: '加總', COUNT_ROWS: '筆數', COUNT_NON_NULL: '非空值筆數', MIN: '最小值', MAX: '最大值'};
@@ -52,6 +53,7 @@ export function SpecificationHistory({taskId, runId}: {taskId: string; runId: st
         <div><dt>規格識別碼</dt><dd className="spec-checksum">{current.content_checksum}</dd></div>
       </dl>
       <JoinSummary joins={spec.joins}/>
+      <SourceOrderSummary value={spec.source_order}/>
       <h5>篩選條件（全部符合）</h5>
       {spec.filters.length ? <ul>{spec.filters.map((filter: any, index: number) => <li key={index}>{filter.column} {operators[filter.operator] || filter.operator} {filter.constant ? String(filter.constant.value) : ''}</li>)}</ul> : <p>不篩選資料。</p>}
       <p>空值比較結果不明時排除該筆資料；明確的「為空值」條件除外。</p>

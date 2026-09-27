@@ -292,3 +292,19 @@ independent workbook visual inspection. The prior native-renderer verification
 records the operator-approved existing openpyxl renderer. Next: generate an
 ordered synthetic workbook through that renderer and inspect both sheets with
 the bundled artifact runtime, including all newly added rule rows.
+
+## Public V3 design API checkpoint
+
+V3 validate/compile-preview/save now use the existing specification endpoints
+and unchanged approval gate. The ordered encrypted-oracle integration test now
+uses public specification save/approve rather than internal storage calls.
+New real isolated PostgreSQL/API checks cover context binding, preview without
+mutation, idempotent save, checksum-bound approval, exact historical readback,
+and rejection of changed ordinal, omitted ordinal and V1 downgrade. Run state
+does not change, and no Hop artifact or agent invocation is created.
+
+Full backend regression: 1,397 passed, 48 skipped, one warning, 28.67 seconds,
+exit 0. Historical specification UI also displays the source-order summary.
+Opening the design API is not deployment or execution approval. Ordered XLSX
+visual inspection, browser roundtrip, live execution and portable replay remain
+required; no existing Pilot run or frozen oracle was changed.

@@ -21,15 +21,13 @@ from test_source_order_compilation import ordered_design
 def test_ordered_oracle_encrypted_roundtrip_and_comparison_history(context):
     queue,task_id,run,spec,naming,api=prepared(context,design_factory=ordered_design)
     rid=run['run_id']
-    # Public V3 execution remains closed pending full QA/release integration.
-    assert api.post(f'/api/tasks/{task_id}/runs/{rid}/specifications',json=spec).status_code==422
-    with queue.conn() as conn:
-        current,names=store.context(queue,conn,task_id,rid)
-        checked=validate_specification(spec,current,names)
-        assert checked['status']=='VALIDATED_NOT_APPROVED',checked
-        saved=store.save(queue,conn,task_id,rid,checked)
-        sid=saved['specification_id']
-        store.approve(queue,conn,task_id,rid,sid,saved['content_checksum'])
+    # Public save/approval does not dispatch execution or grant release.
+    url=f'/api/tasks/{task_id}/runs/{rid}/specifications'
+    response=api.post(url,json=spec)
+    assert response.status_code==200,response.text
+    saved=response.json();sid=saved['specification_id']
+    assert saved['execution_authorized'] is False
+    assert api.post(url+'/'+sid+'/approve',json={'content_checksum':saved['content_checksum']}).status_code==200
     editor=oracle_editor_context(queue,task_id,rid,sid)
     assert editor['version']==2 and editor['comparison']=='EXACT_SOURCE_SEQUENCE'
     assert editor['ordinal_column']=='source_position'
