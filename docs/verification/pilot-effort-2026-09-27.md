@@ -45,3 +45,17 @@ STOP 與 ABANDON 重送同一已結束 session 回讀原結果，不新增第二
 
 仍待：多連線競爭測試、讀取／復原 API、真人自我確認的明確可信度標籤、
 網站活動區間與斷線處理、實際真人基準。此階段不宣稱完整計時功能可用。
+
+## 唯讀復原 API
+
+新增 GET `/api/projects/{project_id}/pilot-cohorts/{cohort_id}/cases/{case_key}/effort`。
+回應 no-store，僅回傳指定案例事件與小計；全域序號先驗證再投影，持久序號不改寫。
+有未結束區間時明確回傳 OPEN_REQUIRES_EXPLICIT_CLOSE 或 EXPIRED_REQUIRES_ABANDON；
+不以查詢觸發續計、結束、放棄或推估工時。另一案例正在計時只顯示布林阻擋，
+不洩露對方案例、session 或事件。跨專案／集合錯配拒絕，錯誤不暴露儲存細節。
+
+PostgreSQL 測試核對讀取前後事件完全一致、逾時復原、關閉後重讀、其他案例隔離；
+API 測試核對 no-store、404、遮蔽錯誤與沒有公開寫入入口（POST 405）。
+完整隔離回歸 1418 passed／48 skipped／1 warning（28.93 秒）。
+正式部署尚未更新，本紀錄不代表真人計時或網站操作已驗收。下一步為多連線
+競爭驗證、網站復原與人工來源確認流程；未解決的完整性限制仍保留。

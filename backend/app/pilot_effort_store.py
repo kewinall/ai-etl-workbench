@@ -30,6 +30,35 @@ def _scope(conn, project_id, cohort_id, case_key):
     return row['plan_checksum']
 
 
+def read(repo, project_id, cohort_id, case_key):
+    """Read-only recovery view; never close, resume or count an open interval."""
+    with repo.conn() as conn:
+        conn.execute('SELECT pg_advisory_xact_lock_shared(%s)', (LOCK_ID,))
+        checksum = _scope(conn, project_id, cohort_id, case_key)
+        rows = _events(conn)
+        global_summary = _summary(rows)
+        scoped = [r for r in rows if str(r['cohort_id']) == str(cohort_id) and r['case_key'] == case_key]
+        # Global order was validated above. Rebase only this in-memory projection;
+        # the returned persisted events retain their authoritative sequence numbers.
+        summary = _summary([{**r, 'sequence': n} for n, r in enumerate(scoped, 1)])
+        now = conn.execute('SELECT clock_timestamp() AS stamp').fetchone()['stamp']
+        recovery = None
+        if summary['open_session']:
+            start = scoped[-1]
+            age = (now - start['recorded_at']).total_seconds()
+            if age < 0:
+                raise ValueError('EFFORT_CLOCK_REVERSED')
+            recovery = {'session_id': str(start['session_id']),
+                'status': 'EXPIRED_REQUIRES_ABANDON' if age > MAX_INTERVAL_SECONDS else 'OPEN_REQUIRES_EXPLICIT_CLOSE',
+                'started_at': start['recorded_at'], 'counted_seconds': None,
+                'automatic_resume': False}
+        return {'project_id': str(project_id), 'cohort_id': str(cohort_id), 'case_key': case_key,
+            'protocol_checksum': checksum, 'checked_at': now, 'summary': summary,
+            'recovery': recovery, 'other_case_open': bool(global_summary['open_session'] and not recovery),
+            'events': [{k: r[k] for k in ('sequence', 'session_id', 'action', 'actor', 'mode', 'recorded_at')} for r in scoped],
+            'human_recording_enabled': False, 'comparison_ready': False}
+
+
 def record(repo, project_id, cohort_id, case_key, request_key, *, action,
            actor, mode, session_id=None):
     if actor not in ('DELEGATED_AGENT', 'FUNCTIONAL_TEST'):

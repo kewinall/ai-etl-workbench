@@ -6,7 +6,7 @@ import psycopg
 import pytest
 from psycopg.rows import dict_row
 from app.pilot_cohort import PilotCohortPlan, register
-from app.pilot_effort_store import record, _events, _summary
+from app.pilot_effort_store import record, read, _events, _summary
 from test_pilot_cohort import plan_payload
 
 pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1', reason='Isolated PostgreSQL required')
@@ -27,6 +27,16 @@ def test_effort_storage_scope_replay_immutability_and_expiry(monkeypatch):
                 return record(repo, project, cohort, 'case-00', key, action=action,
                     actor='FUNCTIONAL_TEST', mode='WORKBENCH', **kwargs)
             first=call('effort-start-test')
+            before = _events(conn)
+            recovery = read(repo, project, cohort, 'case-00')
+            assert recovery['recovery']['status'] == 'OPEN_REQUIRES_EXPLICIT_CLOSE'
+            assert recovery['recovery']['automatic_resume'] is False
+            other = read(repo, project, cohort, 'case-01')
+            assert other['other_case_open'] is True and other['events'] == []
+            assert other['recovery'] is None
+            assert _events(conn) == before
+            with pytest.raises(ValueError, match='SCOPE'):
+                read(repo, uuid4(), cohort, 'case-00')
             assert call('effort-start-test') == first
             with pytest.raises(ValueError, match='OPEN_SESSION'): call('effort-second-test')
             with pytest.raises(ValueError, match='SCOPE'):
@@ -38,6 +48,7 @@ def test_effort_storage_scope_replay_immutability_and_expiry(monkeypatch):
             assert call('effort-stop-test', 'STOP', session_id=first['session_id']) == stopped
             second=call('effort-next-test')
             monkeypatch.setattr('app.pilot_effort_store.MAX_INTERVAL_SECONDS', -1)
+            assert read(repo, project, cohort, 'case-00')['recovery']['status'] == 'EXPIRED_REQUIRES_ABANDON'
             expired=call('effort-expired-test', 'STOP', session_id=second['session_id'])
             assert expired['action']=='ABANDON'
             assert call('effort-expired-test', 'STOP', session_id=second['session_id']) == expired
@@ -45,6 +56,9 @@ def test_effort_storage_scope_replay_immutability_and_expiry(monkeypatch):
             assert summary['abandoned_sessions']==1
             assert summary['excluded_nonhuman_sessions']==1
             assert summary['totals']['WORKBENCH']['recorded_human_seconds'] is None
+            saved = read(repo, project, cohort, 'case-00')
+            assert saved['recovery'] is None and saved['other_case_open'] is False
+            assert len(saved['events']) == 4 and saved['summary'] == summary
             for query in ('DELETE FROM platform.pilot_effort_event', 'UPDATE platform.pilot_effort_event SET mode=mode'):
                 with pytest.raises(psycopg.Error):
                     with conn.transaction(): conn.execute(query)

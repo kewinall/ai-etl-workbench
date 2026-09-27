@@ -79,6 +79,22 @@ def create_project_router(repo) -> APIRouter:
         except Exception:
             raise HTTPException(503,detail={'code':'PROJECT_EVALUATION_UNAVAILABLE','message':'專案評估證據暫時無法讀取，不代表沒有案例。'}) from None
 
+    @router.get('/{project_id}/pilot-cohorts/{cohort_id}/cases/{case_key}/effort')
+    def effort_history(project_id: UUID, cohort_id: UUID, case_key: str, response: Response):
+        from .pilot_effort_store import read
+        response.headers['Cache-Control'] = 'no-store'
+        try:
+            get_project(project_id)
+            return read(repo, project_id, cohort_id, case_key)
+        except HTTPException:
+            raise
+        except ValueError as error:
+            if str(error) == 'EFFORT_CASE_SCOPE_INVALID':
+                raise HTTPException(404, detail='找不到此專案的量測案例') from None
+            raise HTTPException(503, detail='計時證據暫時無法核對；不代表零工時') from None
+        except Exception:
+            raise HTTPException(503, detail='計時證據暫時無法讀取；不代表零工時') from None
+
     @router.post('', status_code=201)
     def create_project(data: ProjectPayload):
         try:
