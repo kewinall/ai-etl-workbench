@@ -96,3 +96,25 @@ WSL 曾停止，先確認 Stopped 後恢復既有容器與資料卷；沒有重�
 保留舊 context checksum，新增嚴格的同次執行 enrichment 與負向測試。
 檢查／補充實測證據後再授權 QA 複核，不以修改提示強迫 PASS，不改需求以避開問題，
 不重新執行已成功的目標。第 4 階段仍未完成，第 5–7 階段不受此 checkpoint 宣稱完成。
+
+## 2026-09-27 單來源 QA 補證與正式交付通過
+
+加入 QA context v6 的 `single_source_contract`：驗證原 HPL 選項、來源欄位指紋、
+精確區分大小寫的 positional header preflight，以及同 Run target claim 的 DDL 指紋。
+DDL 證據標示平台登錄範圍，不聲稱即時 catalog 或外部 DBA 未修改；獨立引擎探針仍非此 Run 實測。
+v3→v6 僅可移除新增欄位還原完整舊 context 才允許補證，不能改寫需求／執行／比對；
+既有 PASS 的 v3 context 保留版本。Prompt v6 說明證據範圍，不要求模型 PASS。
+
+- 針對測試：38 passed（0.57s），含 DDL 與實際 delivery compiler 一致、錯誤 claim／header 拒絕。
+- 隔離 PostgreSQL 全套：1059 passed、46 skipped、1 warning（23.98s）；其後新增兩項上述單元測試另行通過。
+- API／Worker 重建部署。三個既有正式交付案例皆仍為 APPROVED_CURRENT。
+- 此修正版真實 QA v6 PASS、無 issue；v5 NEEDS_REVIEW 與原日誌原樣保留。
+- 依使用者委派核准 QA，產生綁定 SDM、候選包；既有隔離 Vertica 啟動及唯讀連線通過。
+- 新候選 HWF 單次隔離執行 PASS，通過固定標準答案；正式 Release 核准後 RELEASE_READY。
+- 真實下載 ZIP 指紋與 API 相符，六個固定成員、五份 artifact 的大小與 checksum 均驗證。
+  內部識別碼與 ZIP 指紋僅留本機平台，不新增至公開文件。
+- 原失敗仍 FAILED，修正版原始 Hop 僅一次 WRITE_STARTED，沒有重放原目標。
+
+下一步完成此案例真實網站歷史切換、節點／診斷／交付與窄版回歸，再判定第 4 階段。
+第 5–7 階段仍未完成。Workspace CURRENT 可同步；tasks.yml 因既有內容含敏感 metadata
+遭安全審查拒絕，未改用其他方式繞過；後續須先取得安全的去識別更新方案。

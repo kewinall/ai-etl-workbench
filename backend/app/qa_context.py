@@ -10,6 +10,7 @@ from .private_log_store import read_private_log
 from .hop_log_evidence import hop_log_evidence
 from .comparison_store import checked_public_evidence
 from .qa_execution_details import execution_details
+from .qa_single_source_contract import inspect_contract, preserve_reviewed_context
 
 
 def load_qa_context(queue,task_id,run_id,comparison_id,*,connection=None):
@@ -35,6 +36,15 @@ def load_qa_context(queue,task_id,run_id,comparison_id,*,connection=None):
         if compiled['hpl_checksum']!=auth['hpl_checksum']:raise ValueError('QA_HPL_BINDING_CHANGED')
         provenance=conn.execute('SELECT * FROM platform.result_comparison_provenance WHERE comparison_id=%s AND run_id=%s',
             (comparison_id,run_id)).fetchone()
+        details=execution_details(run,compiled,auth)
+        if row['spec_json']['version'] == 1:
+            latest=conn.execute("""SELECT status,input_json,output_json FROM platform.agent_invocation
+                WHERE task_id=%s AND run_id=%s AND role='pilot_qa'
+                ORDER BY created_at DESC,invocation_id DESC LIMIT 1""",(task_id,run_id)).fetchone()
+            if not preserve_reviewed_context(latest):
+                claim=conn.execute('SELECT * FROM platform.task_run_target_claim WHERE run_id=%s FOR SHARE',
+                                   (run_id,)).fetchone()
+                details['single_source_contract']=inspect_contract(compiled,details,claim)
     root=ET.fromstring(compiled['hpl'])
     names=[node.findtext('name') for node in root.findall('transform')]
     errors=validate_pipeline_graph(root)
@@ -60,7 +70,7 @@ def load_qa_context(queue,task_id,run_id,comparison_id,*,connection=None):
     semantics={'requirement':run['input_snapshot']['requirement_text'],
         'conditions':run['input_snapshot']['target_config']['requirements_v1'],
         'specification':row['spec_json'],
-        'execution_details':execution_details(run,compiled,auth),
+        'execution_details':details,
         'nodes':[{'id':node.findtext('name'),'component':node.findtext('type')} for node in root.findall('transform')]}
     if row['spec_json']['version'] == 2:
         semantics['join_conditions'] = run['input_snapshot']['target_config']['join_contract_v1']

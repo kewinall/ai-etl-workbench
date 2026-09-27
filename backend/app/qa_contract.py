@@ -19,6 +19,7 @@ class QANodeV1(BaseModel):
 
 class QAExecutionDetailsV1(BaseModel):
     model_config=ConfigDict(extra='forbid')
+    single_source_contract: dict | None=None
     csv_input_contract: CsvInputContractV1
     compiler_plan: dict
     output_types: dict[str,str]
@@ -115,6 +116,13 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
         details=value.get('execution_details')
         if details:
             plan=details['compiler_plan']
+            if not multi:
+                if details.get('single_source_contract') is None:
+                    details.pop('single_source_contract',None)
+                else:
+                    from .qa_single_source_contract import expected_contract
+                    if details['single_source_contract'] != expected_contract(value['specification'],details):
+                        raise ValueError('QA_SINGLE_SOURCE_CONTRACT_CHANGED')
             if multi:
                 if details.get('runtime_options') is None:
                     details.pop('runtime_options',None)  # Preserve historical v4 bytes.
@@ -145,7 +153,8 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
                     or not plan.get('stages')
                     or any(nodes.get(stage.get('id'))!=stage.get('component') for stage in plan['stages'])):
                 raise ValueError('QA_EXECUTION_DETAILS_BINDING_CHANGED')
-        context.update(version=(5 if details and 'runtime_options' in details else 4) if multi else (3 if 'execution_details' in value else 2),semantics=value)
+        context.update(version=(5 if details and 'runtime_options' in details else 4) if multi else
+                       (6 if details and 'single_source_contract' in details else 3 if details else 2),semantics=value)
     return {**context,'context_checksum':digest(context)}
 
 

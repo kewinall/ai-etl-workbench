@@ -22,7 +22,9 @@ def test_context_is_repeatable_and_excludes_runtime_settings():
     assert {e['id'] for e in first['context']['evidence']}==set(REQUIRED_CHECKS)
     assert all(e['status']=='PASS' for e in first['context']['evidence'])
     assert set(first['context'])=={'version','run_id','specification_checksum','evidence','context_checksum','semantics'}
-    assert first['context']['version']==3
+    assert first['context']['version'] in (3,6)
+    if first['context']['version']==6:
+        assert first['context']['semantics']['execution_details']['single_source_contract']
     assert first['context']['semantics']['requirement']==first['run']['input_snapshot']['requirement_text']
     assert first['context']['semantics']['nodes']
     assert not any(key in str(first['context']['semantics']) for key in ('password','secret_ref','file_path','connection_id'))

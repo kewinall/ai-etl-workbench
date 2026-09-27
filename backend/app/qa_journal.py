@@ -118,6 +118,8 @@ def same_execution_enrichment(previous,current):
         if not semantics.pop('execution_details',None):return False
     elif previous.get('version')==4 and current.get('version')==5:
         if not (semantics.get('execution_details') or {}).pop('runtime_options',None):return False
+    elif previous.get('version')==3 and current.get('version')==6:
+        if not (semantics.get('execution_details') or {}).pop('single_source_contract',None):return False
     else:return False
     try:
         canonical=build_qa_context(current['run_id'],current['specification_checksum'],current['evidence'],semantics)
