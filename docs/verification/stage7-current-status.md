@@ -2,6 +2,16 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 可重複復原檢查工具
+
+新增 `app.recovery_verify` 及 [執行契約](../recovery-verification.md)，将先前
+臨時驗證整理為 opt-in 工具。拒絕非隔離用途的連線、含密碼／query 的 DSN，
+檢查 IPv4／IPv6 路由及 readonly mounts；不列印明文或原始 exception。
+8 項 scope 單元測試通過。最終版在既有無網路復原副本實測 PASS：
+1 筆 secret 解密、20 份 download service／ZIP 指紋完整、19 個凍結情境匹配、
+events unchanged。HTTP verified 明確為 false，ETL replayed 為 false。
+驗證後停止隔離容器，資料保留。這不是自動備份／還原或完整環境復原工具。
+
 ## 2026-09-27：既有 PostgreSQL 備份的實際隔離還原
 
 核對先前私有備份：1,370,878 bytes，SHA-256
