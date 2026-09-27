@@ -6,6 +6,13 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 REQUIRED = [
+    'backend/app/recovery_verify.py',
+    'backend/app/pilot_report.py',
+    'docs/recovery-verification.md',
+    'docs/staged-completion.md',
+    'docs/verification/stage5-current-status.md',
+    'docs/verification/stage6-current-status.md',
+    'docs/verification/stage7-current-status.md',
     'scripts/hop/ValidatePipeline.java',
     'scripts/hop/ExecuteCompilerProbe.java',
     'scripts/hop/InspectCompilerPlugins.java',

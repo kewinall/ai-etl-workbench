@@ -57,7 +57,10 @@ events unchanged。HTTP verified 明確為 false，ETL replayed 為 false。
 測試後停止隔離容器，保留其副本與資料卷供複查；未刪除或改動正式資料。
 此結果是「指定 DB 備份可以實際還原」，不是 HTTP health check 或僅列出 TOC。
 
-## 尚未證明
+## 舊備份演練後的待辦（歷史快照）
+
+以下是 migration 053 演練當時的缺口；前三項已有下節 055 副本的部分證據。
+目前剩餘範圍以 055 節末與「下一步」為準，不重複宣稱全部尚未執行。
 
 - 最新 migration 055 的一致性備份及還原。
 - 加密主金鑰與 ciphertext 的配對復原及可用性（不得輸出明文）。

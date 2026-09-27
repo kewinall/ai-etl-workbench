@@ -18,7 +18,8 @@
 詳見 [報告驗證](pilot-report-2026-09-27.md)。
 第 6 階段仍未完成，不由交付數推論改善率；第 7 階段持久 Worker、重啟、
 完整備份還原及 knowledge-workspace 同步仍待驗收。
-既有 migration 053 備份已完成隔離資料庫還原，並非完整環境復原，
+既有 migration 053 與最新 migration 055 備份均已完成隔離資料庫還原；
+055 副本金鑰與 20 份 ZIP 通過 service-layer 驗證，仍非 HTTP 或完整環境復原，
 詳見 [第 7 階段](stage7-current-status.md)。
 
 以下為歷史里程碑，案數代表各段當時狀態，不是最新總數。
