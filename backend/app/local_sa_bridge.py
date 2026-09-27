@@ -6,6 +6,7 @@ from uuid import UUID
 from .run_queue import RunQueue, RunConflict
 from .sa_work_queue import SAWorkQueue, authorization_offer
 from .sa_journal import SAJournal
+from .sa_failure import safe_code
 
 
 def handle(queue, data):
@@ -44,7 +45,7 @@ def handle(queue, data):
         status = SAJournal(queue).finish(task_id, invocation_id, data['review'], data['trace'], token)
         return {'status': status, 'invocation_id': str(invocation_id), 'execution_authorized': False}
     if action == 'uncertain':
-        SAJournal(queue).hold_uncertain(task_id, invocation_id, data.get('trace'))
+        SAJournal(queue).hold_uncertain(task_id, invocation_id, data.get('trace'), failure=data.get('failure'))
         return {'status': 'OUTCOME_UNKNOWN_NEEDS_REVIEW'}
     raise ValueError('UNKNOWN_LOCAL_WORKER_ACTION')
 
@@ -57,7 +58,7 @@ def main():
         result = handle(RunQueue(os.environ['DATABASE_URL']), json.loads(raw))
         print(json.dumps(result, default=str, ensure_ascii=False))
     except Exception as error:
-        print(json.dumps({'status': 'ERROR', 'code': str(error) if isinstance(error, RunConflict) else 'LOCAL_WORKER_REQUEST_FAILED'}))
+        print(json.dumps({'status': 'ERROR', 'code': safe_code(error)}))
         raise SystemExit(1) from None
 
 

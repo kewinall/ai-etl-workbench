@@ -4,6 +4,7 @@ from psycopg.types.json import Jsonb
 from .run_queue import RunConflict
 from .sa_contract import build_sa_context, validate_sa_review, digest, SAReviewV1
 from .sa_gateway import PROMPT, PROMPT_VERSION
+from .sa_failure import failure_trace, FAILURE_CODES, FAILURE_STAGES
 
 
 class SAJournal:
@@ -42,7 +43,9 @@ class SAJournal:
                 result['invocation']['duration_ms'] = trace.get('duration_ms', row['duration_ms'])
                 result['invocation']['review'] = output.get('review') if row['status'] in ('VALIDATED_NOT_APPROVED', 'STALE_RESULT_NEEDS_REVIEW') else None
                 allowed_errors = {'MODEL_CALL_FAILED', 'MODEL_TEMPORARY_FAILURE', 'MODEL_OUTPUT_INVALID', 'SA_OUTPUT_CONTRACT_INVALID', 'SA_DISPATCH_INTERRUPTED', 'SA_RUN_NOT_AUTHORIZED', 'SA_GATE_BLOCKED', 'SA_MODEL_VERSION_MISMATCH'}
+                allowed_errors |= FAILURE_CODES
                 result['invocation']['error_code'] = trace.get('error_code') if trace.get('error_code') in allowed_errors else ('SA_REVIEW_REQUIRED' if trace.get('error_code') else None)
+                result['invocation']['failure_stage'] = trace.get('failure_stage') if trace.get('failure_stage') in FAILURE_STAGES else None
             return result
 
     def reserve(self, task_id, run_id, authorization=None):
@@ -97,9 +100,14 @@ class SAJournal:
             self.queue.event(conn, run['run_id'], 'SA_' + status, run['phase'])
             return status
 
-    def hold_uncertain(self, task_id, invocation_id, trace=None):
+    def hold_uncertain(self, task_id, invocation_id, trace=None, *, failure=None):
         with self.queue.conn() as conn:
             self.queue.locked_task(conn, task_id)
+            if failure is not None:
+                record = conn.execute("SELECT * FROM platform.agent_invocation WHERE invocation_id=%s AND task_id=%s AND role='pilot_sa' AND status='DISPATCH_RESERVED' FOR UPDATE", (invocation_id, task_id)).fetchone()
+                if not record:
+                    raise RunConflict('SA_RESULT_NOT_WRITABLE')
+                trace = failure_trace(record, failure if isinstance(failure, dict) else {})
             row = conn.execute("UPDATE platform.agent_invocation SET status='OUTCOME_UNKNOWN_NEEDS_REVIEW',output_json=%s WHERE invocation_id=%s AND task_id=%s AND role='pilot_sa' AND status='DISPATCH_RESERVED' RETURNING run_id", (Jsonb({'trace': trace, 'execution_authorized': False}), invocation_id, task_id)).fetchone()
             if not row:
                 raise RunConflict('SA_RESULT_NOT_WRITABLE')

@@ -125,6 +125,25 @@ def test_claimed_work_cannot_be_cancelled_as_unbilled(context):
         work.cancel_queued(task_id, run['run_id'])
 
 
+def test_native_failure_diagnostic_persisted_without_accepting_review(context):
+    queue, task_id, run = prepared(context)
+    journal = SAJournal(queue)
+    reserved = journal.reserve(task_id, run['run_id'])
+    journal.hold_uncertain(task_id, reserved['invocation_id'], failure={
+        'error_code':'SA_UNKNOWN_EVIDENCE', 'failure_stage':'RESULT_PERSISTENCE',
+        'review':{'private':'not a valid review'}, 'trace':None})
+    result = journal.read(task_id, run['run_id'])['invocation']
+    assert result['status']=='OUTCOME_UNKNOWN_NEEDS_REVIEW' and result['review'] is None
+    assert result['error_code']=='SA_UNKNOWN_EVIDENCE' and result['failure_stage']=='RESULT_PERSISTENCE'
+    assert result['usage']['total_tokens'] is None
+    assert queue.detail(task_id,run['run_id'])['write_started'] is False
+    with queue.conn() as conn:
+        saved=conn.execute('SELECT output_json FROM platform.agent_invocation WHERE invocation_id=%s',(reserved['invocation_id'],)).fetchone()
+        assert 'private' not in json.dumps(saved) and 'review' not in saved['output_json']
+    with pytest.raises(RunConflict,match='SA_RESULT_NOT_WRITABLE'):
+        journal.hold_uncertain(task_id,reserved['invocation_id'],failure={})
+
+
 @pytest.mark.parametrize('failure', [False, True])
 def test_async_worker_persists_provider_result_and_does_not_repeat(context, failure):
     queue, task_id, run = prepared(context)

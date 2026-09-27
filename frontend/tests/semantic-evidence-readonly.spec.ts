@@ -20,11 +20,12 @@ test('已保存語意攔截：歷史版本、節點差異、窄版面及返回�
   const evidence = page.getByRole('region', {name: '規格語意攔截證據'});
   await expect(evidence).toHaveCount(1);
   await expect(evidence).toContainText('未授權執行');
+  expect(rejected[0].event_context.issues.some((issue: any) => issue.node_id && 'expected' in issue && 'actual' in issue)).toBe(true);
   for (const issue of rejected[0].event_context.issues) {
     await expect(evidence).toContainText(issue.field_path);
-    await expect(evidence).toContainText('節點 ' + issue.node_id);
-    await expect(evidence).toContainText('預期 ' + JSON.stringify(issue.expected));
-    await expect(evidence).toContainText('實際 ' + JSON.stringify(issue.actual));
+    if (issue.node_id) await expect(evidence).toContainText('節點 ' + issue.node_id);
+    if ('expected' in issue) await expect(evidence).toContainText('預期 ' + JSON.stringify(issue.expected));
+    if ('actual' in issue) await expect(evidence).toContainText('實際 ' + JSON.stringify(issue.actual));
   }
   for (const width of [390, 768, 1440]) {
     await page.setViewportSize({width, height: 1000});

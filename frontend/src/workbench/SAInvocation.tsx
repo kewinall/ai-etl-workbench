@@ -77,6 +77,7 @@ export function SAInvocation({taskId, runId}: {taskId: string; runId: string}) {
       {!data.matches_current && <p>此版本已不符合目前 Task／設定，不可沿用核准。</p>}
       <dl><dt>呼叫編號</dt><dd>{item.invocation_id}</dd><dt>Provider／模型</dt><dd>{item.provider}／{item.model}</dd><dt>Prompt 版本</dt><dd>{item.prompt_version ?? '未記錄'}</dd><dt>Context checksum</dt><dd>{item.context_checksum}</dd><dt>模型處理時間</dt><dd>{item.duration_ms == null ? '不可用' : `${item.duration_ms} ms`}</dd><dt>Token</dt><dd>{item.usage?.usage_type === 'EXACT' && item.usage.total_tokens != null ? item.usage.total_tokens : '不可用（不當作零）'}</dd></dl>
       {item.error_code && <p>處理代碼：{item.error_code}。請先核對設定與呼叫紀錄，不要直接重送。</p>}
+      {item.failure_stage && <p>失敗階段：{({MODEL_CALL:'模型呼叫', RESULT_CHECK:'回傳後版本檢查', RESULT_PERSISTENCE:'結果驗證／保存', UNRECORDED:'未記錄'} as Record<string,string>)[item.failure_stage] || '未記錄'}。已保存用量不代表輸出已通過；未知用量不當作零。</p>}
       {item.provider === 'LOCAL_COPILOT' && <p>Copilot 回報：AI credits {item.usage?.ai_credits ?? '不可用'}；Premium requests {item.usage?.premium_requests ?? '不可用'}；輸出 Token {item.usage?.output_tokens ?? '不可用'}。僅顯示 CLI 實際回報，未推算費用。</p>}
       {item.review && <><h5>SA 建議（非執行核准）</h5><p>{item.review.summary}</p><p>建議狀態：{item.review.status === 'NEEDS_INPUT' ? '需要補正' : '待人工審查'}</p><p>引用：{item.review.evidence_ids.join('、')}</p><ul>{item.review.issues.map((issue: any, index: number) => <li key={index}>{issue.message}（{issue.evidence_ids.join('、')}）</li>)}</ul></>}
     </>}

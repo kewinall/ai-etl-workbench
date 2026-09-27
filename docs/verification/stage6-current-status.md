@@ -5,6 +5,27 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### SA 未知結果診斷 checkpoint（2026-09-27）
+
+第十二案在 SA 階段先後補明原生解析失敗／NULL 行為、唯一目標欄位與合成
+Pilot 部分寫入風險界線。一次原生 SA 回報 LOCAL_WORKER_REQUEST_FAILED，
+已保存 OUTCOME_UNKNOWN_NEEDS_REVIEW，沒有 ETL 寫入，也未重送該呼叫。
+舊橋接層將非 RunConflict 全部遮成通用碼，無法由已保存資訊判定當次根因；
+其模型用量不可用，不能回填推算或當作零。
+
+補上 SA allowlist 錯誤碼及 MODEL_CALL／RESULT_CHECK／RESULT_PERSISTENCE
+階段。失敗結果的用量只有 provider、模型、Run、context、prompt、schema、
+輸出指紋及原生零工具／零自動重試欄位核對後才保存，不保存未通過的模型
+文字，不把未知結果變成 READY。網站呈現階段，原本成功／失敗歷史不回寫。
+
+完整隔離 PostgreSQL 回歸 1213 passed／46 skipped／1 warning（30.77s），
+exit 0；網站編譯通過。Windows 初次局部測試因 pytest 暫存目錄權限出現一個
+setup error，並非斷言失败；包含該測試的上述隔離完整回歸已通過。
+部署前無 QUEUED／RUNNING 工作，API／網站／Worker 同版建置，API／網站／
+控制 Worker 已部署。部署後歷史語意證據 UI 1 passed（4.6s），第十一案
+仍 RELEASE_READY。另建新版 SA 真實 READY_FOR_REVIEW，尚不能據此推定舊錯誤
+已定位；第十二案未完成，正式集合仍 11／20。
+
 ### 第十一案：篩選語意植錯與修正交付（2026-09-27）
 
 正式 semantic-filter-aggregate 已完成：獨立意圖指定 GE 10，對真實 Developer

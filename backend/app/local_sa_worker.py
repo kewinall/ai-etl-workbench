@@ -8,6 +8,7 @@ from uuid import uuid4
 from threading import Event, Thread
 from .copilot_gateway import complete_copilot, CopilotError
 from .worker_presence import PresenceReporter
+from .sa_failure import safe_code, FAILURE_CODES
 
 
 def bridge(data, *, distribution='RockyLinux9', container='ai-etl-workbench-api-1'):
@@ -20,7 +21,8 @@ def bridge(data, *, distribution='RockyLinux9', container='ai-etl-workbench-api-
     except ValueError:
         raise CopilotError('LOCAL_WORKER_BRIDGE_UNAVAILABLE') from None
     if result.returncode or value.get('status') == 'ERROR':
-        raise CopilotError(value.get('code', 'LOCAL_WORKER_BRIDGE_FAILED'))
+        code = value.get('code')
+        raise CopilotError(code if isinstance(code, str) and code in FAILURE_CODES else 'LOCAL_WORKER_BRIDGE_FAILED')
     return value
 
 
@@ -45,17 +47,22 @@ def run_once(task_id=None, run_id=None, *, transport=bridge, completion=complete
                 return
     thread = Thread(target=heartbeat, daemon=True)
     thread.start()
+    stage, review, trace = 'MODEL_CALL', None, None
     try:
         review, trace = completion(record['input_json'], record['model'], before_call=check)
+        stage = 'RESULT_CHECK'
         check()
+        stage = 'RESULT_PERSISTENCE'
         return transport({**identity, 'action': 'finish', 'review': review, 'trace': trace})
     except Exception as error:
-        code = str(error) if isinstance(error, CopilotError) else 'LOCAL_WORKER_INTERRUPTED'
+        code = safe_code(error)
         try:
-            transport({**identity, 'action': 'uncertain', 'trace': {'error_code': code, 'usage': None}})
+            transport({**identity, 'action': 'uncertain', 'failure': {
+                'error_code': code, 'failure_stage': stage, 'review': review, 'trace': trace}})
         except Exception:
             pass
-        return {'status': 'OUTCOME_REQUIRES_RECONCILIATION', 'code': code, 'invocation_id': record['invocation_id']}
+        return {'status': 'OUTCOME_REQUIRES_RECONCILIATION', 'code': code, 'failure_stage': stage,
+                'invocation_id': record['invocation_id']}
     finally:
         stop.set()
         thread.join(timeout=26)
