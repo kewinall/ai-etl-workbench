@@ -5,6 +5,21 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 日期邊界案正式交付（2026-09-27）
+
+第 2 案首次 SA 指出通用「全部期間」文字與指定日期案例易混淆，保存
+NEEDS_INPUT，未執行 Hop。修訂版明定 GE 起日／LT 迄日、ALL、EXCLUDE_UNKNOWN、
+只映射 record_id BIGINT，未更動固定樣本與標準答案。
+新 SA READY_FOR_REVIEW、Developer 提案驗證及命名／規格核准完成。
+標準答案先核對既有登錄 definition 與 oracle checksum，再綁定本版規格。
+真實 Hop 單次執行 EXACT_MULTISET MATCH：預期 4／實際 4、缺少 0／額外 0，
+另存來源 BOUND_PLATFORM_TARGET 證據。單次真實 QA PASS、無 issue。
+隔離可攜驗證 PASS，正式核准後 RELEASE_READY；實際下載 ZIP 指紋與 API
+相符，六項 allowlist 產物及內容檢查通過。沒有重播原目標。
+
+目前正式集合 2／20 案已完成上述執行與交付核對；兩案都不是首次準備成功。
+仍待其餘 18 案、完整成效／人工基準、補充 UI 回歸與第 7 階段驗收。
+
 ### 首案正式交付（2026-09-27）
 
 隔離可攜資料庫唯讀預檢成功；候選包在獨立目標僅執行一次，
