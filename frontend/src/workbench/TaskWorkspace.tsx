@@ -78,7 +78,7 @@ function Collaboration({taskId}: {taskId: string}) {
   </section>;
 }
 
-export function TaskWorkspace({task, tab, navigate, renderSetup, renderValue}: {task: any; tab?: string; navigate: (path: string) => void; renderSetup: (task: any) => ReactNode; renderValue: (value: any) => ReactNode}) {
+export function TaskWorkspace({task, tab, runId, navigate, renderSetup, renderValue}: {task: any; tab?: string; runId?:string; navigate: (path: string) => void; renderSetup: (task: any) => ReactNode; renderValue: (value: any) => ReactNode}) {
   const current: Tab = tabs.some(([key]) => key === tab) ? tab as Tab : 'overview';
   const [detail, setDetail] = useState(task);
   const [assets, setAssets] = useState<any>(null);
@@ -136,7 +136,7 @@ export function TaskWorkspace({task, tab, navigate, renderSetup, renderValue}: {
         <section className="panel"><h3>所有 SQL</h3>{assets?.sql?.length ? assets.sql.map((sql: any, i: number) => <article key={i}><h4>{sql.artifact} · {sql.node}</h4><pre>{sql.sql}</pre></article>) : <p>{assets ? '目前 Job 沒有內嵌 SQL。' : 'SQL 清單尚未讀取成功。'}</p>}</section>
       </>}
       {key === 'execution' && <>
-        {current === 'execution' && <OracleHistory taskId={task.id}/>}
+        {current === 'execution' && <OracleHistory taskId={task.id} requestedRunId={runId}/>}
         <section className="panel"><h3>舊版 Task 執行紀錄</h3><p>舊版進度 {detail.progress}% · 寫入筆數 {detail.rows ?? '未記錄'} · 節點 {detail.current_step || '未記錄'}</p><p>以下保留舊版執行資料，不代表上方選取 Run 的結果。新版 Hop、結果比對與 QA 狀態請以上方版本證據為準；舊版的 0% 或零筆不會覆蓋新版結果。</p>{detail.last_error && renderValue(detail.last_error)}{detail.error_test_result && renderValue(detail.error_test_result)}</section>
         <section className="panel terminal"><h3>執行 Log</h3>{detail.logs?.length ? detail.logs.map((log: any, i: number) => <article key={i}><code>{time(log.time)} · {log.level} · {log.node} — {log.message}</code>{Object.keys(log.detail || {}).length > 0 && renderValue(log.detail)}</article>) : <p>尚無執行紀錄。</p>}</section>
         <section className="panel terminal"><h3>舊版 Apache Hop Log</h3>{assets?.hop_logs?.length ? assets.hop_logs.map((log: any, i: number) => <article key={i}><b>{log.log_type}</b><pre>{log.log_content}</pre></article>) : <p>{assets ? '舊版紀錄沒有 Hop log；這不表示新版 Run 沒有執行日誌，請查看上方 QA 的 Hop 執行證據。' : '舊版 Hop Log 尚未讀取成功。'}</p>}</section>

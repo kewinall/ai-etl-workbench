@@ -20,7 +20,7 @@ export function ProjectEvaluation({projectId,navigate}:{projectId:string;navigat
         <h4>{item.name}</h4><p>{item.task_id} · {item.run_id?`版本 ${item.run_id}`:'尚無準備版本'}</p>
         <p>控制狀態：{item.state||'NO_RUN'} · {item.phase||'未開始'} · {item.outcome_code||'尚無結果'}</p>
         <p>保存的歷史交付紀錄：{item.historical_release_count}（非目前可下載判定）</p>
-        <button onClick={()=>navigate(`/projects/${projectId}/tasks/${encodeURIComponent(item.task_id)}/execution`)}>查看 Task 執行與 QA 證據</button>
+        <button onClick={()=>navigate(`/projects/${projectId}/tasks/${encodeURIComponent(item.task_id)}/execution${item.run_id?'/'+encodeURIComponent(item.run_id):''}`)}>查看此版本執行與 QA 證據</button>
       </article>)}
     </>}
   </section>;
