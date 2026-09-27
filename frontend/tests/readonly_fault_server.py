@@ -59,7 +59,7 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if not self.path.startswith('/api/'):
             return super().do_GET()
-        if self.path == '/api/projects' or self.path.endswith('/evaluation'):
+        if self.path == '/api/projects' or self.path.endswith('/evaluation') or (self.path.startswith('/api/projects/') and self.path.endswith('/tasks')):
             with lock:
                 fail = self.path not in seen
                 seen.add(self.path)
