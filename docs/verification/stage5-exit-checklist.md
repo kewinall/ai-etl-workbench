@@ -58,6 +58,14 @@ run_count 0。未授權模型、未執行 Hop 或建立 Vertica 表；保留該 
 
 ## 後續階段邊界
 
+來源映射追查完成：source_binding.execution_sources 只接受已上傳 CSV，
+hop_connection_runtime 使用 settings snapshot 的 connection_id 與同版機密。
+舊 source.connection 不是此執行路徑的連線來源；沒有據此修改或重跑歷史。
+建立頁新增可見支援範圍，保留舊模式但明示尚未完成新版執行驗收。
+33 項 execution settings／source execution binding 測試通過，build／部署與
+實際 UI 說明顯示通過。這是揭露缺口，不是完成 Excel／JSON／資料表引擎支援，
+原規劃功能仍須保留在後續實作範圍，不能以說明文字取代其验收。
+
 設定解析追查：execution_settings.resolve_settings 明確採 Task overrides → Project
 → 平台；不是從來源內 connection 字串或環境變數猜連線。25 項定向測試通過，
 涵蓋 precedence、無效明確選擇不得 fallback、舊 reference 不使用 environment、
