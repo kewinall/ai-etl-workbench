@@ -5,6 +5,21 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 日期格式證據補足與真實 QA 複核（2026-09-27）
+
+新增 source_formats 證據，逐一核對 CSVInput 的欄位 format 與已執行 HPL
+checksum；DATE／TIMESTAMP mask 有明確值，並標示不代表全面非法日期拒絕測試。
+context 升為單來源 v7／多來源 v8；原版內容可重新建構，舊 PASS、pending、
+unknown 不自動遷移。有限複核只能移除新增欄位後精確還原舊 context，不能改
+需求、來源、檢查或 HPL；舊 NEEDS_REVIEW 仍保存。QA prompt 升為 v7。
+
+相關 43 測試通過，完整隔離 PostgreSQL 1162 passed／46 skipped／1 warning
+（24.92 秒）；第一次全回歸的唯一失敗是舊 prompt v6 固定斷言，已更新並
+增加新指引／限制斷言後重跑通過。已部署 API，前三案 RELEASE_READY 與
+交付指紋不變。第四案同次執行的真實 QA v7 PASS、issues=[]；v6 NEEDS_REVIEW
+未覆寫，沒有重跑 Hop。已核准 QA、保存 SDM 與候選包，尚待可攜驗證／Release。
+下一步先核對可攜 Worker 是否相容新增 QA context，不能拿舊 Worker 強行處理。
+
 ### 零列案 Hop 通過、QA 阻擋（2026-09-27）
 
 第 4 案第 3 次準備的 Developer 真實提案通過，核對 amount GT INTEGER 100、

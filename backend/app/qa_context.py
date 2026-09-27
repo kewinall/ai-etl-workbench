@@ -37,10 +37,13 @@ def load_qa_context(queue,task_id,run_id,comparison_id,*,connection=None):
         provenance=conn.execute('SELECT * FROM platform.result_comparison_provenance WHERE comparison_id=%s AND run_id=%s',
             (comparison_id,run_id)).fetchone()
         details=execution_details(run,compiled,auth)
+        latest=conn.execute("""SELECT status,input_json,output_json FROM platform.agent_invocation
+            WHERE task_id=%s AND run_id=%s AND role='pilot_qa'
+            ORDER BY created_at DESC,invocation_id DESC LIMIT 1""",(task_id,run_id)).fetchone()
+        from .qa_source_formats import inspect_formats, should_enrich
+        if should_enrich(latest):
+            details['source_formats']=inspect_formats(compiled)
         if row['spec_json']['version'] == 1:
-            latest=conn.execute("""SELECT status,input_json,output_json FROM platform.agent_invocation
-                WHERE task_id=%s AND run_id=%s AND role='pilot_qa'
-                ORDER BY created_at DESC,invocation_id DESC LIMIT 1""",(task_id,run_id)).fetchone()
             if not preserve_reviewed_context(latest):
                 claim=conn.execute('SELECT * FROM platform.task_run_target_claim WHERE run_id=%s FOR SHARE',
                                    (run_id,)).fetchone()

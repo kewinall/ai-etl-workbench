@@ -19,6 +19,7 @@ class QANodeV1(BaseModel):
 
 class QAExecutionDetailsV1(BaseModel):
     model_config=ConfigDict(extra='forbid')
+    source_formats: dict | None=None
     single_source_contract: dict | None=None
     csv_input_contract: CsvInputContractV1
     compiler_plan: dict
@@ -41,6 +42,7 @@ class QASemanticsV1(BaseModel):
 
 class QAExecutionDetailsV2(BaseModel):
     model_config=ConfigDict(extra='forbid')
+    source_formats: dict | None=None
     runtime_options: dict | None=None
     csv_input_contracts: dict[str,CsvInputContractV1]
     csv_structure_validations: dict[str,dict]
@@ -116,6 +118,12 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
         details=value.get('execution_details')
         if details:
             plan=details['compiler_plan']
+            if details.get('source_formats') is None:
+                details.pop('source_formats',None)
+            else:
+                from .qa_source_formats import expected_formats
+                if details['source_formats'] != expected_formats(plan,details['hpl_checksum']):
+                    raise ValueError('QA_SOURCE_FORMATS_CHANGED')
             if not multi:
                 if details.get('single_source_contract') is None:
                     details.pop('single_source_contract',None)
@@ -155,6 +163,8 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
                 raise ValueError('QA_EXECUTION_DETAILS_BINDING_CHANGED')
         context.update(version=(5 if details and 'runtime_options' in details else 4) if multi else
                        (6 if details and 'single_source_contract' in details else 3 if details else 2),semantics=value)
+        if details and 'source_formats' in details:
+            context['version'] = 8 if multi else 7
     return {**context,'context_checksum':digest(context)}
 
 
