@@ -40,13 +40,13 @@ class PostgresRepository:
    nodes=c.execute("select node_key key,node_label label,status,duration_ms,detail from platform.task_node_run where task_id=%s order by sequence_no",(task_id,)).fetchall()
    events=c.execute("select level,node_key,message,detail,created_at from platform.task_event where task_id=%s order by created_at,event_id",(task_id,)).fetchall()
   d=self._shape(r);d['nodes']=[dict(x) for x in nodes];d['logs']=[{'level':x['level'],'node':x['node_key'],'message':x['message'],'time':x['created_at'].isoformat(),'detail':x['detail']} for x in events];return d
- def next_id(self):
+ def next_id(self,c):
   prefix=datetime.now().strftime('TASK-%Y%m%d-')
-  with self.conn() as c:
-   vals=c.execute("select task_id from platform.task where task_id like %s order by task_id desc limit 1",(prefix+'%',)).fetchone()
+  c.execute('SELECT pg_advisory_xact_lock(271828,1)')
+  vals=c.execute("select task_id from platform.task where task_id like %s order by length(task_id) desc,task_id desc limit 1",(prefix+'%',)).fetchone()
   n=int(vals['task_id'].rsplit('-',1)[1])+1 if vals else 1; return prefix+f'{n:04d}'
  def create_task(self,data):
-  task_id=self.next_id(); source=(data.get('source_type') or 'CSV').upper();source_config=dict(data.get('source_config') or {});operation=(data.get('operation') or 'NEW').upper()
+  source=(data.get('source_type') or 'CSV').upper();source_config=dict(data.get('source_config') or {});operation=(data.get('operation') or 'NEW').upper()
   if operation not in ('NEW','ERROR_TEST'):raise ValueError('Operation only supports NEW or ERROR_TEST')
   configured=source_config.get('sources') or []
   if configured:
@@ -57,6 +57,7 @@ class PostgresRepository:
   target=(data.get('target_type') or 'VERTICA').upper()
   if target not in ('POSTGRESQL','VERTICA'):raise ValueError('Unsupported target database')
   with self.conn() as c:
+   task_id=self.next_id(c)
    target_config={**(data.get('target_config') or {}),'type':target,'schema':data['target_schema'],'table':data['target_table']}
    project_id=data.get('project_id') or '00000000-0000-0000-0000-000000000010'
    c.execute("insert into platform.task(task_id,project_id,task_name,task_type,task_category,requirement_text,status,current_step,source_type,source_config,target_type,target_config,model_provider,progress,error_test_config) values(%s,%s,%s,%s,%s,%s,'CREATED','router',%s,%s,%s,%s,%s,0,%s)",(task_id,project_id,data['name'],operation,data.get('category','STAGE'),data['requirement'],source,json.dumps(source_config),target,json.dumps(target_config),data['model'],json.dumps(data.get('error_test_config') or {})))

@@ -1,0 +1,29 @@
+import os
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
+import pytest
+from app.repository import PostgresRepository
+from test_run_queue_integration import context
+
+pytestmark=pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS')!='1',reason='Isolated PostgreSQL required')
+
+def test_concurrent_creation_keeps_unique_ids_and_complete_children(context):
+    queue,existing=context
+    repo=PostgresRepository(os.environ['DATABASE_URL'])
+    project=repo.get_task(existing)['project_id']
+    barrier=Barrier(8)
+    def create(index):
+        barrier.wait()
+        return repo.create_task(dict(project_id=project,name=f'Concurrent synthetic {index}',
+            requirement='Synthetic creation only',source_type='CSV',source_config={},
+            target_type='VERTICA',target_schema='ai_sample',target_table='never_created',model='synthetic'))
+    try:
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            results=list(pool.map(create,range(8)))
+        assert len({row['id'] for row in results})==8
+        assert all(len(row['nodes'])==8 and len(row['logs'])==1 for row in results)
+        assert all(row['status']=='CREATED' and row['project_id']==project for row in results)
+    finally:
+        # Only this isolated fixture's newly created synthetic tasks; no runs exist.
+        with queue.conn() as conn:
+            conn.execute('DELETE FROM platform.task WHERE project_id=%s AND task_id<>%s',(project,existing))
