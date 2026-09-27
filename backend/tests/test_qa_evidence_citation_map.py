@@ -31,7 +31,7 @@ def test_native_payload_explains_alias_without_changing_evidence_or_forcing_pass
 
     result, trace = complete_qa_review(run, profile, context,
         native_completion=completion, before_call=lambda: None)
-    assert len(calls) == 1 and PROMPT_VERSION == 9
+    assert len(calls) == 1 and PROMPT_VERSION == 10
     assert 'source_formats' in calls[0]['prompt']
     assert 'not proof of strict rejection' in calls[0]['prompt']
     assert 'without rerunning ETL' in PROMPT

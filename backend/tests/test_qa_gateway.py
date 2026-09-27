@@ -26,6 +26,22 @@ def test_qa_role_trace_and_advisory_only():
     assert trace['status']=='VALIDATED_NOT_APPROVED' and not trace['release_ready']
 
 
+def test_ordered_review_prompt_is_versioned_and_bound_to_trace():
+    from app.qa_gateway import PROMPT,PROMPT_VERSION
+    from app.sa_contract import digest
+    run,profile,context,_,response=values()
+    def inspect(**kwargs):
+        assert kwargs['messages'][0]['content']==PROMPT
+        return response(**kwargs)
+    _,trace=complete_qa_review(run,profile,context,completion=inspect)
+    assert PROMPT_VERSION==10 and trace['prompt_version']==10
+    assert trace['prompt_checksum']==digest(PROMPT)
+    for term in ('EXACT_SOURCE_SEQUENCE','position_mismatch_count','PINNED_ORDERED_QUERY_AND_EXECUTED_HPL',
+                 '$source_order.source.0','ORDER BY','ordered mismatch requires FAIL',
+                 'Do not invent a source_order_evidence citation ID'):
+        assert term in PROMPT
+
+
 @pytest.mark.parametrize('field,value',[('matches_current',False),('write_started',False),
     ('lease_token','active'),('outcome_code','HOP_EXECUTION_FAILED'),('state','RUNNING')])
 def test_ineligible_run_never_calls_provider(field,value):

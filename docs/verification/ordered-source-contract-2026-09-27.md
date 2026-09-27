@@ -272,3 +272,23 @@ This checkpoint does not claim browser interaction or real save roundtrip.
 Public V3 save remains closed pending ordered workbook verification; the
 deployed platform has not been replaced. knowledge-workspace is still absent
 at the expected local path and has not been synchronized.
+
+## QA prompt checkpoint
+
+QA prompt V10 explains source_order_evidence, generated logical-record ordinals,
+the pinned ordered query, position mismatch counts and exact sequence comparison.
+It distinguishes explicit ORDER BY from physical table order and uses existing
+citation IDs rather than inventing a new evidence ID. Deterministic mismatches
+still require FAIL; the presence of additional evidence never implies PASS.
+Historical invocation prompts/results are not rewritten or reapproved.
+
+Focused QA checks: 24 passed. The first full regression found the legacy citation
+test's explicit V9 assertion; after updating it for the intended V10 change,
+the full rerun passed: 1,396 passed, 48 skipped, one warning, 26.98 seconds,
+exit 0. No real model call or deployment occurred.
+
+Located the existing development-only scripts/sdm/inspect-native-render.mjs for
+independent workbook visual inspection. The prior native-renderer verification
+records the operator-approved existing openpyxl renderer. Next: generate an
+ordered synthetic workbook through that renderer and inspect both sheets with
+the bundled artifact runtime, including all newly added rule rows.
