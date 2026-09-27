@@ -157,3 +157,22 @@ Build 通過，UI contract test 1 passed（4.5 秒），驗證正常區間、503
 所有計時請求均攔截；暫時預覽已停止。這不是伺服器連續性證明：瀏覽器
 崩潰未送事件、儲存被清除、其他裝置、HTTP 連線失敗但 navigator 仍在線
 及自動閒置判定尚待處理。不得將此瀏覽器保護當成完整活動量測驗收。
+
+## 隔離真實網站／API／資料庫驗收
+
+使用 compose.ui-regression 的独立資料卷與 5195 網站，套用 054/055；
+模型／ETL 派發全部停用，沒有正式 Pilot 資料卷或憑證。建置新映像只供
+此次隔離環境，正式容器沒有更新。
+
+新增無 mock 的 Playwright 測試，建立合成專案與 20 案登錄，透過網站開始
+和結束一個 FUNCTIONAL_TEST 區間，再開始另一區間、發出瀏覽器 offline
+事件、重新載入，確認不能有效結束而能明確放棄。API 回讀四事件依序為
+START／STOP／START／ABANDON，真人小計 null、無 open session、comparison
+仍 false；390/768/1440px 無橫向溢出，無 page error。1 passed（2.2 秒）。
+
+獨立 PostgreSQL 查核：START 2、STOP 1、ABANDON 1，全部 FUNCTIONAL_TEST；
+該合成專案 Task 數 0。沒有模型或 Hop 派發。離線事件為測試訊號，不宣稱
+已驗證所有真實網路中斷方式。隔離服務驗收後停止，資料卷保留以供核對。
+
+此結果完成短區間操作的隔離真實整合，不等於正式部署、真人基準、完整
+活動覆蓋或整體第 6／7 階段完成；上述崩潰／跨裝置等限制仍未解決。
