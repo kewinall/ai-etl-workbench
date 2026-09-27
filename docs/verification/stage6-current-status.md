@@ -5,6 +5,18 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 缺漏日期範圍選擇案正式交付（2026-09-27）
+
+第 9 案原版 Gate 偵測 date_scope 缺漏並停止，未開始寫入。新 revision
+明定 ALL、amount > INTEGER 100、EXCLUDE_UNKNOWN 與僅輸出 record_id；
+來源與固定標準答案不變。新 Gate、真實 SA／Developer 通過，規格與答案
+指紋核對後才授權單次 Hop。實際 MATCH 0／0，缺少與額外均為 0，另存
+BOUND_PLATFORM_TARGET 證據；未將預期零列當作執行結果。
+
+真實 QA PASS，獨立資料庫可攜重播 PASS，正式 RELEASE_READY。下載 ZIP
+指紋符合 API，六項 allowlist 與內容檢查通過。原目標不重跑。
+正式集合累計 9／20 案完成執行與交付核對，仍不代表整體目標完成。
+
 ### 缺漏 Join 鍵值案正式交付（2026-09-27）
 
 第 8 案原版 Gate 對無 keys 的契約回覆 NEEDS_INPUT／UNSUPPORTED，未寫入。
