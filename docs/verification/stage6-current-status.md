@@ -20,8 +20,12 @@
 規格與從固定目錄核對的答案已核准，既有 Worker 主要執行程式四檔與現行
 source SHA-256 一致。單次 Hop 在新受控目標執行完成，Vertica 實測
 EXACT_MULTISET MATCH：預期 2／實際 2、缺少 0／額外 0，來源核對為
-BOUND_PLATFORM_TARGET。QA 已授權一次真實審查，結果另核對；尚未 Release。
+BOUND_PLATFORM_TARGET。QA 單次真實審查 PASS、issues=[]，已保存核准及
+QA-linked SDM。交付候選包已產生，狀態 PORTABILITY_REQUIRED；尚未 Release。
 這仍是首案第 3 次準備的結果，不可回算首次成功或宣稱 20 案完成。
+
+下一步先完成此候選包的隔離可攜驗證／正式核准／下載核對；不得再次派發本案
+原 Hop 寫入。再處理其餘 19 案與人工基準。第 7 階段維運與備份還原仍未完成。
 
 ## 已實作的前置能力
 
