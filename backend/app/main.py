@@ -739,6 +739,8 @@ def update_setting_group(group_key:str,value:dict[str,Any]):
  try:return {'key':group_key,'value':repo.update_setting(group_key,value)}
  except ValueError as exc:raise HTTPException(422,str(exc)) from exc
 app.include_router(create_ai_profile_router(repo))
+from .connection_test_api import create_connection_test_router
+app.include_router(create_connection_test_router(repo))
 @app.post('/api/settings/connections/{connection_id}/secret')
 def put_connection_secret(connection_id:str,data:SecretInput):
  if not re.fullmatch(r'[A-Za-z0-9_-]{2,80}',connection_id):raise HTTPException(422,'Invalid connection id')

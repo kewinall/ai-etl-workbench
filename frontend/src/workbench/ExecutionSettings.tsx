@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react';
 import {request, jsonBody} from './api';
+import {ConnectionTest} from './ConnectionTest';
 
 function toolValues(result:any):Record<string,string> {
   const value=result?.values?.execution_tool_paths;
@@ -49,6 +50,7 @@ export function ExecutionSettings({group}:{group:string}) {
     }catch(e:any){setSecretMessage(e.message)}finally{setBusy(false)}
   };
   return <>
+    {group==='connections'&&<ConnectionTest/>}
     <section hidden={group!=='execution'} className="panel setting-card">
       <h2>執行環境與工具路徑</h2><p>指定 Apache Hop 與工作目錄。儲存路徑不代表 Worker 已具備該檔案，仍須通過執行環境驗證。</p>
       <fieldset disabled={busy||saved===null} style={{border:0,padding:0,margin:0,minWidth:0}}>
