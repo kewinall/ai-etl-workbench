@@ -1,5 +1,6 @@
-import {useEffect, useState, useCallback} from 'react';
+import {useEffect, useState, useCallback, useRef} from 'react';
 import {request, jsonBody} from './api';
+import {OperationLatch} from './operationLatch';
 
 const roleFields = [
   ['requirement_gate', 'SA／需求確認模型'],
@@ -8,16 +9,19 @@ const roleFields = [
   ['file_understanding', '檔案理解模型（選用）'],
 ];
 
-function ProfileEditor({profile, onSaved, onDirty}: {profile: any; onSaved: () => Promise<void>; onDirty: (id: string, dirty: boolean) => void}) {
+function ProfileEditor({profile, onSaved, onDirty, onBusy}: {profile: any; onSaved: () => Promise<void>; onDirty: (id: string, dirty: boolean) => void; onBusy: (id: string, busy: boolean) => void}) {
   const [draft, setDraft] = useState(profile);
   const [secret, setSecret] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [testRole, setTestRole] = useState('requirement_gate');
   const [allowTest, setAllowTest] = useState(false);
+  const operation=useRef(new OperationLatch());
   useEffect(() => {setDraft(profile)}, [profile]);
   const change = (key: string, value: any) => {setDraft({...draft, [key]: value}); setAllowTest(false)};
   const save = async () => {
+    if(!operation.current.acquire())return;
+    onBusy(profile.profile_id,true);
     setBusy(true); setMessage('');
     let profileSaved = false;
     try {
@@ -32,15 +36,17 @@ function ProfileEditor({profile, onSaved, onDirty}: {profile: any; onSaved: () =
       setAllowTest(false);
       setMessage('AI Profile 已儲存；尚未測試真實連線。');
     } catch (error: any) {setMessage(`${profileSaved ? 'Profile 已儲存，但機密或重新載入未完成：' : '儲存失敗：'}${error.message}`)}
-    finally {setBusy(false)}
+    finally {setBusy(false);onBusy(profile.profile_id,false);operation.current.release()}
   };
   const test = async () => {
+    if(!operation.current.acquire())return;
+    onBusy(profile.profile_id,true);
     setBusy(true); setMessage('');
     try {
       const result = await request(`/api/settings/ai-profiles/${profile.profile_id}/test?role=${testRole}`, {method: 'POST'});
       setMessage(`真實模型呼叫成功：${result.usage.model}，${result.usage.duration_ms} ms。僅驗證此角色的模型連線，不代表 ETL 通過。`);
     } catch (error: any) {setMessage(`模型測試未通過：${error.message}`)}
-    finally {setBusy(false); setAllowTest(false)}
+    finally {setBusy(false); setAllowTest(false);onBusy(profile.profile_id,false);operation.current.release()}
   };
   const dirty = JSON.stringify(draft) !== JSON.stringify(profile) || !!secret;
   useEffect(() => {onDirty(profile.profile_id,dirty); return () => onDirty(profile.profile_id,false)},[dirty,profile.profile_id,onDirty]);
@@ -85,11 +91,16 @@ export function AIProfiles() {
   const [error, setError] = useState('');
   const [leaveMessage,setLeaveMessage] = useState('');
   const [dirtyIds,setDirtyIds] = useState<Set<string>>(new Set());
+  const busyIds=useRef(new Set<string>());
+  const [busyCount,setBusyCount]=useState(0);
+  const onBusy=useCallback((id:string,busy:boolean)=>{
+    if(busy)busyIds.current.add(id);else busyIds.current.delete(id);
+    setBusyCount(busyIds.current.size);
+  },[]);
   const onDirty = useCallback((id: string, dirty: boolean) => setDirtyIds(old => {const next=new Set(old); if(dirty)next.add(id);else next.delete(id);return next}),[]);
   useEffect(() => {
-    if(!dirtyIds.size)return;
-    const beforeNavigate=(event: Event)=>{if(event.defaultPrevented)return;event.preventDefault();setLeaveMessage('尚未離開：AI Profile 草稿已保留。請先儲存或取消 AI 變更（包含搜尋隱藏的表單），再選擇目的頁面。')};
-    const beforeUnload=(event: BeforeUnloadEvent)=>{event.preventDefault();event.returnValue=''};
+    const beforeNavigate=(event: Event)=>{if(event.defaultPrevented||(!dirtyIds.size&&!busyIds.current.size))return;event.preventDefault();setLeaveMessage(busyIds.current.size?'AI Profile 正在儲存或測試，請等待結果後再離開。':'尚未離開：AI Profile 草稿已保留。請先儲存或取消 AI 變更（包含搜尋隱藏的表單），再選擇目的頁面。')};
+    const beforeUnload=(event: BeforeUnloadEvent)=>{if(!dirtyIds.size&&!busyIds.current.size)return;event.preventDefault();event.returnValue=''};
     window.addEventListener('workbench:before-navigate',beforeNavigate);
     window.addEventListener('beforeunload',beforeUnload);
     return ()=>{window.removeEventListener('workbench:before-navigate',beforeNavigate);window.removeEventListener('beforeunload',beforeUnload)};
@@ -105,11 +116,11 @@ export function AIProfiles() {
   useEffect(() => {load().catch(error => setError(error.message))}, []);
   const matches=(profile:any)=>`${profile.display_name} ${profile.profile_id} ${profile.provider_type}`.toLowerCase().includes(query.trim().toLowerCase());
   return <div><h2>AI 連線與角色模型</h2>
-    {leaveMessage&&!!dirtyIds.size&&<p role="alert">{leaveMessage}</p>}
+    {leaveMessage&&(!!dirtyIds.size||busyCount>0)&&<p role="alert">{leaveMessage}</p>}
     <label>搜尋 AI Profile<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="名稱、Profile ID 或供應商"/></label>
     <p>顯示 {profiles.filter(matches).length} / {profiles.length} 個 Profile。搜尋只隱藏表單，不丟棄草稿；清空搜尋可查看全部。</p>
     {!!dirtyIds.size&&<p role="status">有 {dirtyIds.size} 個 AI Profile 尚未儲存（包含搜尋隱藏的表單）</p>}
     {error && <p role="alert">{error}</p>}
-    {profiles.map(profile => <div key={profile.profile_id} hidden={!matches(profile)}><ProfileEditor profile={profile} onSaved={() => load(profile.profile_id)} onDirty={onDirty}/></div>)}
+    {profiles.map(profile => <div key={profile.profile_id} hidden={!matches(profile)}><ProfileEditor profile={profile} onSaved={() => load(profile.profile_id)} onDirty={onDirty} onBusy={onBusy}/></div>)}
   </div>;
 }

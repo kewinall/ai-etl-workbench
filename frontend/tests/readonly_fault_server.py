@@ -18,6 +18,22 @@ lock = Lock()
 
 
 class Handler(SimpleHTTPRequestHandler):
+    def do_PUT(self):
+        # Observe pending UI state without changing any saved configuration.
+        if not self.path.startswith('/api/settings/ai-profiles/'):
+            self.send_error(405)
+            return
+        length = int(self.headers.get('Content-Length', '0'))
+        if not 0 < length <= 65536:
+            self.send_error(413)
+            return
+        self.rfile.read(length)
+        sleep(15)
+        self.send_response(503)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(b'{"detail":"UI_DELAYED_SETTINGS_FAULT_NO_WRITE"}')
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(DIST), **kwargs)
 
