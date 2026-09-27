@@ -39,3 +39,37 @@ def test_errors_do_not_reveal_connection_or_secret(monkeypatch):
     response=TestClient(app).post('/api/settings/connections/test-db/test')
     assert response.status_code==409
     assert 'private.example' not in response.text and 'synthetic-secret' not in response.text
+
+
+@pytest.mark.parametrize('kind',['configuration','credential'])
+def test_changed_binding_does_not_report_success(monkeypatch,kind):
+    class ChangingRepo(Repo):
+        reads=0
+        versions=0
+        def setting(self,*args):
+            self.reads+=1
+            value=super().setting(*args)
+            if kind=='configuration' and self.reads>1:value['etl_qa']['database']='changed'
+            return value
+        def secret_version(self,*args):
+            self.versions+=1
+            return 'version-2' if kind=='credential' and self.versions>1 else 'version-1'
+    class DB:
+        def cursor(self):return self
+        def execute(self,sql):assert sql=='SELECT 1'
+        def fetchone(self):return [1]
+    @contextmanager
+    def connect(**kwargs):yield DB()
+    monkeypatch.setattr('app.connection_test_api.vertica_python.connect',connect)
+    with pytest.raises(ValueError,match='SAVED_CONNECTION_CHANGED'):probe(ChangingRepo(),'test-db')
+
+
+def test_no_tls_or_secret_never_uses_driver_defaults(monkeypatch):
+    class NoTls(Repo):
+        def setting(self,*args):
+            value=super().setting(*args);del value['etl_qa']['tlsmode'];return value
+    class NoSecret(Repo):
+        def read_secret_at_version(self,*args):return ''
+    monkeypatch.setattr('app.connection_test_api.vertica_python.connect',lambda **kwargs:pytest.fail('must not connect'))
+    with pytest.raises(ValueError,match='EXPLICIT_TLS_MODE_REQUIRED'):probe(NoTls(),'test-db')
+    with pytest.raises(ValueError,match='SAVED_SECRET_REQUIRED'):probe(NoSecret(),'test-db')
