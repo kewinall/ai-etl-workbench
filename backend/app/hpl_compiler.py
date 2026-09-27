@@ -21,7 +21,7 @@ def compile_hpl(payload, run, naming):
     info = _values(SubElement(root, 'info'), name='etl_' + result['specification_checksum'][:16],
                    description='Specification ' + result['specification_checksum'] + '; Naming ' + spec['naming']['checksum'])
     parameters = SubElement(info, 'parameters')
-    names = ['SOURCE_CSV'] if spec['version'] == 1 else ['SOURCE_CSV_0', 'SOURCE_CSV_1']
+    names = ['SOURCE_CSV_0', 'SOURCE_CSV_1'] if spec['version'] == 2 else ['SOURCE_CSV']
     for name in names:
         parameter = SubElement(parameters, 'parameter')
         _values(parameter, name=name, default_value=None, description='Runtime-bound validated CSV; no bundled data')
@@ -42,6 +42,8 @@ def compile_hpl(payload, run, naming):
                     header='Y' if contract['header'] else 'N', encoding={'UTF-8-SIG': 'UTF-8', 'BIG5': 'Big5'}.get(contract['encoding'], contract['encoding']),
                     lazy_conversion='N', parallel='N', newline_possible='Y', buffer_size=50000,
                     include_filename='N', add_filename_result='N')
+            if 'ordinal_column' in stage:
+                _values(node, rownum_field=stage['ordinal_column'])
             fields = SubElement(node, 'fields')
             for field in stage['fields']:
                 kind = _type(field['data_type'])

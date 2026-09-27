@@ -77,6 +77,12 @@ def parsed_intent(snapshot):
     if any(item.column not in refs for item in value.filters):
         raise ValueError('INTENT_FILTER_SOURCE_UNKNOWN')
     outputs = refs
+    if 'source_order_v1' in target:
+        from .etl_specification import SourceOrderV1
+        SourceOrderV1.model_validate(target['source_order_v1'])
+        if len((snapshot.get('source_config') or {}).get('sources') or []) != 1 or value.filters or value.aggregation:
+            raise ValueError('INTENT_SOURCE_ORDER_SCOPE_UNSUPPORTED')
+        outputs = refs + ['$source_order.source.0']
     if value.aggregation:
         agg = value.aggregation
         ids = [metric.id for metric in agg.metrics]
@@ -123,7 +129,7 @@ def validate_intent(spec, snapshot, naming):
              (naming.get('contract_json') or {}).get('columns') or []
              if isinstance(column.get('source_name'), str) and isinstance(column.get('english_name'), str)}
     def resolve(ref):
-        key = ref if multi or ref.startswith('$metric.') else ref.removeprefix('source.0.')
+        key = ref if multi or ref.startswith(('$metric.', '$source_order.')) else ref.removeprefix('source.0.')
         return names[key]
     try:
         wanted = intent.model_dump(mode='json')

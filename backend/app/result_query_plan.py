@@ -21,15 +21,20 @@ def build_result_query_plan(payload, run, naming):
                for name in spec['output_columns']]
     projection = ', '.join('"' + column['name'] + '"' for column in columns)
     sql = f'SELECT {projection} FROM "{spec["target_schema"]}"."{spec["target_table"]}" LIMIT 10001;'
+    ordered = spec['version'] == 3
+    if ordered:
+        sql = sql.replace(' LIMIT 10001;', f' ORDER BY "{spec["source_order"]["ordinal_column"]}" ASC LIMIT 10001;')
     plan = {'version': 1, 'run_id': spec['run_id'],
             'specification_checksum': compiled['specification_checksum'],
             'naming_checksum': spec['naming']['checksum'],
             'settings_checksum': spec['settings_checksum'],
             'columns': columns, 'sql': sql,
             'sql_checksum': sha256(sql.encode()).hexdigest(),
-            'comparison': 'EXACT_MULTISET', 'max_accepted_rows': 10000,
+            'comparison': 'EXACT_SOURCE_SEQUENCE' if ordered else 'EXACT_MULTISET', 'max_accepted_rows': 10000,
             'overflow_row_limit': 10001,
             'required_target_scope': 'EXCLUSIVE_RUN_TARGET'}
+    if ordered:
+        plan['source_order'] = spec['source_order']
     digest = sha256(json.dumps(plan, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
     return {'status': 'RESULT_QUERY_PLAN_NOT_EXECUTABLE', 'plan': plan,
             'checksum': digest, 'actual_provenance': 'NOT_VERIFIED',

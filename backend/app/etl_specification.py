@@ -116,6 +116,27 @@ class EtlSpecificationV1(ContractModel):
         return value
 
 
+class SourceOrderV1(ContractModel):
+    version: Literal[1]
+    source_ref: Literal['source.0']
+    ordinal_column: str = Field(pattern=IDENTIFIER)
+    direction: Literal['ASC']
+    semantics: Literal['LOGICAL_CSV_RECORD_POSITION']
+
+    @field_validator('version', mode='before')
+    @classmethod
+    def integer_version(cls, value):
+        if type(value) is not int:
+            raise ValueError('INTEGER_VERSION_REQUIRED')
+        return value
+
+
+class EtlSpecificationV3(EtlSpecificationV1):
+    """Single CSV full projection with an explicit source-position contract."""
+    version: Literal[3]
+    source_order: SourceOrderV1
+
+
 class EtlSpecificationV2(ContractModel):
     """Two-source Join design. V1 model/canonical output remains unchanged."""
     version: Literal[2]
@@ -182,7 +203,8 @@ Full SQL semantics against business intent still require human review and QA.
     def issue(code, path, message):
         issues.append({'code': code, 'field_path': path, 'message': message})
     try:
-        model = EtlSpecificationV2 if isinstance(payload, dict) and payload.get('version') == 2 else EtlSpecificationV1
+        version = payload.get('version') if isinstance(payload, dict) else None
+        model = EtlSpecificationV3 if version == 3 else EtlSpecificationV2 if version == 2 else EtlSpecificationV1
         spec = model.model_validate(payload)
     except ValueError:
         return {'status': 'INVALID', 'issues': [{'code': 'SPEC_SCHEMA_INVALID', 'field_path': 'specification', 'message': '規格格式不合法或包含不支援的 SQL／轉換欄位'}], 'execution_authorized': False}
@@ -199,6 +221,17 @@ Full SQL semantics against business intent still require human review and QA.
     if check_requirements(snapshot)['status'] != 'CHECKED' or (run.get('gate_result') or {}).get('status') != 'CHECKED':
         issue('SPEC_GATE_BLOCKED', 'run_id', '目前需求檢查未通過，不可由規格覆蓋阻擋')
     target = snapshot.get('target_config') or {}
+    ordered = isinstance(spec, EtlSpecificationV3)
+    if ordered or 'source_order_v1' in target:
+        try:
+            confirmed_order = SourceOrderV1.model_validate(target.get('source_order_v1'))
+        except ValueError:
+            issue('SPEC_SOURCE_ORDER_UNCONFIRMED', 'source_order', '來源順序契約未確認或不合法')
+        else:
+            if not ordered or spec.source_order != confirmed_order:
+                issue('SPEC_SOURCE_ORDER_MISMATCH', 'source_order', '規格不得忽略或改變已確認來源順序')
+        if ordered and (spec.filters or spec.aggregation is not None):
+            issue('SPEC_SOURCE_ORDER_SCOPE_UNSUPPORTED', 'source_order', '來源順序版本僅支援單一 CSV 全列投影，不得篩選或聚合')
     conditions = target.get('requirements_v1') or {}
     if (spec.target_schema, spec.target_table, spec.write_mode) != (target.get('schema'), target.get('table'), conditions.get('write_mode')):
         issue('SPEC_TARGET_MISMATCH', 'target_table', '目標或寫入模式與已確認輸入不一致')
@@ -293,6 +326,15 @@ Full SQL semantics against business intent still require human review and QA.
                 issue('SPEC_BOOLEAN_ORDER_UNSUPPORTED', path, '布林欄位不能使用大小排序比較')
     available = set(source_names)
     expected_metric_names = set()
+    if ordered:
+        ref = '$source_order.source.0'
+        ordinal = spec.source_order.ordinal_column
+        expected_metric_names.add(ref)
+        if by_source.get(ref) != ordinal or not types.get(ordinal) or types[ordinal][1] != 'BIGINT' or ordinal in source_names:
+            issue('SPEC_SOURCE_ORDER_NAMING_INVALID', 'source_order.ordinal_column', '來源序號須有獨立 BIGINT 命名，不得覆蓋來源欄位')
+        available.add(ordinal)
+        if ordinal not in spec.output_columns:
+            issue('SPEC_SOURCE_ORDER_OUTPUT_MISSING', 'output_columns', '輸出必須保留來源序號')
     if spec.aggregation:
         aggregation = spec.aggregation
         if len(set(aggregation.group_by)) != len(aggregation.group_by) or any(name not in available for name in aggregation.group_by):
@@ -346,6 +388,10 @@ def compilation_plan(payload, run, naming):
     fields = [{'source_name': field['name'], 'stream_name': by_source[field['name']]['english_name'], 'data_type': by_source[field['name']]['vertica_type']}
               for field in run['input_snapshot']['source_config']['sources'][0]['fields']]
     stages = [{'id': 'source', 'component': 'CSVInput', 'source_ref': spec['source_ref'], 'contract': result['csv_input_contract'], 'fields': fields}]
+    if spec['version'] == 3:
+        stages[0]['ordinal_column'] = spec['source_order']['ordinal_column']
+        stages.append({'id': 'source_order_sort', 'component': 'SortRows',
+                       'columns': [spec['source_order']['ordinal_column']], 'case_sensitive': True})
     if spec['filters']:
         stages.append({'id': 'filter', 'component': 'FilterRows', 'logic': spec['filter_logic'], 'null_policy': spec['filter_null_policy'], 'predicates': spec['filters'], 'on_false': 'DISCARD'})
     if spec['aggregation']:
