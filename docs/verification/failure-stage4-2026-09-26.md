@@ -150,3 +150,9 @@ TypeScript／Vite build 通過；只重建並部署 web。實際瀏覽同一修�
 Developer 紀錄、最新 QA PASS 及先前 NEEDS_REVIEW 均可見；沒有額外模型或 ETL 呼叫。
 此 checkpoint 不代表第 5 階段全數通過；下一步仍為概覽／專案交付狀態、
 舊版空狀態與完整 CRUD／設定回歸。
+
+概覽另加入最新 Run 的唯讀交付證據核對，只有 API 同時返回 RELEASE_READY、
+release_ready 與正式 Release 紀錄才顯示已核准；讀取失敗明示無法確認。
+保留原控制流程狀態，沒有竄改歷史。TypeScript／Vite build 與 web 部署通過；
+實際網站確認「正式交付已核准」，點擊「查看交付證據與下載」進入同 Task 交付頁。
+專案清單交付摘要與完整 CRUD／設定回歸仍待完成。

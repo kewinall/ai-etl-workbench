@@ -5,6 +5,7 @@ import {RunVersions} from './RunVersions';
 import {OracleHistory} from './OracleHistory';
 import {SdmDelivery} from './SdmDelivery';
 import {RunArtifacts} from './RunArtifacts';
+import {DeliveryStatus} from './DeliveryStatus';
 
 const tabs = [['overview','概覽'],['requirements','需求與規格'],['collaboration','協作紀錄'],['artifacts','產物與流程'],['execution','執行與 QA'],['delivery','交付']] as const;
 type Tab = typeof tabs[number][0];
@@ -122,6 +123,7 @@ export function TaskWorkspace({task, tab, navigate, renderSetup, renderValue}: {
       {key === 'overview' && <>
         <section className="panel"><h3>目前狀態與下一步</h3>{latest ? <><p>最新準備版本：{latest.state} · {latest.phase || '階段未記錄'}</p><p>結果／阻擋代碼：{latest.outcome_code || '尚無結果'}</p><p>Run：{latest.run_id}</p></> : <p>{busy ? '正在讀取版本…' : error ? '無法確認最新版本。' : '尚無準備版本。'}</p>}<p>既有 Task 狀態：{detail.status}；不代表目前版本已取得執行或交付核准。</p><button onClick={() => select('requirements')}>前往需求確認與補正</button></section>
         <ExecutionReadiness taskId={task.id}/>
+        {current==='overview'&&latest&&!busy&&!error&&<section className="panel"><DeliveryStatus key={`${latest.run_id}:${refresh}`} taskId={task.id} runId={latest.run_id} onOpen={()=>select('delivery')}/></section>}
       </>}
       {key === 'requirements' && (visitedRequirements || current === key) && <>
         <RunVersions key={task.id} taskId={task.id}/><section className="panel"><h3>建立 Task 的完整設定</h3><p>下方是目前 Task 保存內容；歷次不可變快照請查看上方版本。</p>{renderSetup(detail)}</section>
