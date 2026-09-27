@@ -1,4 +1,5 @@
 param([switch]$NoBrowser)
+throw 'Legacy Windows POC startup is disabled: it seeds demo data and starts the obsolete worker. Use the Docker Pilot deployment workflow in docs/pilot-service-lifecycle.md. No data or service was changed.'
 $ErrorActionPreference='Stop'; $Root=Split-Path -Parent $PSScriptRoot
 $Utf8NoBom=New-Object System.Text.UTF8Encoding($false)
 [Console]::InputEncoding=$Utf8NoBom; [Console]::OutputEncoding=$Utf8NoBom

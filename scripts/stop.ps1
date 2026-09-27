@@ -1,3 +1,4 @@
+throw 'Legacy POC stop is disabled: forced termination and recursive runtime cleanup are unsafe for retained Pilot evidence. Use docs/pilot-service-lifecycle.md. No process or file was changed.'
 $Root=Split-Path -Parent $PSScriptRoot; $file="$Root\runtime-temp\processes.json"
 if(Test-Path $file){$p=Get-Content $file|ConvertFrom-Json; $ids=@($p.api,$p.worker,$p.frontend); Get-CimInstance Win32_Process|Where-Object{$ids -contains $_.ParentProcessId}|ForEach-Object{Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue}; $ids|ForEach-Object{Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue}; Remove-Item $file -Force}
 $escapedRoot=[regex]::Escape($Root)
