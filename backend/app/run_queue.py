@@ -116,7 +116,7 @@ class RunQueue:
             self.event(conn, run_id, 'ENQUEUED', 'PREFLIGHT')
             return result
 
-    def revise(self, task_id, parent_id, request_key, input_checksum, requirement_text, target_schema, target_table, requirements_v1=None, source_fields_v1=None, csv_input_contract_v1=None, csv_replacement_v1=None, join_contract_v1=None, csv_input_contracts_v1=None):
+    def revise(self, task_id, parent_id, request_key, input_checksum, requirement_text, target_schema, target_table, requirements_v1=None, source_fields_v1=None, csv_input_contract_v1=None, csv_replacement_v1=None, join_contract_v1=None, csv_input_contracts_v1=None, transformation_contract_v1=None):
         from .source_replacement import replace_csv_source, verify_csv_replacement
         if csv_replacement_v1 is not None and source_fields_v1 is not None:
             raise ValueError('CONFLICTING_SOURCE_CHANGES')
@@ -148,6 +148,9 @@ class RunQueue:
             if join_contract_v1 is not None:
                 from .join_contract import JoinContractV1
                 target['join_contract_v1'] = JoinContractV1.model_validate(join_contract_v1).model_dump()
+            if transformation_contract_v1 is not None:
+                from .transformation_contract import TransformationContractV1
+                target['transformation_contract_v1'] = TransformationContractV1.model_validate(transformation_contract_v1).model_dump(mode='json')
             existing = conn.execute('SELECT * FROM platform.task_run WHERE task_id=%s AND request_key=%s', (task_id, request_key)).fetchone()
             if existing:
                 snapshot = existing['input_snapshot']

@@ -47,6 +47,15 @@ services:
     networks: [test-only, browser-only]
     depends_on:
       api: {condition: service_healthy}
+  control-worker:
+    image: ai-etl-workbench-api:dev
+    environment:
+      <<: *test-env
+      WORKBENCH_CONTROL_WORKER_ENABLED: 'true'
+    command: [python, -m, app.control_worker]
+    networks: [test-only]
+    depends_on:
+      api: {condition: service_healthy}
 networks:
   test-only: {internal: true}
   browser-only: {}

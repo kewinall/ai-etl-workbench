@@ -18,7 +18,8 @@ class RequirementConditionsV1(BaseModel):
 
 def condition_issues(snapshot):
     raw = (snapshot.get('target_config') or {}).get('requirements_v1') or {}
-    issues = []
+    from .transformation_contract import intent_issues
+    issues = intent_issues(snapshot)
     def issue(kind, field, message):
         issues.append(dict(issue_type=kind, field_path='requirements_v1.' + field, message=message,
                            suggestion={'required': True}))

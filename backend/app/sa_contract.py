@@ -42,6 +42,10 @@ def build_sa_context(run):
     except ValueError:
         conditions = {'invalid': True}
     evidence.append({'id': 'conditions', 'kind': 'CONDITIONS', 'value': conditions})
+    from .transformation_contract import intent_evidence
+    intent = intent_evidence(snapshot)
+    if intent is not None:
+        evidence.append({'id': 'transformation.conditions', 'kind': 'TRANSFORMATION_CONDITIONS', 'value': intent})
     from .join_contract import join_evidence
     join_input = join_evidence(snapshot)
     if join_input is not None:
@@ -56,7 +60,7 @@ def build_sa_context(run):
         for field_index, field in enumerate(source.get('fields') or []):
             evidence.append({'id': f'source.{source_index}.field.{field_index}', 'kind': 'SOURCE_FIELD',
                              'value': {key: field.get(key) for key in ('name', 'type')}})
-    context = {'version': 2, 'run_id': str(run['run_id']), 'input_checksum': run['input_checksum'],
+    context = {'version': 3 if intent is not None else 2, 'run_id': str(run['run_id']), 'input_checksum': run['input_checksum'],
                'settings_checksum': run['settings_snapshot']['checksum'], 'evidence': evidence,
                'deterministic_gate': check_requirements(snapshot)}
     return {**context, 'context_checksum': digest(context)}

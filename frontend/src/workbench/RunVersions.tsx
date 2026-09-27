@@ -11,6 +11,7 @@ import {CsvReplacement} from './CsvReplacement';
 import {HopOutcome} from './HopOutcome';
 import {ExecutionReconciliation} from './ExecutionReconciliation';
 import {ExecutionDiagnosis} from './ExecutionDiagnosis';
+import {TransformationEditor, TransformationSummary, intentPayload} from './TransformationIntent';
 
 const states: Record<string, string> = {QUEUED: '待處理（未啟動）', RUNNING: '處理中', NEEDS_REVIEW: '需要人工檢查', SUCCEEDED: '流程已結束', FAILED: '失敗', CANCELLED: '已取消'};
 
@@ -22,6 +23,7 @@ export function RunVersions({taskId}: {taskId: string}) {
   const [confirmed, setConfirmed] = useState(false);
   const [editing, setEditing] = useState(false);
   const [conditions, setConditions] = useState<any>({});
+  const [transformation, setTransformation] = useState<any>(null);
   const [sourceFields, setSourceFields] = useState<any[] | null>(null);
   const [csvContract, setCsvContract] = useState<any>(null);
   const [replacement, setReplacement] = useState<any>(null);
@@ -56,7 +58,7 @@ export function RunVersions({taskId}: {taskId: string}) {
   const revise = () => action(async () => {
     if(replacementPending) throw new Error('請先確認或取消來源換檔');
     await request(`/api/tasks/${taskId}/runs/${detail.run_id}/revisions`, jsonBody('POST', {
-      ...draft, requirements_v1: {version: 1, ...conditions}, ...(replacement ? {csv_replacement_v1:replacement} : sourceFields ? {source_fields_v1: {fields: sourceFields}} : {}), ...(csvContract ? {csv_input_contract_v1: {...csvContract, header: csvContract.header === 'true'}} : {}), request_key: revisionKey.current, input_checksum: detail.input_checksum,
+      ...draft, requirements_v1: {version: 1, ...conditions}, ...(transformation ? {transformation_contract_v1: intentPayload(transformation)} : {}), ...(replacement ? {csv_replacement_v1:replacement} : sourceFields ? {source_fields_v1: {fields: sourceFields}} : {}), ...(csvContract ? {csv_input_contract_v1: {...csvContract, header: csvContract.header === 'true'}} : {}), request_key: revisionKey.current, input_checksum: detail.input_checksum,
     }));
     // Reload the entire Task so legacy input/history panels cannot show stale data.
     window.location.reload();
@@ -111,6 +113,7 @@ export function RunVersions({taskId}: {taskId: string}) {
         <SourceEvidence items={detail.gate_result.source_evidence}/>
       </section>}
       <p>{detail.input_summary.requirement_text}</p>
+      <TransformationSummary value={detail.input_summary.transformation_contract_v1}/>
       <p>目標：{detail.input_summary.target_schema || '未指定'}.{detail.input_summary.target_table || '未指定'}</p>
       {!!detail.input_summary.source_fields?.length && <p>來源欄位：{detail.input_summary.source_fields.map((field: any) => `${field.name} (${field.type || '未指定型別'})`).join('、')}</p>}
       {detail.input_summary.csv_input_contract_v1 && <section aria-label="CSV 輸入契約摘要"><h4>CSV 輸入契約</h4>{detail.input_summary.csv_input_contract_v1.contract_status === 'CONFIRMED_INPUT_ONLY' ? <p>編碼：{detail.input_summary.csv_input_contract_v1.encoding}；分隔：{JSON.stringify(detail.input_summary.csv_input_contract_v1.delimiter)}；標題列：{detail.input_summary.csv_input_contract_v1.header ? '有' : '無'}；額外欄位：{detail.input_summary.csv_input_contract_v1.extra_columns === 'REJECT' ? '拒收' : '忽略'}。</p> : <p>尚未確認或格式不合法，請補正後建立新版。</p>}<p>綁定來源 source.0；只確認解析需求，不代表檔案已驗證或已執行匯入。</p></section>}
@@ -123,11 +126,13 @@ export function RunVersions({taskId}: {taskId: string}) {
           setDraft({requirement_text: detail.input_summary.requirement_text || '', target_schema: detail.input_summary.target_schema || '', target_table: detail.input_summary.target_table || ''});
           setConditions(detail.input_summary.requirements_v1 || {version: 1, write_mode: null, date_scope: null, date_column: '', start_date: '', end_date_exclusive: '', key_columns: []});
           setSourceFields(null);
+          setTransformation(detail.input_summary.transformation_contract_v1 || null);
           setReplacement(null); setReplacementPending(false);
           setCsvContract(null);
           revisionKey.current = crypto.randomUUID(); setEditing(true);
         }}>補正需求並建立新版</button>}
         {editing && <form aria-label="需求補正" onSubmit={event => {event.preventDefault(); revise()}}>
+          <TransformationEditor value={transformation} sources={detail.input_summary.transformation_source_refs || []} disabled={busy} onChange={setTransformation}/>
           {detail.input_summary.csv_contract_editable && <CsvReplacement disabled={busy} onChange={setReplacement} onPending={setReplacementPending}/>}
           <p>保存會保留舊版本，並建立待確認的新版本，不執行 ETL。僅單一且沒有實體／樣本資料的來源可補正欄位；Join 條件尚未接通。</p>
           {detail.input_summary.csv_contract_editable && <fieldset><legend>CSV 輸入契約補正</legend>

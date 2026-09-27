@@ -9,6 +9,7 @@ from .requirement_contract import RequirementConditionsV1
 from .join_contract import JoinContractV1, join_evidence
 from .source_revision import SourceFieldsV1, editable_source
 from .source_replacement import CsvReplacementV1
+from .transformation_contract import TransformationContractV1, intent_evidence, source_refs
 from .csv_contract import (CsvInputContractV1, CsvInputContractsV1, editable_csv_source,
                           csv_evidence, editable_csv_sources, csv_sources_evidence)
 
@@ -87,6 +88,7 @@ class ReviseRun(BaseModel):
     csv_replacement_v1: CsvReplacementV1 | None = None
     join_contract_v1: JoinContractV1 | None = None
     csv_input_contracts_v1: CsvInputContractsV1 | None = None
+    transformation_contract_v1: TransformationContractV1 | None = None
 
 
 def public_run(row):
@@ -102,6 +104,8 @@ def public_run(row):
     result['input_summary']['target_schema'] = target.get('schema', '')
     result['input_summary']['target_table'] = target.get('table', '')
     result['input_summary']['requirements_v1'] = target.get('requirements_v1')
+    result['input_summary']['transformation_contract_v1'] = intent_evidence(row['input_snapshot'])
+    result['input_summary']['transformation_source_refs'] = source_refs(row['input_snapshot'])
     join_input = join_evidence(row['input_snapshot'])
     if join_input is not None:
         result['input_summary']['join_contract_v1'] = join_input
@@ -228,7 +232,8 @@ def create_run_router(queue):
                                data.csv_input_contract_v1.model_dump() if data.csv_input_contract_v1 else None,
                                data.csv_replacement_v1.model_dump(mode='json') if data.csv_replacement_v1 else None,
                                data.join_contract_v1.model_dump() if data.join_contract_v1 else None,
-                               data.csv_input_contracts_v1.model_dump() if data.csv_input_contracts_v1 else None))
+                               data.csv_input_contracts_v1.model_dump() if data.csv_input_contracts_v1 else None,
+                               data.transformation_contract_v1.model_dump(mode='json') if data.transformation_contract_v1 else None))
 
     @router.get('/{task_id}/runs/{run_id}/sa-invocation')
     def sa_invocation(task_id: str, run_id: UUID):

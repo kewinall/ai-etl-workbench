@@ -5,6 +5,24 @@
 
 ## 最新進度：Developer 診斷與首案 Hop
 
+### 轉換意圖與逐欄位網站 checkpoint（2026-09-27）
+
+新增選用 TransformationContractV1：原始來源限定欄位、Filter 常數、聚合
+及輸出順序，透過 Naming Contract 對照規格。共用 validator 拒絕差異並
+回報節點及需求／規格路徑，不產生 HPL 或保存規格。revision 與輸入 checksum
+綁定，SA／Developer 取得獨立意圖證據；舊版無契約時不回寫並明確顯示限制。
+
+新增網站逐欄位編輯及摘要，無 JSON 編輯需求；實際隔離網站／API／PostgreSQL
+保存重讀與舊版保留通過，390px 無水平溢出。初次瀏覽器測試停在欄位標籤，
+已加入明確標籤；第二次測試讀取已隨頁面重載釋放的回應 body，改為回讀 API
+持久化版本後，最終 1 passed（5.8s）。未呼叫模型或 ETL。
+
+最終完整隔離回歸 1184 passed／46 skipped／1 warning（31.22s），exit 0；
+API／網站映像建置通過。原 Pilot 容器未更新，既有第十案仍 RELEASE_READY。
+新意圖仍需接通 QA 版本化證據、模型交接及新建 Task 導引，再部署同版 Worker
+並進行正式語意五案。正式集合仍為 10／20，整體階段不宣稱完成。
+操作及限制見 [轉換意圖](../transformation-intent.md)。
+
 ### 語意植錯前置盤點（2026-09-27，尚未驗收）
 
 直接呼叫現行 validate_specification，使用既有測試 fixture 的已確認需求，

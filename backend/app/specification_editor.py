@@ -42,7 +42,10 @@ def editor_context(run, naming):
     # Probe existing invariant validator; this is not returned as a proposed design.
     # Metric coverage alone is expected to be incomplete until the user specifies it.
     probe = validate_specification({**binding, 'filters': [], 'aggregation': None, 'output_columns': [c['name'] for c in source]}, run, naming)
-    issues = [issue for issue in probe['issues'] if issue['code'] != 'SPEC_NAMING_COVERAGE_MISMATCH']
+    # The empty probe is not a proposal. Intent differences are expected until
+    # the operator enters the design; actual validate/save still enforce them.
+    issues = [issue for issue in probe['issues'] if issue['code'] not in
+              ('SPEC_NAMING_COVERAGE_MISMATCH', 'SPEC_TRANSFORMATION_INTENT_MISMATCH')]
     if issues:
         return {**blocked, 'issues': issues}
     return {'status': 'EDITOR_CONTEXT_READY', 'binding': binding, 'source_columns': source, 'metric_columns': metrics,

@@ -187,6 +187,8 @@ Full SQL semantics against business intent still require human review and QA.
     except ValueError:
         return {'status': 'INVALID', 'issues': [{'code': 'SPEC_SCHEMA_INVALID', 'field_path': 'specification', 'message': '規格格式不合法或包含不支援的 SQL／轉換欄位'}], 'execution_authorized': False}
     snapshot = run['input_snapshot']
+    from .transformation_contract import validate_intent
+    issues.extend(validate_intent(spec, snapshot, naming))
     multi = isinstance(spec, EtlSpecificationV2)
     if multi:
         issues.extend(validate_join_semantics([join.model_dump() for join in spec.joins], snapshot))

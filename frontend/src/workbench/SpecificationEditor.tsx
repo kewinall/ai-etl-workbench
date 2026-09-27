@@ -44,7 +44,11 @@ export function SpecificationEditor({base, initial, onSaved, onCancel}: {base: s
       setMetrics(result.metric_columns.map((m: any) => initial?.aggregation?.metrics.find((old: any) => old.id === m.id && old.output_column === m.output_column) || {id: m.id, output_column: m.output_column, function: '', column: ''}));
     })}>讀取已確認欄位</button>}
     {error && <p role="alert">{error}</p>}
-    {!!issues.length && <ul role="alert">{issues.map((issue: any, i: number) => <li key={i}>{issue.message} {issue.field_path}</li>)}</ul>}
+    {!!issues.length && <ul role="alert">{issues.map((issue: any, i: number) => <li key={i}>{issue.message} {issue.field_path}
+      {issue.node_id && <span> · 節點：{issue.node_id}</span>}
+      {issue.requirement_path && <span> · 需求：{issue.requirement_path}</span>}
+      {'expected' in issue && <span> · 預期：{JSON.stringify(issue.expected)}；實際：{JSON.stringify(issue.actual)}</span>}
+    </li>)}</ul>}
     {context && <>
       <p>固定目標：{context.binding.target_schema}.{context.binding.target_table} · {context.binding.write_mode}。變更目標需先補正 Run。</p>
       {context.binding.version === 2 && <><JoinSummary joins={context.binding.joins}/><p>Join 規則取自已確認需求；需變更時，請先補正 Run 並重新核准。</p></>}
