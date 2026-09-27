@@ -20,7 +20,7 @@ lock = Lock()
 class Handler(SimpleHTTPRequestHandler):
     def do_PUT(self):
         # Observe pending UI state without changing any saved configuration.
-        if not self.path.startswith('/api/settings/ai-profiles/'):
+        if not self.path.startswith(('/api/settings/ai-profiles/', '/api/projects/')):
             self.send_error(405)
             return
         length = int(self.headers.get('Content-Length', '0'))

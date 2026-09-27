@@ -6,6 +6,7 @@ import {ProjectSummary} from './ProjectSummary';
 import {ProjectEvaluation} from './ProjectEvaluation';
 import {mergeProjectHistory} from './projectHistory';
 import {historyPage} from './historyPage';
+import {OperationLatch} from './operationLatch';
 
 type Project = {project_id: string; project_name: string; description: string; default_ai_profile: string; default_connection: string; naming_rules: Record<string, any>; updated_at: string};
 type Props = {projectId?: string; tab?: string; navigate: (path: string) => void; onError: (message: string) => void};
@@ -24,6 +25,8 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
   const [aliases, setAliases] = useState<[string, string][]>([]);
   const [snapshot, setSnapshot] = useState<Project | null>(null);
   const [busy, setBusy] = useState(false);
+  const busyRef=useRef(false);
+  const operation=useRef(new OperationLatch());
   const [loading, setLoading] = useState(true);
   const [projectLoadError,setProjectLoadError]=useState('');
   const [projectLoadAttempt,setProjectLoadAttempt]=useState(0);
@@ -40,12 +43,11 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
   useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => {event.preventDefault(); event.returnValue = ''};
+    const warn = (event: BeforeUnloadEvent) => {if(!dirtyRef.current&&!busyRef.current)return;event.preventDefault(); event.returnValue = ''};
     const beforeNavigate = (event: Event) => {
-      if (!dirtyRef.current) return;
+      if (event.defaultPrevented||(!dirtyRef.current&&!busyRef.current)) return;
       event.preventDefault();
-      setMessage('尚未離開：專案設定尚未儲存。請先「儲存設定」或「取消變更」，再選擇目的頁面；目前草稿已保留。');
+      setMessage(busyRef.current?'專案正在儲存，請等待結果後再離開。':'尚未離開：專案設定尚未儲存。請先「儲存設定」或「取消變更」，再選擇目的頁面；目前草稿已保留。');
     };
     window.addEventListener('beforeunload', warn);
     window.addEventListener('workbench:before-navigate', beforeNavigate);
@@ -98,7 +100,8 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
-    if(busy)return;
+    if(!operation.current.acquire())return;
+    busyRef.current=true;
     setBusy(true); setMessage('');
     try {
       const dictionary: Record<string, string> = {};
@@ -111,9 +114,10 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
       const result = await request<Project>(creating ? '/api/projects' : `/api/projects/${projectId}`, jsonBody(creating ? 'POST' : 'PUT', value));
       setProjects(old => [...old.filter(p => p.project_id !== result.project_id), result].sort((a,b) => a.project_name.localeCompare(b.project_name)));
       restore(result);
+      busyRef.current=false;
       navigate(`/projects/${result.project_id}/settings`);
       setMessage('已儲存；重新載入後仍可保留設定。');
-    } catch (error: any) {setMessage(error.message)} finally {setBusy(false)}
+    } catch (error: any) {setMessage(error.message)} finally {setBusy(false);busyRef.current=false;operation.current.release()}
   };
 
   if (!projectId) return <section className="panel wb-project-home" aria-label="專案工作區首頁">
