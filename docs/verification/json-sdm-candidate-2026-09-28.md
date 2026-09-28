@@ -2,6 +2,16 @@
 
 工程進度，尚未部署正式或完成 JSON 交付驗收。
 
+## 後續網站驗證
+
+SdmPreview 已支援 V5；顯示端嚴格核對格式、固定政策、根結構與三個指紋，異常不顯示為已確認。
+隔離 5195 實際上傳、補正、新版規格核准、SDM 預覽、候選保存與下載通過；Run 未開始寫入。
+兩項顯示守門正反例亦通過：合計 3 passed（6.8 秒），其中僅一項是實際瀏覽器流程。
+TypeScript／Vite 及 API／Web Docker build 通過，保留既有大 chunk 警告。
+首次下載流程在保存時受阻，確認為隔離 Compose 缺少 WORKBENCH_ARTIFACT_ROOT；
+新增專用 ui-test-artifacts 資料卷後重驗通過，不使用正式產物或密鑰。
+XLSX 文件視覺驗收、JSON 可攜重播、正式真實全鏈仍未完成。以下保留前階段工程時點。
+
 - SDM document V5 綁定 JSON 原始來源、Profile、讀取契約指紋；欄位對照沿用已驗證 Naming Contract 與規格。
 - 規則頁明示 BOM 僅於副本移除、不重新序列化；缺鍵 NULL、拒絕額外／巢狀／重複鍵、保留空物件、固定 null launcher 選項與嚴格型別政策。
 - 候選文件不宣稱執行、QA 或 Release 通過；不包含 upload ID 或樣本資料。

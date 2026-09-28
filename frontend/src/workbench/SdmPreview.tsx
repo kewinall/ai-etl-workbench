@@ -5,6 +5,8 @@ import {SourceOrderSummary} from './SourceOrder';
 import {validateSdmOrder} from './sdmOrder';
 import {validateSdmExcel} from './sdmExcel';
 import {ExcelInputSummary} from './ExcelInputContract';
+import {validateSdmJson} from './sdmJson';
+import {JsonInputSummary} from './JsonInputContract';
 
 export function SdmPreview({url,specificationChecksum}:{url:string;specificationChecksum:string}) {
   const [attempt,setAttempt]=useState(0),[data,setData]=useState<any>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -35,9 +37,10 @@ export function SdmPreview({url,specificationChecksum}:{url:string;specification
     request(url).then(value=>{
       if(value.document?.specification_checksum!==specificationChecksum||value.status!=='SDM_CANDIDATE_NOT_RELEASED')throw new Error('SDM 與目前規格版本不符');
       const document=value.document;
-      if(![1,2,3,4].includes(document.version)||document.document_type!=='SDM_CANDIDATE'||value.qa_passed!==false||value.release_ready!==false||document.filter_logic!=='ALL'||document.filter_null_policy!=='EXCLUDE_UNKNOWN'||document.target?.write_mode!=='APPEND'||(document.aggregation&&document.aggregation.null_policy!=='SQL_NULLS'))throw new Error('SDM 政策或文件版本不受支援，請重新核對規格。');
+      if(![1,2,3,4,5].includes(document.version)||document.document_type!=='SDM_CANDIDATE'||value.qa_passed!==false||value.release_ready!==false||document.filter_logic!=='ALL'||document.filter_null_policy!=='EXCLUDE_UNKNOWN'||document.target?.write_mode!=='APPEND'||(document.aggregation&&document.aggregation.null_policy!=='SQL_NULLS'))throw new Error('SDM 政策或文件版本不受支援，請重新核對規格。');
       validateSdmOrder(document);
       validateSdmExcel(document);
+      validateSdmJson(document);
       if(document.version===2&&(!Array.isArray(document.source_refs)||document.source_refs.join(',')!=='source.0,source.1'||!Array.isArray(document.joins)||document.joins.length!==1))throw new Error('SDM 雙來源或 Join 規則不完整。');
       if(live)setData(value);
     }).catch(e=>live&&setError(e.message)).finally(()=>live&&setBusy(false));
@@ -56,6 +59,12 @@ export function SdmPreview({url,specificationChecksum}:{url:string;specification
         <p>來源識別：{data.document.version===2?data.document.source_refs.join('、'):data.document.source_ref}</p>
         <JoinSummary joins={data.document.joins}/>
         <SourceOrderSummary value={data.document.source_order}/>
+        {data.document.version===5&&<><JsonInputSummary value={{contract_status:'CONFIRMED_INPUT_ONLY',contract:data.document.json_input_contract}}/>
+          <details><summary>JSON 來源與讀取指紋</summary>
+            <p>原始來源：{data.document.json_source.content_checksum}</p>
+            <p>Profile：{data.document.json_source.profile_checksum}</p>
+            <p>讀取契約：{data.document.json_source.contract_checksum}</p>
+            <p>讀取副本指紋及啟動紀錄須另由執行證據驗證；候選文件不代表執行或 QA 通過。</p></details></>}
         {data.document.version===4&&<><ExcelInputSummary value={{contract_status:'CONFIRMED_INPUT_ONLY',contract:data.document.excel_input_contract}}/>
           <details><summary>Excel 來源與讀取指紋</summary>
             <p>來源：{data.document.excel_source.content_checksum}</p><p>Profile：{data.document.excel_source.profile_checksum}</p>

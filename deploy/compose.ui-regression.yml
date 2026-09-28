@@ -26,6 +26,7 @@ services:
       WORKBENCH_SA_DISPATCH_ENABLED: 'false'
       WORKBENCH_DEVELOPER_DISPATCH_ENABLED: 'false'
       WORKBENCH_QA_DISPATCH_ENABLED: 'false'
+      WORKBENCH_ARTIFACT_ROOT: /app/outputs
     command: [python, -m, app.migrations]
     networks: [test-only]
     depends_on:
@@ -33,6 +34,7 @@ services:
   api:
     image: ai-etl-workbench-api:dev
     environment: *test-env
+    volumes: [ui-test-artifacts:/app/outputs]
     networks: [test-only]
     depends_on:
       migrate: {condition: service_completed_successfully}
@@ -61,3 +63,4 @@ networks:
   browser-only: {}
 volumes:
   ui-test-database:
+  ui-test-artifacts:

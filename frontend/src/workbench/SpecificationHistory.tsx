@@ -62,8 +62,8 @@ export function SpecificationHistory({taskId, runId}: {taskId: string; runId: st
       <h5>分組與聚合</h5>
       {spec.aggregation ? <><p>分組欄位：{spec.aggregation.group_by.join('、')}</p><ul>{spec.aggregation.metrics.map((metric: any) => <li key={metric.id}>{metric.output_column}：{functions[metric.function] || metric.function}{metric.column ? `（${metric.column}）` : ''}</li>)}</ul></> : <p>不聚合，保留明細。</p>}
       <h5>輸出欄位順序</h5><ol>{spec.output_columns.map((name: string) => <li key={name}>{name}</li>)}</ol>
-      {current.approval_effective && spec.version === 5 && <p>JSON SDM 與正式執行鏈尚未接通，暫不提供 SDM 產生或交付；規格及編譯預覽仍可檢視。</p>}
-      {current.approval_effective&&spec.version!==5&&<SdmPreview key={current.specification_id} url={`${base}/specifications/${current.specification_id}/sdm-preview`} specificationChecksum={current.content_checksum}/>}
+      {current.approval_effective && spec.version === 5 && <p>JSON SDM 可產生候選文件；可攜交付仍待驗收，不代表 Release 已通過。</p>}
+      {current.approval_effective&&<SdmPreview key={current.specification_id} url={`${base}/specifications/${current.specification_id}/sdm-preview`} specificationChecksum={current.content_checksum}/>}
       <p>{current.approval_effective ? '此規格核准目前有效；尚未授權執行或 Release。' : current.approval_id ? '歷史核准已失效，紀錄仍保留。請檢查最新規格及上游內容。' : current.reviewable ? '可檢閱後核准此規格。' : '此版本目前不可核准，請檢查需求、設定與命名版本。'}</p>
       {current.reviewable && !current.approval_effective && <>
         <label><input type="checkbox" checked={confirmed} disabled={busy} onChange={event => setConfirmed(event.target.checked)}/>我已檢查來源、{spec.version === 2 ? 'Join 規則、' : ''}目標、篩選、分組與輸出，確認此規格；這不是執行授權。</label>
