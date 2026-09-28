@@ -72,7 +72,22 @@ def test_type_error_after_profile_sample_cannot_yield(source):
     selected = selected_profile(upload['upload_id'], upload['checksum'], upload['size'], '明細', 2)
     assert selected['fields'] == [{'name': 'number', 'type': 'BIGINT'}]
     candidate = {**upload, **selected, 'type': 'EXCEL', 'has_actual_data': True}
+    from app.source_preflight import source_preflight
+    evidence, issues = source_preflight({'source_type': 'EXCEL', 'source_config': {
+        'sources': [candidate], 'excel_input_contract_v1': policy()}})
+    assert issues and evidence[0]['status'] == 'EXCEL_NUMBER_TYPE'
     with pytest.raises(ValueError, match='EXCEL_NUMBER_TYPE'):
         with source_staging.stage_excel_source(uuid4(), candidate, policy()):
             pytest.fail('Late invalid value yielded execution copy')
     assert Path(upload['path']).exists()
+
+
+def test_worker_preflight_records_full_typed_proof(source):
+    from app.source_preflight import source_preflight
+    evidence, issues = source_preflight({'source_type': 'EXCEL', 'source_config': {
+        'sources': [source], 'excel_input_contract_v1': policy()}})
+    assert not issues
+    assert evidence[0]['excel_full_file_validated'] is True
+    assert evidence[0]['excel']['column_types_checked'] is True
+    assert evidence[0]['excel']['content_checksum'] == source['checksum']
+    assert evidence[0]['execution_authorized'] is False

@@ -55,6 +55,14 @@ def developer_material(context):
             'The controller pins an ascending ordinal result query and exact sequence validation. '
             'Do not claim that database insertion order alone guarantees ordered retrieval.')
         version=6
+    if context['version'] == 4:
+        prompt = prompt.replace('EtlSpecificationV1', 'EtlSpecificationV4') + (
+            ' Return proposal version 4 and specification version 4. Cite source.0.excel_input. '
+            'Copy its reference object exactly into specification.excel_source. '
+            'This is a native XLSX source with a confirmed worksheet, header and blank-row policy. '
+            'Do not substitute CSV, another sheet, inferred parsing defaults, or a different fingerprint. '
+            'Use source_ref source.0; the compiler owns ExcelInput XML and SOURCE_XLSX runtime binding.')
+        version = 7
     schema = model.model_json_schema()
     return {'prompt': prompt, 'prompt_version': version,
             'prompt_checksum': digest(prompt), 'schema': schema, 'schema_checksum': digest(schema)}

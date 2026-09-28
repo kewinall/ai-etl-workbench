@@ -24,17 +24,20 @@ class ExecuteExcelProbe {
     var document = factory.newDocumentBuilder().parse(Path.of("/candidate/candidate.hpl").toFile());
     var provider = new MemoryMetadataProvider();
     var meta = new PipelineMeta(document.getDocumentElement(), provider);
-    if (meta.getTransforms().size() != 2
+    var allowed = java.util.Set.of("ExcelInput", "FilterRows", "SortRows", "GroupBy", "SelectValues", "Dummy");
+    for (var node : meta.getTransforms())
+      if (!allowed.contains(node.getTransformPluginId())) throw new IllegalStateException("Unexpected plugin");
+    if (meta.getTransforms().size() > 20
         || !"ExcelInput".equals(meta.findTransform("source").getTransformPluginId())
         || !"Dummy".equals(meta.findTransform("target").getTransformPluginId()))
-      throw new IllegalStateException("Only XLSX source and collector allowed");
+      throw new IllegalStateException("XLSX source and collector required");
     var engine = new LocalPipelineEngine(meta, new Variables(), null);
     engine.setMetadataProvider(provider);
     engine.prepareExecution();
     var rows = Collections.synchronizedList(new ArrayList<String>());
     engine.getTransform("target", 0).addRowListener(new RowAdapter() {
       public void rowReadEvent(IRowMeta rowMeta, Object[] row) {
-        if (rowMeta.size() != 2) throw new IllegalStateException("Unexpected output width");
+        if (rowMeta.size() < 1 || rowMeta.size() > 200) throw new IllegalStateException("Unexpected output width");
         var values = new ArrayList<String>();
         for (int i = 0; i < rowMeta.size(); i++)
           values.add(row[i] == null ? "NULL" : Base64.getEncoder().encodeToString(

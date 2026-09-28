@@ -19,13 +19,22 @@ pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_EXCEL_TEST') != '1',
                                reason='Explicit network-disabled native Excel probe required')
 
 
-def execute_excel(tmp_path, contract, fields, content, *, staged_path=None):
+def execute_excel(tmp_path, contract, fields, content, *, staged_path=None, compiled_hpl=None):
     root = fromstring('<pipeline><info><name>excel_probe</name></info><order><hop>'
                       '<from>source</from><to>target</to><enabled>Y</enabled></hop></order>'
                       '<transform><name>target</name><type>Dummy</type><copies>1</copies></transform></pipeline>')
-    source = excel_input_transform(contract, fields)
+    if compiled_hpl is not None:
+        root = fromstring(compiled_hpl)
+        target = root.find("transform[name='target']")
+        for child in list(target):
+            if child.tag not in ('name', 'type', 'copies', 'distribute', 'GUI'):
+                target.remove(child)
+        target.find('type').text = 'Dummy'
+        source = root.find("transform[name='source']")
+    else:
+        source = excel_input_transform(contract, fields)
+        root.append(source)
     source.find('file/name').text = '/staged/source.xlsx' if staged_path else '/candidate/input.xlsx'
-    root.append(source)
     (tmp_path / 'candidate.hpl').write_bytes(tostring(root, encoding='utf-8'))
     (tmp_path / 'input.xlsx').write_bytes(content)
     repo = Path(__file__).resolve().parents[2]
@@ -91,3 +100,16 @@ def test_native_reads_verified_attempt_copy(tmp_path, source):
         assert rows == [['001', '12345678901234567890.123456'], ['002', '1.25']], output
         directory = staged['directory']
     assert not directory.exists()
+
+
+def test_native_v4_compiled_filter_aggregation_matches_expected(tmp_path):
+    from app.hpl_compiler import compile_hpl
+    from test_excel_specification import excel_design
+    from decimal import Decimal
+    captured = []
+    args = excel_design(rows=[['B', '200.25'], ['A', '150.25'], ['A', '20.00'], ['B', '300.25']], capture=captured)
+    compiled = compile_hpl(*args)
+    assert compiled['status'] == 'VALIDATED_NOT_APPROVED', compiled
+    rows, output = execute_excel(tmp_path, policy(), [], captured[0], compiled_hpl=compiled['hpl'])
+    assert [(category, Decimal(total), int(count)) for category, total, count in rows] == [
+        ('A', Decimal('150.25'), 1), ('B', Decimal('500.50'), 2)], output

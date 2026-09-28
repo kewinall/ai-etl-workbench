@@ -21,10 +21,10 @@ def compile_hpl(payload, run, naming):
     info = _values(SubElement(root, 'info'), name='etl_' + result['specification_checksum'][:16],
                    description='Specification ' + result['specification_checksum'] + '; Naming ' + spec['naming']['checksum'])
     parameters = SubElement(info, 'parameters')
-    names = ['SOURCE_CSV_0', 'SOURCE_CSV_1'] if spec['version'] == 2 else ['SOURCE_CSV']
+    names = ['SOURCE_XLSX'] if spec['version'] == 4 else ['SOURCE_CSV_0', 'SOURCE_CSV_1'] if spec['version'] == 2 else ['SOURCE_CSV']
     for name in names:
         parameter = SubElement(parameters, 'parameter')
-        _values(parameter, name=name, default_value=None, description='Runtime-bound validated CSV; no bundled data')
+        _values(parameter, name=name, default_value=None, description='Runtime-bound validated XLSX; no bundled data' if spec['version'] == 4 else 'Runtime-bound validated CSV; no bundled data')
     order = SubElement(root, 'order')
     edges = [dict(edge) for edge in plan['edges']]
     filter_stages = [stage for stage in plan['stages'] if stage['component'] == 'FilterRows']
@@ -36,7 +36,13 @@ def compile_hpl(payload, run, naming):
         node = _values(SubElement(root, 'transform'), name=stage['id'], type=stage['component'], copies=1, distribute='Y')
         _values(SubElement(node, 'GUI'), xloc=80 + index * 180, yloc=100, draw='Y')
         component = stage['component']
-        if component == 'CSVInput':
+        if component == 'ExcelInput':
+            from .excel_input_compiler import excel_input_transform
+            native = excel_input_transform(stage['contract'], stage['fields'])
+            for child in native:
+                if child.tag not in ('name', 'type', 'copies', 'distribute', 'GUI'):
+                    node.append(child)
+        elif component == 'CSVInput':
             contract = stage['contract']
             _values(node, filename='${' + stage.get('parameter', 'SOURCE_CSV') + '}', separator=contract['delimiter'], enclosure='"',
                     header='Y' if contract['header'] else 'N', encoding={'UTF-8-SIG': 'UTF-8', 'BIG5': 'Big5'}.get(contract['encoding'], contract['encoding']),
@@ -110,5 +116,5 @@ def compile_hpl(payload, run, naming):
     xml = tostring(root, encoding='utf-8', xml_declaration=True).decode('utf-8')
     return {**result, 'compiler_status': 'HPL_CANDIDATE_NOT_EXECUTABLE', 'hpl': xml,
             'hpl_checksum': sha256(xml.encode('utf-8')).hexdigest(), 'execution_authorized': False,
-            'required_checks': ['CSV_BYTES_AND_EXTRA_COLUMNS_POLICY', 'NATIVE_METADATA_AND_ROW_SEMANTICS',
+            'required_checks': ['EXCEL_BYTES_SELECTION_AND_TYPE_POLICY' if spec['version'] == 4 else 'CSV_BYTES_AND_EXTRA_COLUMNS_POLICY', 'NATIVE_METADATA_AND_ROW_SEMANTICS',
                                 'SPECIFICATION_APPROVAL', 'RUNTIME_CONNECTION_BINDING', 'VERTICA_QA_AND_RELEASE_APPROVAL']}

@@ -1,5 +1,9 @@
 # 第 5 階段目前判定（2026-09-28）
 
+最新補充：[Excel V4 規格與角色證據](excel-v4-specification-2026-09-28.md)
+已通過真實 Hop 篩選／聚合標準答案、CSV V1–V3 與前版完整輸出相容性，
+以及全後端回歸；尚待契約確認 UI／revision、正式派發與 Vertica／Release 驗收。
+
 最新補充：[Excel 全檔型別與暫存副本](excel-typed-staging-2026-09-28.md)
 完成 9 項真實 Hop 比對、1571 項後端回歸。來源準備尚未接入版本化 Run；
 正式 Excel／Vertica／QA／Release 全鏈仍未完成，下一步接版本化規格與證據。

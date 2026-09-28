@@ -17,6 +17,10 @@
 
 整體目標保持未完成。人工基準依操作者決定保留未量測，不填入估算或代理工時。
 
+最新工程補充：[Excel V4 規格與角色證據](verification/excel-v4-specification-2026-09-28.md)
+接通來源三重指紋、角色輸出驗證與 HPL/HWF 候選編譯；原生篩選／聚合答案正確，
+CSV V1–V3 與前版輸出一致。正式 Run／Vertica／QA／Release 尚未接通，不宣稱完成。
+
 最新工程補充：[Excel 型別及暫存](verification/excel-typed-staging-2026-09-28.md)
 完成 9 項真實 Hop 原生讀取及 1571 項後端回歸，包含全檔型別錯誤攔截與
 已確認 bytes 的唯讀暫存。尚未接入正式 Run／Vertica／Release。

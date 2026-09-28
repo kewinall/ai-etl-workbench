@@ -25,6 +25,14 @@ def source_preflight(snapshot):
                 profile = verify_excel_source(source, content=content)
                 item['excel_selection_v1'] = profile['excel_selection_v1']
                 item['excel_full_file_validated'] = False
+                if 'excel_input_contract_v1' in config:
+                    from .excel_contract_binding import validated_excel_contract
+                    from .excel_input_contract import validate_excel_content
+                    contract = validated_excel_contract(config)['contract']
+                    fields = source.get('fields') or []
+                    item['excel'] = validate_excel_content(content, contract, [field.get('name') for field in fields],
+                                                          column_types=[field.get('type') for field in fields])
+                    item['excel_full_file_validated'] = True
             if source['type'] == 'CSV':
                 try:
                     contract = source_csv_contract(config, f'source.{index}')

@@ -12,11 +12,12 @@ def compile_hwf(payload, run, naming):
     _values(root, name='etl_' + compiled['specification_checksum'][:16],
             description='HPL SHA-256: ' + compiled['hpl_checksum'], name_sync_with_filename='N')
     parameters = SubElement(root, 'parameters')
-    names = ('SOURCE_CSV_0', 'SOURCE_CSV_1') if compiled['specification']['version'] == 2 else ('SOURCE_CSV',)
+    excel = compiled['specification']['version'] == 4
+    names = ('SOURCE_XLSX',) if excel else ('SOURCE_CSV_0', 'SOURCE_CSV_1') if compiled['specification']['version'] == 2 else ('SOURCE_CSV',)
     for name in names:
         parameter = SubElement(parameters, 'parameter')
         _values(parameter, name=name, default_value=None,
-                description='Runtime-bound validated CSV; no bundled data')
+                description='Runtime-bound validated XLSX; no bundled data' if excel else 'Runtime-bound validated CSV; no bundled data')
     actions = SubElement(root, 'actions')
     start = SubElement(actions, 'action')
     _values(start, name='Start', type='SPECIAL', repeat='N', schedulerType=0,
