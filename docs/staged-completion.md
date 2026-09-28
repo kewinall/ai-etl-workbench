@@ -11,13 +11,19 @@
 | 2 | 日期補正、新 revision、真實執行與 Release | 指定案例通過；見 [日期驗收](verification/date-range-stage2-2026-09-26.md) |
 | 3 | Join 語意攔截、真實 QA、可攜重播及節點驗證 | 指定案例通過，不擴大為所有 ETL 功能均已支援 |
 | 4 | 真實缺欄位失敗、診斷、核准修訂及新版交付 | 歷史與節點回歸範圍見 [網站驗證](verification/stage5-current-status.md)，不以通用 UI 測試代替每案證據 |
-| 5 | 15 項隔離 UI 回歸及三項正式唯讀回歸通過；來源選項輔助說明隱藏與過度承諾文案已修正部署 | 全站完整功能對照、Excel／JSON／資料表及範例來源新版受控流程仍未完成，不能以提示限制取代實作；見 [第 5 階段](verification/stage5-current-status.md) |
+| 5 | 新 Excel 案例真實角色／Hop／Vertica／QA／SDM／可攜 Release 通過；既有網站回歸持續保留 | 全站完整功能對照、JSON／資料表及範例來源新版受控流程仍未完成；Excel 僅限已驗收契約，不能擴大為任意工作簿；見 [第 5 階段](verification/stage5-current-status.md) |
 | 6 | 20／20 可交付、19／20 原凍結情境匹配；報告已部署 | 第 19 案是核准的來源列序需求延伸；人工基準延後、改善率不可用，完整列印分頁仍待驗證；見 [第 6 階段](verification/stage6-current-status.md) |
 | 7 | migration 056、準備失聯核對、正常停啟及手動 WSL session；協調備份與 20 份 ZIP HTTP 還原；同一 execute_once Run 真實部分提交、容器死亡、自然 lease 回收、禁止重跑及真實網站人工結案通過 | 完整 dispatcher 派發鏈、容器外孤兒、宿主機重開／登入自啟與長時間穩定性、異機加密保管／保留策略、原 roles／ACL 及 workspace 同步仍未完成；見 [第 7 階段](verification/stage7-current-status.md) |
 
 整體目標保持未完成。人工基準依操作者決定保留未量測，不填入估算或代理工時。
 
-最新工程：[受控結果比對恢復](verification/comparison-recovery-2026-09-28.md)。
+最新验收：[Excel 真實交付](verification/excel-release-accepted-2026-09-28.md)。
+最終 caf92f4 已部署，migration 057 已套用；同一 Excel Run 完成只讀比對恢復、
+真實 QA PASS、SDM、獨立 HWF 重播與正式 ZIP。原寫入仍只有一次、失敗歷史保留。
+正式唯讀瀏覽器回歸 5 passed；ZIP 清單／指紋及實際 SDM 閱讀性已核對。
+人工基準未量測，JSON／資料表及第 5–7 階段剩餘事項不因本案通過而消失。
+
+以下為先前工程時點：[受控結果比對恢復](verification/comparison-recovery-2026-09-28.md)。
 已加入不可重播的獨立恢復紀錄、網站確認、QA／Release lineage 與停機保護；
 1702 項隔離後端、16 項 Windows／發行檢查、4 項瀏覽器互動通過。
 正式部署及同一 Excel Run 的真實比對恢復仍待執行，不改寫原失敗或宣告 Excel E2E 完成。

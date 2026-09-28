@@ -2,6 +2,9 @@
 
 ## 判定
 
+後續更新：最終版本已部署，真實 Excel 比對恢復、QA 及 Release 已驗收；
+見 [真實交付證據](excel-release-accepted-2026-09-28.md)。下文保留當時隔離驗證範圍。
+
 已實作明確核准的「只重新比對、不重跑 ETL」流程，通過隔離 PostgreSQL、API、
 瀏覽器互動及回歸測試。**本輪尚未部署正式 Pilot，也未恢復真實 Excel 案例；
 不代表 Excel QA／Release 或第 5–7 階段完成。**
