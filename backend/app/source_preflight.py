@@ -29,7 +29,8 @@ def source_preflight(snapshot):
                     from .json_input_contract import prepare_json_reader_content
                     contract = validated_json_contract(config)['contract']
                     _, item['json'] = prepare_json_reader_content(content, contract,
-                                                                  [field['name'] for field in source['fields']])
+                        [field['name'] for field in source['fields']],
+                        column_types=[field.get('type') for field in source['fields']])
             if source['type'] == 'EXCEL':
                 from .excel_profile import verify_excel_source
                 profile = verify_excel_source(source, content=content)

@@ -5,7 +5,7 @@ from decimal import Decimal
 import os
 from pathlib import Path
 import subprocess
-from xml.etree.ElementTree import Element, SubElement, tostring
+from xml.etree.ElementTree import Element, SubElement, tostring, fromstring
 
 import pytest
 from test_join_native import wsl_path
@@ -17,7 +17,7 @@ pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_JSON_TEST') != '1',
                                reason='Explicit network-disabled native JSON probe required')
 
 
-def execute_json(tmp_path, content, columns, *, root_shape='ARRAY', missing_file=False, expect_failure=False, staged_path=None):
+def execute_json(tmp_path, content, columns, *, root_shape='ARRAY', missing_file=False, expect_failure=False, staged_path=None, compiled_hpl=None):
     def values(node, **items):
         for key, value in items.items():
             SubElement(node, key).text = str(value)
@@ -25,7 +25,8 @@ def execute_json(tmp_path, content, columns, *, root_shape='ARRAY', missing_file
     root = Element('pipeline')
     values(SubElement(root, 'info'), name='json_probe')
     order = SubElement(root, 'order')
-    types = {'String': 'VARCHAR(255)', 'Integer': 'BIGINT', 'BigNumber': 'NUMERIC(38,18)', 'Boolean': 'BOOLEAN'}
+    types = {'String': 'VARCHAR(255)', 'Integer': 'BIGINT', 'BigNumber': 'NUMERIC(38,18)',
+             'Boolean': 'BOOLEAN', 'Date': 'DATE', 'Timestamp': 'TIMESTAMP'}
     fragment = json_input_fragment(policy(root_shape), [
         {'stream_name': name, 'source_name': key, 'data_type': types[kind]} for name, key, kind in columns])
     for start, end in fragment['hops']:
@@ -33,6 +34,13 @@ def execute_json(tmp_path, content, columns, *, root_shape='ARRAY', missing_file
     values(SubElement(order, 'hop'), **{'from': 'source_columns', 'to': 'target', 'enabled': 'Y'})
     values(SubElement(root, 'transform'), name='target', type='Dummy', copies=1)
     root.extend(fragment['transforms'])
+    if compiled_hpl is not None:
+        root = fromstring(compiled_hpl)
+        target = root.find("transform[name='target']")
+        for child in list(target):
+            if child.tag not in ('name', 'type', 'copies', 'distribute', 'GUI'):
+                target.remove(child)
+        target.find('type').text = 'Dummy'
     (tmp_path / 'candidate.hpl').write_bytes(tostring(root, encoding='utf-8'))
     if not missing_file:
         (tmp_path / 'input.json').write_bytes(content)
@@ -118,3 +126,39 @@ def test_native_reads_verified_attempt_not_reopened_upload(tmp_path, uploaded):
         Path(uploaded['path']).write_bytes(b'[{"id":"changed"}]')
         rows = execute_json(tmp_path, b'', [('id', 'id', 'String')], staged_path=staged['path'])
         assert rows == [['001']]
+
+
+def test_native_exact_date_timestamp_and_boolean_values(tmp_path):
+    rows = execute_json(tmp_path,
+        b'[{"d":"2024-02-29","t":"2026-09-28 12:34:56","b":"true"},{"d":null,"t":null,"b":false}]',
+        [('day', 'd', 'Date'), ('occurred', 't', 'Timestamp'), ('enabled', 'b', 'Boolean')])
+    assert rows == [['2024-02-29T00:00:00Z', '2026-09-28T12:34:56Z', 'true'], [None, None, 'false']]
+
+
+@pytest.mark.parametrize('token', ['1.0', '1e3', '"1.0"'])
+def test_native_integral_json_decimal_token(tmp_path, token):
+    rows = execute_json(tmp_path, ('[{"id":' + token + '}]').encode(), [('id', 'id', 'Integer')])
+    assert rows == [['1000' if token == '1e3' else '1']]
+
+
+@pytest.mark.parametrize('mode', ['aggregate', 'all_filtered', 'missing_file'])
+def test_real_v5_compiler_filter_aggregation_and_failure(tmp_path, mode):
+    from test_json_specification import json_design, CONTENT
+    from app.hpl_compiler import compile_hpl
+    from app.json_input_contract import prepare_json_reader_content
+    spec, run, naming = json_design()
+    if mode == 'all_filtered':
+        spec['filters'][0]['constant']['value'] = '999.00'
+    compiled = compile_hpl(spec, run, naming)
+    assert compiled['status'] == 'VALIDATED_NOT_APPROVED'
+    source = run['input_snapshot']['source_config']['sources'][0]
+    reader, proof = prepare_json_reader_content(CONTENT, policy(), [field['name'] for field in source['fields']],
+        column_types=[field['type'] for field in source['fields']])
+    assert proof['column_types_checked'] is True
+    rows = execute_json(tmp_path, reader, [('unused', 'unused', 'String')], compiled_hpl=compiled['hpl'],
+        missing_file=mode == 'missing_file', expect_failure=mode == 'missing_file')
+    if mode == 'aggregate':
+        assert [(row[0], Decimal(row[1]), row[2]) for row in rows] == [
+            ('A', Decimal('251.75'), '2'), ('C', Decimal('201.00'), '1')]
+    else:
+        assert rows == []

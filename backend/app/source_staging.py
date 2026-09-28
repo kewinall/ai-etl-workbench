@@ -16,14 +16,17 @@ from .csv_contract import validated_csv_contracts
 def stage_json_source(run_id, source, contract):
     """Verified source bytes and explicit BOM-only reader copy; not Run authority."""
     from .json_input_contract import prepare_json_reader_content
+    from .json_source_profile import verify_json_source
     canonical_id = str(UUID(str(run_id)))
     if source.get('type') != 'JSON' or source.get('has_actual_data') is not True:
         raise ValueError('STAGING_REQUIRES_UPLOADED_JSON')
     content = read_verified_upload(source.get('upload_id'), 'JSON', source.get('checksum'), source.get('size'))
+    verify_json_source(source, content=content)
     fields = source.get('fields') or []
     if any(not isinstance(field, dict) for field in fields):
         raise ValueError('JSON_FIELDS_INVALID')
-    reader, evidence = prepare_json_reader_content(content, contract, [field.get('name') for field in fields])
+    reader, evidence = prepare_json_reader_content(content, contract, [field.get('name') for field in fields],
+                                                  column_types=[field.get('type') for field in fields])
     root = task_uploads.ROOT / 'runtime-temp' / 'run-sources'
     root.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=canonical_id + '-', dir=root) as directory:

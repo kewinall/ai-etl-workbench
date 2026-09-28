@@ -34,7 +34,7 @@ def contract_checksum(value):
                             separators=(',', ':')).encode()).hexdigest()
 
 
-def validate_json_content(content, contract, field_names):
+def validate_json_content(content, contract, field_names, *, column_types=None):
     policy = JsonInputContractV1.model_validate(contract)
     if not isinstance(content, bytes) or not 0 < len(content) <= 50 * 1024 * 1024:
         raise ValueError('JSON_BYTES_OR_SIZE_INVALID')
@@ -42,28 +42,44 @@ def validate_json_content(content, contract, field_names):
             or any(not isinstance(name, str) or not name.strip() for name in field_names)
             or len(set(field_names)) != len(field_names)):
         raise ValueError('JSON_FIELDS_INVALID')
-    profile, _ = inspect_json(content)
+    if column_types is not None:
+        from .json_value_validation import validate_json_value
+        if not isinstance(column_types, list) or len(column_types) != len(field_names):
+            raise ValueError('JSON_TYPE_COVERAGE_INVALID')
+        for declared_type in column_types:
+            validate_json_value(None, declared_type)
+    profile, rows = inspect_json(content)
     if profile['root_shape'] != policy.root_shape:
         raise ValueError('JSON_ROOT_SHAPE_MISMATCH')
     if [field['name'] for field in profile['fields']] != field_names:
         raise ValueError('JSON_COLUMN_BINDING_MISMATCH')
+    if column_types is not None:
+        for row_index, row in enumerate(rows):
+            for column_index, (name, declared_type) in enumerate(zip(field_names, column_types)):
+                try:
+                    validate_json_value(row.get(name), declared_type)
+                except ValueError as error:
+                    # Safe coordinates, never source values, filenames or paths.
+                    raise ValueError(f'{error}: record={row_index + 1}, column={column_index + 1}') from None
     return {'status': 'JSON_STRUCTURE_VALIDATED_NOT_EXECUTABLE', 'complete': True,
             'records_expected': profile['row_count'], 'root_shape': policy.root_shape,
             'content_checksum': sha256(content).hexdigest(), 'byte_count': len(content),
             'contract_checksum': contract_checksum(policy.model_dump()),
             'field_names_checksum': contract_checksum(field_names),
             'column_statistics': profile['column_statistics'],
+            'column_types_checked': column_types is not None,
+            'column_types_checksum': contract_checksum(column_types) if column_types is not None else None,
             'type_conversion_verified': False, 'execution_authorized': False}
 
 
-def prepare_json_reader_content(content, contract, field_names):
+def prepare_json_reader_content(content, contract, field_names, *, column_types=None):
     """Only remove a leading UTF-8 BOM for Hop 2.12; retain both byte identities.
 
     No JSON reserialization, field mapping, value conversion, filtering or sorting.
     The original upload is unchanged; the caller must bind this reader checksum
     alongside the original checksum before any execution or portable replay.
     """
-    evidence = validate_json_content(content, contract, field_names)
+    evidence = validate_json_content(content, contract, field_names, column_types=column_types)
     has_bom = content.startswith(b'\xef\xbb\xbf')
     reader = content[3:] if has_bom else content
     return reader, {**evidence, 'reader_content_checksum': sha256(reader).hexdigest(),

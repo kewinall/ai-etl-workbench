@@ -23,7 +23,10 @@ class ExecuteJsonProbe {
     factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
     var document = factory.newDocumentBuilder().parse(Path.of("/candidate/candidate.hpl").toFile());
     var meta = new PipelineMeta(document.getDocumentElement(), new MemoryMetadataProvider());
-    if (meta.getTransforms().size() != 4
+    var allowed = java.util.Set.of("RowGenerator", "JsonInput", "FilterRows", "SortRows", "GroupBy", "SelectValues", "Dummy");
+    for (var node : meta.getTransforms())
+      if (!allowed.contains(node.getTransformPluginId())) throw new IllegalStateException("Unexpected plugin");
+    if (meta.getTransforms().size() < 4 || meta.getTransforms().size() > 20
         || !"RowGenerator".equals(meta.findTransform("source_file").getTransformPluginId())
         || !"SelectValues".equals(meta.findTransform("source_columns").getTransformPluginId())
         || !"JsonInput".equals(meta.findTransform("source").getTransformPluginId())

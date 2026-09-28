@@ -1,4 +1,5 @@
 from copy import deepcopy
+import pytest
 from uuid import UUID
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -54,4 +55,32 @@ def test_json_revision_invalidates_approval_and_preserves_history(context, tmp_p
     final = queue.detail(task_id, saved['run_id'])
     proof = final['gate_result']['source_evidence'][0]['json']
     assert proof['complete'] and proof['records_expected'] == 2
+    assert proof['column_types_checked'] is True
     assert not proof['execution_authorized'] and not final['write_started']
+
+
+@pytest.mark.parametrize('content,code', [
+    (b'[{"day":"2026/09/28"}]', 'JSON_DATE_FORMAT'),
+    (b'[{"id":1},{"id":""}]', 'JSON_NUMBER_TYPE'),
+    (b'[{"enabled":"TRUE"}]', 'JSON_BOOLEAN_TYPE'),
+    (b'[{"amount":1.5},{"amount":"private-marker"}]', 'JSON_STRING_TYPE_OR_LENGTH'),
+])
+def test_json_gate_rejects_profile_suggestions_that_require_implicit_conversion(context, tmp_path, monkeypatch, content, code):
+    queue, task_id = context
+    monkeypatch.setattr(task_uploads, 'ROOT', tmp_path)
+    monkeypatch.setattr(task_uploads, 'UPLOAD_ROOT', tmp_path / 'uploads')
+    upload = task_uploads.save_and_profile('synthetic.json', content)
+    profile = confirmed_json_profile(upload['upload_id'], upload['checksum'], upload['size'])
+    config = {'sources': [{**upload, **profile, 'type': 'JSON', 'has_actual_data': True}],
+              'json_input_contract_v1': policy()}
+    with queue.conn() as conn:
+        conn.execute("UPDATE platform.task SET source_type='JSON',source_config=%s WHERE task_id=%s", (Jsonb(config), task_id))
+    prepared = queue.enqueue(task_id, 'json-typed-gate-parent')
+    queue.review(task_id, prepared['run_id'], prepared['input_checksum'], prepared['settings_snapshot']['checksum'], 'APPROVE')
+    assert run_once(queue)['status'] == 'NEEDS_INPUT'
+    final = queue.detail(task_id, prepared['run_id'])
+    evidence = final['gate_result']['source_evidence'][0]
+    assert evidence['status'].startswith(code + ': record=')
+    assert 'private-marker' not in str(final['gate_result'])
+    assert not final['write_started'] and final['phase'] == 'REQUIREMENT_GATE'
+    assert final['approval']['decision'] == 'APPROVE'

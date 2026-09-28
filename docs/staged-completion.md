@@ -17,7 +17,11 @@
 
 整體目標保持未完成。人工基準依操作者決定保留未量測，不填入估算或代理工時。
 
-最新工程：[JSON 來源確認與補正網站](verification/json-confirmation-revision-2026-09-28.md)。
+最新工程：[JSON 型別與 V5 編譯](verification/json-types-v5-compiler-2026-09-28.md)。
+全檔型別、Gate 與暫存檢查、原生 V5 Filter／Aggregation 正反例通過；139 項針對性、
+1842 項隔離後端通過。仍未接角色／規格 API／執行／QA／Release，未部署正式，第 5–7 階段未完成。
+
+先前工程：[JSON 來源確認與補正網站](verification/json-confirmation-revision-2026-09-28.md)。
 Gate／Run revision／舊核准失效及真實隔離 UI 保存回讀已通過；1771 項後端、
 3 項瀏覽器及 10 項 HTTP／發行驗證通過。尚未部署正式，JSON 執行全鏈仍未完成。
 

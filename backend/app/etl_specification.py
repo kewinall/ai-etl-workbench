@@ -149,6 +149,18 @@ class EtlSpecificationV4(EtlSpecificationV1):
     excel_source: ExcelSourceReferenceV1
 
 
+class JsonSourceReferenceV1(ContractModel):
+    content_checksum: str = Field(pattern=SHA256)
+    profile_checksum: str = Field(pattern=SHA256)
+    contract_checksum: str = Field(pattern=SHA256)
+
+
+class EtlSpecificationV5(EtlSpecificationV1):
+    """Native flat JSON; explicit source/profile/read-policy identity."""
+    version: Literal[5]
+    json_source: JsonSourceReferenceV1
+
+
 class EtlSpecificationV2(ContractModel):
     """Two-source Join design. V1 model/canonical output remains unchanged."""
     version: Literal[2]
@@ -216,7 +228,7 @@ Full SQL semantics against business intent still require human review and QA.
         issues.append({'code': code, 'field_path': path, 'message': message})
     try:
         version = payload.get('version') if isinstance(payload, dict) else None
-        model = ({2: EtlSpecificationV2, 3: EtlSpecificationV3, 4: EtlSpecificationV4}.get(version, EtlSpecificationV1)
+        model = ({2: EtlSpecificationV2, 3: EtlSpecificationV3, 4: EtlSpecificationV4, 5: EtlSpecificationV5}.get(version, EtlSpecificationV1)
                  if type(version) is int else EtlSpecificationV1)
         spec = model.model_validate(payload)
     except ValueError:
@@ -226,6 +238,17 @@ Full SQL semantics against business intent still require human review and QA.
     issues.extend(validate_intent(spec, snapshot, naming))
     multi = isinstance(spec, EtlSpecificationV2)
     excel = isinstance(spec, EtlSpecificationV4)
+    json_source = isinstance(spec, EtlSpecificationV5)
+    json_bound = None
+    if json_source:
+        from .json_contract_binding import validated_json_contract
+        try:
+            json_bound = validated_json_contract(snapshot.get('source_config') or {})
+        except ValueError:
+            issue('SPEC_JSON_INPUT_UNCONFIRMED', 'json_source', 'JSON 來源結構或讀取契約尚未確認')
+        else:
+            if spec.json_source.model_dump() != json_bound['reference']:
+                issue('SPEC_JSON_BINDING_MISMATCH', 'json_source', 'JSON 檔案、profile 或讀取契約版本不一致')
     excel_bound = None
     if excel:
         from .excel_contract_binding import validated_excel_contract
@@ -263,8 +286,8 @@ Full SQL semantics against business intent still require human review and QA.
         issue('SPEC_WRITE_MODE_UNSUPPORTED', 'write_mode', '新版編譯接點尚未支援覆寫或合併，不會改成新增模式')
     source_config = snapshot.get('source_config') or {}
     sources = source_config.get('sources') or []
-    if len(sources) != (2 if multi else 1) or any(source.get('type') != ('EXCEL' if excel else 'CSV') for source in sources):
-        issue('SPEC_SOURCE_UNSUPPORTED', 'source_ref', '來源數量或型別不符合規格版本；V1/V3 單 CSV、V2 雙 CSV、V4 單 Excel，不得忽略來源')
+    if len(sources) != (2 if multi else 1) or any(source.get('type') != ('JSON' if json_source else 'EXCEL' if excel else 'CSV') for source in sources):
+        issue('SPEC_SOURCE_UNSUPPORTED', 'source_ref', '來源數量或型別不符合規格版本；V1/V3 單 CSV、V2 雙 CSV、V4 單 Excel、V5 單 JSON，不得忽略來源')
     columns = (naming.get('contract_json') or {}).get('columns') or []
     if naming.get('status') != 'CONFIRMED' or naming.get('task_id') != run.get('task_id') or not run.get('task_id'):
         issue('SPEC_NAMING_UNCONFIRMED', 'naming', '命名契約未確認或不屬於此 Task')
@@ -281,6 +304,8 @@ Full SQL semantics against business intent still require human review and QA.
         if not types[name]:
             issue('SPEC_TYPE_UNSUPPORTED', f'naming.columns.{index}', '型別不在新版編譯支援範圍，不能自行降級為字串')
     source_names = []
+    if json_source and 'json_source_file' in by_name:
+        issue('SPEC_JSON_INTERNAL_COLUMN_RESERVED', 'naming.columns', 'json_source_file 為內部檔名參數欄，不可作為資料欄名')
     if any(not isinstance(field.get('name'), str) or not field['name'] or '\x00' in field['name']
            for source in sources for field in source.get('fields', [])):
         issue('SPEC_SOURCE_FIELDS_INVALID', 'source_ref', '來源欄位名稱缺漏或不合法，不可忽略該欄位')
@@ -393,7 +418,8 @@ Full SQL semantics against business intent still require human review and QA.
     result = {'status': 'INVALID' if issues else 'VALIDATED_NOT_APPROVED', 'issues': issues, 'execution_authorized': False}
     if not issues:
         canonical = spec.model_dump(mode='json')
-        csv_contract = ({'excel_input_contract': excel_bound['contract']} if excel else
+        csv_contract = ({'json_input_contract': json_bound['contract']} if json_source else
+                       {'excel_input_contract': excel_bound['contract']} if excel else
                        {'csv_input_contracts': validated_csv_contracts(source_config)['sources']} if multi else
                         {'csv_input_contract': CsvInputContractV1.model_validate(source_config['csv_input_contract_v1']).model_dump()})
         result.update(specification=canonical, specification_checksum=digest(canonical), **csv_contract,
@@ -413,8 +439,16 @@ def compilation_plan(payload, run, naming):
     fields = [{'source_name': field['name'], 'stream_name': by_source[field['name']]['english_name'], 'data_type': by_source[field['name']]['vertica_type']}
               for field in run['input_snapshot']['source_config']['sources'][0]['fields']]
     excel = spec['version'] == 4
-    stages = [{'id': 'source', 'component': 'ExcelInput' if excel else 'CSVInput', 'source_ref': spec['source_ref'],
-               'contract': result['excel_input_contract'] if excel else result['csv_input_contract'], 'fields': fields}]
+    if spec['version'] == 5:
+        stages = [
+            {'id': 'source_file', 'component': 'RowGenerator', 'purpose': 'SINGLE_FILENAME_PARAMETER', 'parameter': 'SOURCE_JSON'},
+            {'id': 'source', 'component': 'JsonInput', 'source_ref': spec['source_ref'],
+             'contract': result['json_input_contract'], 'fields': fields},
+            {'id': 'source_columns', 'component': 'SelectValues', 'columns': [field['stream_name'] for field in fields]},
+        ]
+    else:
+        stages = [{'id': 'source', 'component': 'ExcelInput' if excel else 'CSVInput', 'source_ref': spec['source_ref'],
+                   'contract': result['excel_input_contract'] if excel else result['csv_input_contract'], 'fields': fields}]
     if spec['version'] == 3:
         stages[0]['ordinal_column'] = spec['source_order']['ordinal_column']
         stages.append({'id': 'source_order_sort', 'component': 'SortRows',

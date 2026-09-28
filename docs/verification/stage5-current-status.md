@@ -1,6 +1,11 @@
 # 第 5 階段目前判定（2026-09-28）
 
-最新工程：[JSON 來源確認與補正网站](json-confirmation-revision-2026-09-28.md)。
+最新工程：[JSON 型別與 V5 編譯](json-types-v5-compiler-2026-09-28.md)。
+完整型別攔截、來源副本與 V5 HPL／HWF 候選已接通；真正編譯的 Filter／Aggregation
+原生測試通過。139 項針對性與 1842 項隔離後端通過；未部署正式，JSON 執行授權仍阻擋。
+角色、規格 API／網站、正式 Hop／Vertica、QA／SDM／Release 尚待接通及新案例驗收。
+
+先前工程：[JSON 來源確認與補正網站](json-confirmation-revision-2026-09-28.md)。
 1771 項隔離後端、3 項真實瀏覽器及 10 項 HTTP／發行檢查通過；Gate／版本化補正、
 舊版與核准保留已接通。未部署正式，typed validation、規格／執行／QA／Release 仍待接通。
 

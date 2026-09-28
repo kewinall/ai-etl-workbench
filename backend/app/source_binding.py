@@ -14,6 +14,8 @@ def source_set_checksum(checksums):
 
 def execution_sources(config, specification_version):
     """Canonical input binding; this does not grant execution permission."""
+    if type(specification_version) is int and specification_version == 5:
+        raise ValueError('JSON_EXECUTION_NOT_READY')
     if type(specification_version) is int and specification_version == 4:
         from .excel_contract_binding import validated_excel_contract
         bound = validated_excel_contract(config)
