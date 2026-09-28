@@ -21,15 +21,8 @@ def normalize_identifier(value:str,ordinal:int)->str:
 def inferred_vertica_type(values:list[Any], declared:str|None=None)->str:
     if declared:
         return TYPE_ALIASES.get(str(declared).lower(),str(declared).upper())
-    meaningful=[v for v in values if v not in (None,"")]
-    if not meaningful:return "VARCHAR(255)"
-    text=[str(v).strip() for v in meaningful]
-    if all(re.fullmatch(r"(?i:true|false|0|1)",x) for x in text):return "BOOLEAN"
-    if all(re.fullmatch(r"[-+]?\d+",x) for x in text):return "BIGINT"
-    if all(re.fullmatch(r"[-+]?(?:\d+\.\d+|\d+)",x) for x in text):return "NUMERIC(18,4)"
-    if all(re.fullmatch(r"\d{4}-\d{2}-\d{2}",x) for x in text):return "DATE"
-    if all(re.fullmatch(r"\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(?::\d{2})?",x) for x in text):return "TIMESTAMP"
-    return f"VARCHAR({min(2048,max(32,max(len(x) for x in text)*2))})"
+    from .field_inference import infer_field_type
+    return infer_field_type(values).replace('DECIMAL(', 'NUMERIC(', 1)
 
 def naming_suggestions(profile:dict[str,Any], project_rules:dict[str,Any]|None=None)->dict[str,Any]:
     aliases=(project_rules or {}).get("column_aliases") or {}

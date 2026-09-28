@@ -6,6 +6,7 @@ import json
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -14,23 +15,8 @@ UPLOAD_ROOT = ROOT / "runtime-temp" / "task-uploads"
 
 
 def _field_type(values: list[Any]) -> str:
-    clean = [v for v in values if v not in (None, "")]
-    if not clean:
-        return "VARCHAR(255)"
-    if all(isinstance(v, bool) or str(v).lower() in ("true", "false") for v in clean):
-        return "BOOLEAN"
-    try:
-        if all(str(v).lstrip("+-").isdigit() for v in clean): return "BIGINT"
-        if all(float(v) is not None for v in clean): return "DECIMAL(18,4)"
-    except (TypeError, ValueError):
-        pass
-    for fmt in ("%Y-%m-%d", "%Y/%m/%d", "%Y-%m-%d %H:%M:%S"):
-        try:
-            if all(datetime.strptime(str(v), fmt) for v in clean): return "TIMESTAMP" if " " in fmt else "DATE"
-        except ValueError:
-            continue
-    length = min(4000, max(32, max(len(str(v)) for v in clean)))
-    return f"VARCHAR({length})"
+    from .field_inference import infer_field_type
+    return infer_field_type(values)
 
 
 def _csv_profile(path: Path) -> dict[str, Any]:
@@ -62,11 +48,11 @@ def _excel_profile(path: Path) -> dict[str, Any]:
             "sample_rows": rows[:5]}
 
 def _json_profile(path: Path) -> dict[str, Any]:
-    text=path.read_text(encoding="utf-8-sig");parsed=json.loads(text)
+    text=path.read_text(encoding="utf-8-sig");parsed=json.loads(text, parse_float=Decimal)
     rows=parsed if isinstance(parsed,list) else [parsed]
     if not rows or any(not isinstance(row,dict) for row in rows):raise ValueError("JSON 必須是 object 或 object array")
     names=list(dict.fromkeys(key for row in rows[:20] for key in row))
-    return {"encoding":"utf-8-sig","fields":[{"name":name,"type":_field_type([row.get(name) for row in rows[:20]])} for name in names],"sample_rows":rows[:5],"parser_format":"JSON"}
+    return {"encoding":"utf-8-sig","fields":[{"name":name,"type":_field_type([row.get(name) for row in rows[:20]])} for name in names],"sample_rows":[{key: str(value) if isinstance(value, Decimal) else value for key, value in row.items()} for row in rows[:5]],"parser_format":"JSON"}
 
 
 def save_and_profile(filename: str, content: bytes, retention_days: int = 7, max_file_mb: int = 50) -> dict[str, Any]:
