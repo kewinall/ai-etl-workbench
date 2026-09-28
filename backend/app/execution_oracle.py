@@ -19,11 +19,13 @@ def required_result_query_checksum(binding):
 def validate_execution_sources(binding,config):
     """Post-write check only; never grants a second execution authorization."""
     policy=binding.get('policy_version')
-    if policy=='hop-single-attempt-v4':
-        expected=execution_sources(config,4)
+    if policy in ('hop-single-attempt-v4', 'hop-single-attempt-v5'):
+        expected=execution_sources(config,5 if policy == 'hop-single-attempt-v5' else 4)
         if 'source_checksums' in binding or any(binding.get(key)!=value for key,value in expected.items()):
             raise ValueError('EXECUTION_ORACLE_BINDING_CHANGED')
-    elif ('source_format' in binding or any(source.get('type')=='EXCEL' for source in config.get('sources',[]))):
+        if policy == 'hop-single-attempt-v4' and 'json_reader' in binding:
+            raise ValueError('EXECUTION_ORACLE_BINDING_CHANGED')
+    elif ('source_format' in binding or 'json_reader' in binding or any(source.get('type') in ('EXCEL', 'JSON') for source in config.get('sources',[]))):
         raise ValueError('EXECUTION_ORACLE_BINDING_CHANGED')
     elif policy=='hop-single-attempt-v3':
         expected=execution_sources(config,2)
@@ -55,7 +57,7 @@ def load_execution_oracle(queue,task_id,run_id,*,connection=None):
         binding=consent['binding']
         digest=sha256(json.dumps(binding,sort_keys=True,separators=(',',':')).encode()).hexdigest()
         policy=binding.get('policy_version')
-        if (policy not in ('hop-single-attempt-v2','hop-single-attempt-v3','hop-single-attempt-v4') or digest!=consent['binding_checksum']
+        if (policy not in ('hop-single-attempt-v2','hop-single-attempt-v3','hop-single-attempt-v4','hop-single-attempt-v5') or digest!=consent['binding_checksum']
                 or digest!=consent['reserved_checksum'] or binding.get('run_id')!=str(run_id)
                 or binding.get('specification_id')!=str(consent['specification_id'])):
             raise ValueError('EXECUTION_ORACLE_BINDING_CHANGED')

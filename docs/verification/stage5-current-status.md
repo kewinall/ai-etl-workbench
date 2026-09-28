@@ -1,6 +1,10 @@
 # 第 5 階段目前判定（2026-09-28）
 
-最新工程：[JSON 角色、規格 API 與網站](json-roles-specification-ui-2026-09-28.md)。
+最新工程：[JSON 執行綁定與原生啟動](json-execution-binding-2026-09-28.md)。
+119 項針對性（含 8 項 JSON／Excel 原生 CLI）、1898 項隔離後端通過。
+雙指紋與單次執行綁定已接通；未部署正式，JSON 真實 Vertica／QA／SDM／Release 仍未完成。
+
+先前工程：[JSON 角色、規格 API 與網站](json-roles-specification-ui-2026-09-28.md)。
 1850 項隔離後端、3 項真實網站、3 項合成歷史 UI 及 10 項 HTTP／發行檢查通過。
 規格保存／核准／指紋呈現已接通；尚未部署正式，JSON 執行／QA／SDM／Release 仍待完成。
 

@@ -23,11 +23,13 @@ def verify_prepared_files(prepared):
             if stat.S_ISLNK(info.st_mode) or getattr(info, 'st_file_attributes', 0) & 0x400:
                 raise ValueError()
         result = {}
-        excel = 'source_format' in binding
-        if excel:
-            if binding['source_format'] != 'XLSX' or 'source_checksums' in binding:
+        source_format = binding.get('source_format', 'CSV')
+        if 'source_format' in binding:
+            if source_format not in ('XLSX', 'JSON') or 'source_checksums' in binding:
                 raise ValueError()
-            result['source_format'] = 'XLSX'
+            result['source_format'] = source_format
+        if source_format != 'JSON' and ('json_reader' in binding or 'original_source_path' in prepared):
+            raise ValueError()
         if 'source_checksums' in binding:
             checksums = binding['source_checksums']
             if source_set_checksum(checksums) != binding['source_checksum'] or 'source_path' in prepared:
@@ -41,7 +43,14 @@ def verify_prepared_files(prepared):
         else:
             if 'source_paths' in prepared:
                 raise ValueError()
-            files = [(prepared['source_path'], 'source.xlsx' if excel else 'source.csv', binding['source_checksum'], 'source_checksum')]
+            if source_format == 'JSON':
+                from .json_execution_binding import validate_reader_binding
+                reader = validate_reader_binding(binding)
+                result.update(source_checksum=binding['source_checksum'], json_reader=reader)
+                files = [(prepared['source_path'], 'source.json', reader['reader_checksum'], 'reader_checksum'),
+                         (prepared['original_source_path'], 'source-original.json', binding['source_checksum'], 'source_checksum')]
+            else:
+                files = [(prepared['source_path'], 'source.xlsx' if source_format == 'XLSX' else 'source.csv', binding['source_checksum'], 'source_checksum')]
         files.append((prepared['hpl_path'], 'candidate.hpl', binding['hpl_checksum'], 'hpl_checksum'))
         for raw_path, name, expected, checksum_key in files:
             path = Path(raw_path)
@@ -66,6 +75,14 @@ def verify_prepared_files(prepared):
                 raise ValueError()
             if checksum_key not in ('source.0', 'source.1'):
                 result[checksum_key] = expected
+        if source_format == 'JSON':
+            original = Path(prepared['original_source_path']).read_bytes()
+            content = Path(prepared['source_path']).read_bytes()
+            has_bom = original.startswith(b'\xef\xbb\xbf')
+            if (len(original) != reader['original_byte_count'] or len(content) != reader['reader_byte_count']
+                    or reader['normalization'] != ('UTF8_BOM_REMOVED' if has_bom else 'NONE')
+                    or content != (original[3:] if has_bom else original)):
+                raise ValueError()
         return result
     except (OSError, ValueError, KeyError, TypeError):
         raise ValueError('PREPARED_FILES_CHANGED_OR_UNAVAILABLE') from None

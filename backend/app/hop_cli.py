@@ -17,6 +17,9 @@ def run_hop_cli(prepared,cancelled,*,metadata_checksum,expected_nodes,environmen
         raise ValueError('EXECUTION_DISABLED')
     if not callable(log_sink):raise ValueError('PRIVATE_LOG_SINK_REQUIRED')
     verify_prepared_files(prepared)
+    json_source = prepared['binding'].get('source_format') == 'JSON'
+    if json_source and 'WORKBENCH_VERTICA_PASSWORD' not in environment:
+        raise ValueError('JSON_PRIVATE_LAUNCHER_REQUIRED')
     metadata=prepared['directory']/'metadata.json'
     info=metadata.lstat()
     if not stat.S_ISREG(info.st_mode) or info.st_size>1024*1024 or getattr(info,'st_file_attributes',0)&0x400:
@@ -34,5 +37,13 @@ def run_hop_cli(prepared,cancelled,*,metadata_checksum,expected_nodes,environmen
     receipt=log_sink(process['output'])
     if receipt.get('checksum')!=evidence['result']['log_checksum'] or receipt.get('size')!=len(process['output']):
         raise ValueError('HOP_LOG_PERSISTENCE_MISMATCH')
+    if json_source and evidence['result']['status'] == 'COMPLETED':
+        from .json_runtime_evidence import require_json_runtime_receipt
+        try:
+            require_json_runtime_receipt(process['output'])
+        except ValueError:
+            # Preserve saved evidence; an unverifiable setting after possible writes
+            # requires human reconciliation, never success or automatic retry.
+            evidence['result']['status'] = 'UNKNOWN'
     # Raw output and private paths never escape to the caller's result/event.
     return evidence

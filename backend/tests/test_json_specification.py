@@ -51,7 +51,8 @@ def test_json_compiler_binds_source_nodes_without_mutation_or_execution():
     assert result['plan']['edges'][2] == {'from': 'source_columns', 'to': 'filter'}
     assert fromstring(result['hwf']).findtext('parameters/parameter/name') == 'SOURCE_JSON'
     assert 'SOURCE_CSV' not in result['hpl'] + result['hwf']
-    with pytest.raises(ValueError, match='JSON_EXECUTION_NOT_READY'):
+    # A compiler fixture is not a managed upload and cannot obtain runtime binding.
+    with pytest.raises(ValueError, match='UPLOAD_UNAVAILABLE'):
         execution_sources(args[1]['input_snapshot']['source_config'], 5)
 
 

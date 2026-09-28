@@ -17,7 +17,11 @@
 
 整體目標保持未完成。人工基準依操作者決定保留未量測，不填入估算或代理工時。
 
-最新工程：[JSON 角色、規格 API 與網站](verification/json-roles-specification-ui-2026-09-28.md)。
+最新工程：[JSON 執行綁定與原生啟動](verification/json-execution-binding-2026-09-28.md)。
+119 項針對性（含 8 項 JSON／Excel 原生 CLI）、1898 項隔離後端通過。
+已接雙指紋與單次執行；未部署正式，JSON 真實 Vertica／QA／SDM／Release 仍待完成。
+
+先前工程：[JSON 角色、規格 API 與網站](verification/json-roles-specification-ui-2026-09-28.md)。
 1850 項隔離後端、3 項真實網站、3 項合成歷史 UI 及 10 項 HTTP／發行檢查通過。
 尚未部署正式；JSON 執行／QA／SDM／Release 仍未完成，人工基準仍未量測。
 

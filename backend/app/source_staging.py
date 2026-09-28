@@ -31,12 +31,16 @@ def stage_json_source(run_id, source, contract):
     root.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=canonical_id + '-', dir=root) as directory:
         path = Path(directory) / 'source.json'
+        original_path = Path(directory) / 'source-original.json'
+        descriptor = os.open(original_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(descriptor, 'wb') as stream:
+            stream.write(content); stream.flush(); os.fsync(stream.fileno())
         descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         with os.fdopen(descriptor, 'wb') as stream:
             stream.write(reader); stream.flush(); os.fsync(stream.fileno())
         if sha256(path.read_bytes()).hexdigest() != evidence['reader_content_checksum']:
             raise ValueError('STAGING_COPY_MISMATCH')
-        yield {'path': path, 'directory': Path(directory), 'evidence': evidence,
+        yield {'path': path, 'original_path': original_path, 'directory': Path(directory), 'evidence': evidence,
                'run_id': canonical_id, 'execution_authorized': False}
 
 

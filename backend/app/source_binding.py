@@ -15,7 +15,8 @@ def source_set_checksum(checksums):
 def execution_sources(config, specification_version):
     """Canonical input binding; this does not grant execution permission."""
     if type(specification_version) is int and specification_version == 5:
-        raise ValueError('JSON_EXECUTION_NOT_READY')
+        from .json_execution_binding import execution_binding
+        return execution_binding(config)
     if type(specification_version) is int and specification_version == 4:
         from .excel_contract_binding import validated_excel_contract
         bound = validated_excel_contract(config)
@@ -39,9 +40,14 @@ def expected_prepared_binding(authorization):
         'specification_checksum', 'input_checksum', 'settings_checksum', 'hpl_checksum', 'source_checksum')}
     expected['approval_id'] = authorization['specification_approval_id']
     if 'source_format' in authorization:
-        if authorization['source_format'] != 'XLSX' or 'source_checksums' in authorization:
+        if authorization['source_format'] not in ('XLSX', 'JSON') or 'source_checksums' in authorization:
             raise ValueError('SOURCE_FORMAT_BINDING_INVALID')
-        expected['source_format'] = 'XLSX'
+        expected['source_format'] = authorization['source_format']
+    if authorization.get('source_format') == 'JSON':
+        from .json_execution_binding import validate_reader_binding
+        expected['json_reader'] = validate_reader_binding(authorization)
+    elif 'json_reader' in authorization:
+        raise ValueError('SOURCE_FORMAT_BINDING_INVALID')
     if 'source_checksums' in authorization:
         checksums = authorization['source_checksums']
         if source_set_checksum(checksums) != authorization['source_checksum']:

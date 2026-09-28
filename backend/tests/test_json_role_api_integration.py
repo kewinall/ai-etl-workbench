@@ -22,11 +22,11 @@ from test_specification_api_integration import prepared
 from test_json_specification import json_design, CONTENT
 
 
-def prepared_json(context, tmp_path, monkeypatch):
+def prepared_json(context, tmp_path, monkeypatch, content=CONTENT):
     monkeypatch.setattr(task_uploads, 'ROOT', tmp_path)
     monkeypatch.setattr(task_uploads, 'UPLOAD_ROOT', tmp_path / 'uploads')
-    spec, template, naming = json_design()
-    upload = task_uploads.save_and_profile('synthetic.json', CONTENT)
+    spec, template, naming = json_design(content)
+    upload = task_uploads.save_and_profile('synthetic.json', content)
     profile = confirmed_json_profile(upload['upload_id'], upload['checksum'], upload['size'])
     source = {**upload, **profile, 'type': 'JSON', 'has_actual_data': True}
     source.pop('sample_rows', None)
@@ -66,7 +66,7 @@ def test_json_api_preview_save_approval_history_and_runtime_block(context, tmp_p
     assert history[0]['spec_json'] == spec
     assert api.get(base + '/specifications/' + saved['specification_id'] + '/sdm-preview').status_code == 409
     with queue.conn() as conn:
-        with pytest.raises(ValueError, match='JSON_EXECUTION_NOT_READY'):
+        with pytest.raises(ValueError, match='EXPECTED_RESULT_ORACLE_REQUIRED'):
             offer(queue, conn, task, run['run_id'], saved['specification_id'])
         conn.execute("UPDATE platform.task SET requirement_text=requirement_text||' changed' WHERE task_id=%s", (task,))
     historical = api.get(base + '/specifications').json()['items'][0]

@@ -45,7 +45,7 @@ def test_excel_binding_rejects_invalid_selection_or_contract(change):
         execution_sources(config, 4)
 
 
-@pytest.mark.parametrize('kind', [None, 'CSV', 'JSON'])
+@pytest.mark.parametrize('kind', [None, 'CSV', 'UNKNOWN'])
 def test_unknown_explicit_format_cannot_enter_prepared_authority(kind):
     auth = dict.fromkeys(('run_id', 'specification_id', 'specification_approval_id',
         'specification_checksum', 'input_checksum', 'settings_checksum', 'hpl_checksum', 'source_checksum'), 'a' * 64)

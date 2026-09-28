@@ -5,6 +5,8 @@ class WorkbenchHopRun {
     if (password == null || password.isEmpty()) throw new IllegalStateException("HOP_CREDENTIAL_REQUIRED");
     System.setProperty("WORKBENCH_VERTICA_PASSWORD", password);
     try {
+      if ("Y".equals(System.getProperty("HOP_JSON_INPUT_INCLUDE_NULLS")))
+        System.out.println("WORKBENCH_JSON_READER_V1 INCLUDE_NULLS=Y");
       org.apache.hop.core.HopEnvironment.init();
       var registry = org.apache.hop.core.plugins.PluginRegistry.getInstance();
       var type = org.apache.hop.core.extension.ExtensionPointPluginType.class;

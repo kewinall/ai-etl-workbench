@@ -2,7 +2,7 @@
 from contextlib import contextmanager
 from hashlib import sha256
 from .approved_candidate import load_approved_candidate
-from .source_staging import stage_csv_source, stage_csv_sources, stage_excel_source
+from .source_staging import stage_csv_source, stage_csv_sources, stage_excel_source, stage_json_source
 from .source_binding import source_set_checksum, execution_sources
 from .prepared_integrity import verify_prepared_files
 
@@ -16,7 +16,8 @@ def prepare_approved_source(queue, task_id, run_id, specification_id):
     version = candidate['compiled']['specification']['version']
     expected_sources = execution_sources(config, version)
     multi = version == 2
-    staging = (stage_excel_source(run_id, sources[0], config['excel_input_contract_v1']) if version == 4 else
+    staging = (stage_json_source(run_id, sources[0], config['json_input_contract_v1']) if version == 5 else
+               stage_excel_source(run_id, sources[0], config['excel_input_contract_v1']) if version == 4 else
                stage_csv_sources(run_id, config) if multi else
                stage_csv_source(run_id, sources[0], config.get('csv_input_contract_v1')))
     with staging as staged:
@@ -40,6 +41,10 @@ def prepare_approved_source(queue, task_id, run_id, specification_id):
                           {'source_checksum': staged['evidence']['content_checksum']})
         if version == 4:
             source_binding['source_format'] = 'XLSX'
+        if version == 5:
+            from .json_execution_binding import reader_binding
+            source_binding = reader_binding(staged['evidence'], current['compiled']['specification']['json_source'])
+            paths['original_source_path'] = staged['original_path']
         if source_binding != expected_sources:
             raise ValueError('PREPARED_SOURCE_BINDING_MISMATCH')
         prepared = {'status':'PREPARED_NOT_AUTHORIZED', 'execution_authorized':False,
