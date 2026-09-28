@@ -1,5 +1,11 @@
 # 第 5 階段目前判定（2026-09-28）
 
+最新工程補充：[Excel SDM 與可攜重播](excel-sdm-portability-2026-09-28.md)。
+文件 V4 讀取政策與指紋、XLSX staging／HWF 參數及格式綁定 proof 已接通；
+1675 項隔離後端與 4 項原生 HWF 正反例通過，文件預覽可讀、CSV 文件相容。
+本次未部署，真實模型／Vertica／Release E2E 尚未完成；下一步是 SA prompt 與新案例驗收。
+下方補充保留當時結果，不代表尚待項目的最新狀態。
+
 最新工程補充：[Excel 受控準備與 QA 綁定](excel-execution-qa-binding-2026-09-28.md)。
 V4 API／編輯綁定、單次核准／準備、固定 XLSX launcher 與 QA context 已接通；
 1659 項後端回歸、10 項原生 CLI／固定版本相容性通過。尚未部署本次變更，

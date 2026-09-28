@@ -52,6 +52,12 @@ def build_sdm_candidate(payload,run,naming):
     elif spec['version'] == 3:
         document['version'] = 3
         document['source_order'] = deepcopy(order)
+    elif spec['version'] == 4:
+        from .excel_contract_binding import validated_excel_contract
+        bound = validated_excel_contract(run['input_snapshot']['source_config'])
+        document.update(version=4, source_format='XLSX',
+                        excel_source=deepcopy(bound['reference']),
+                        excel_input_contract=deepcopy(bound['contract']))
     checksum=sha256(json.dumps(document,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
     return {'status':'SDM_CANDIDATE_NOT_RELEASED','document':document,'checksum':checksum,
             'qa_passed':False,'release_ready':False}

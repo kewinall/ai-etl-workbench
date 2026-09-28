@@ -21,7 +21,7 @@ from .formal_release_bundle import candidate_parts
 from .release_bundle import MEMBERS
 from .release_portability import validate_portability
 from .delivery_context import load_delivery_context
-from .source_staging import stage_csv_source,stage_csv_sources
+from .source_staging import stage_csv_source,stage_csv_sources,stage_excel_source
 from .source_binding import execution_sources
 from .bound_result_query import load_bound_result_query,execute_bound_result_query
 from .result_oracle import compare_oracle_document
@@ -87,7 +87,9 @@ def replay(queue,repo,task_id,run_id,candidate_id,*,root=None):
     config.update(password=secret,connection_timeout=10)
     try:
         sources=source_config['sources'];multi=spec['version']==2
-        staging=(stage_csv_sources(run_id,source_config) if multi else
+        excel=spec['version']==4
+        staging=(stage_excel_source(run_id,sources[0],source_config['excel_input_contract_v1']) if excel else
+                 stage_csv_sources(run_id,source_config) if multi else
                  stage_csv_source(run_id,sources[0],source_config['csv_input_contract_v1']))
         with staging as staged:
             directory=staged['directory'];(directory/'hop').mkdir()
@@ -102,7 +104,8 @@ def replay(queue,repo,task_id,run_id,candidate_id,*,root=None):
                 if cursor.fetchone() is not None:raise ValueError('PORTABILITY_DESTINATION_TABLE_EXISTS')
                 cursor.execute('CREATE SCHEMA IF NOT EXISTS ai_sample')
                 cursor.execute(parts[MEMBERS['DDL']].decode('utf-8'));db.commit()
-            command=hop_command(directory.as_posix(),credential_launcher=True,source_count=2 if multi else 1)
+            command=hop_command(directory.as_posix(),credential_launcher=True,source_count=2 if multi else 1,
+                                **({'source_format':'XLSX'} if excel else {}))
             command=[('--file='+str(directory/MEMBERS['HWF'])) if arg.startswith('--file=') else arg for arg in command]
             environment={key:os.environ[key] for key in ('PATH','HOME','JAVA_HOME','LANG','LC_ALL') if key in os.environ}
             environment.update(HOP_HOME='/opt/hop',HOP_SHARED_JDBC_FOLDERS='/opt/hop/lib/jdbc',WORKBENCH_VERTICA_PASSWORD=secret)
@@ -134,7 +137,7 @@ def replay(queue,repo,task_id,run_id,candidate_id,*,root=None):
             if ordered and (comparison['comparison']!='EXACT_SOURCE_SEQUENCE'
                     or comparison['ordinal_column']!=spec['source_order']['ordinal_column']):
                 raise ValueError('PORTABILITY_ORDER_CONTRACT_MISMATCH')
-            evidence=dict(version=3 if ordered else 2 if multi else 1,candidate_checksum=candidate['checksum'],**source_binding,
+            evidence=dict(version=4 if excel else 3 if ordered else 2 if multi else 1,candidate_checksum=candidate['checksum'],**source_binding,
                 hop_log_checksum=hop['result']['log_checksum'],result_expected_checksum=comparison['expected_checksum'],
                 result_actual_checksum=comparison['actual_checksum'],expected_count=comparison['expected_count'],actual_count=comparison['actual_count'],
                 exit_code=0,isolated_target_created=True,original_artifacts_unmodified=True,workflow_completed=hop['workflow_completed'],
@@ -144,7 +147,8 @@ def replay(queue,repo,task_id,run_id,candidate_id,*,root=None):
                                 position_mismatch_count=comparison['position_mismatch_count'])
             validate_portability({'status':'PASS','evidence':evidence,'checksum':digest(evidence)},candidate,source_binding['source_checksum'],
                 expected_checksum=comparison['expected_checksum'],expected_count=comparison['expected_count'],
-                source_checksums=source_binding.get('source_checksums'),**order_binding)
+                source_checksums=source_binding.get('source_checksums'),**order_binding,
+                **({'source_format':'XLSX'} if excel else {}))
             with queue.conn() as conn:
                 current=replay_context(queue,repo,conn,task_id,run_id,candidate_id,root)
                 if current[0]['checksum']!=candidate['checksum']:raise ValueError('PORTABILITY_UPSTREAM_CHANGED')

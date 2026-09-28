@@ -27,6 +27,21 @@ def expected_sdm_cells(payload, run, naming, *, release_binding=None):
             ['序號規則','CSV 邏輯資料列位置，從 1 連續遞增；標頭不計入，含換行的引號欄位仍為同一筆資料'],
             ['結果排序',order['ordinal_column']+' ASC；查詢須明確 ORDER BY，資料表實體儲存順序不構成保證'],
             ['答案比對','EXACT_SOURCE_SEQUENCE：逐列比對內容及序號，不忽略列序，不依業務鍵重新排序']])
+    if d['version']==4:
+        policy=d['excel_input_contract'];reference=d['excel_source']
+        rules.extend([
+            ['來源格式','XLSX；Apache Hop ExcelInput（POI）'],
+            ['Excel 工作表',policy['worksheet']],
+            ['Excel 標頭列',str(policy['header_row'])+'（從 1 起算；資料自下一列開始）'],
+            ['空白列政策','SKIP（略過全空白資料列）' if policy['blank_rows']=='SKIP' else 'PRESERVE（保留全空白資料列）'],
+            ['缺少儲存格','NULL（不補造資料）'],
+            ['額外欄位','REJECT（拒絕非空的額外欄位）'],
+            ['公式政策','REJECT（拒絕公式，不使用快取結果）'],
+            ['文字空白','NONE（不自動去除前後空白）'],
+            ['型別與錯誤','依 Naming Contract 型別驗證；FAIL（遇到轉換錯誤即停止，不略過錯誤資料列）'],
+            ['Excel 來源 SHA-256',reference['content_checksum']],
+            ['Excel Profile SHA-256',reference['profile_checksum']],
+            ['Excel 讀取契約 SHA-256',reference['contract_checksum']]])
     for join in d.get('joins', []):
         prefix = 'Join ' + join['id']
         rules.extend([[prefix, f'{join["left_source"]} {join["join_type"]} JOIN {join["right_source"]}'],

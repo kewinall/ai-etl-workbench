@@ -9,24 +9,37 @@ from app.release_bundle import MEMBERS
 from app.source_binding import execution_sources
 from app.sa_contract import digest
 from test_join_semantics import join_design
+from test_excel_specification import excel_design
+from app.excel_profile import selected_profile
+from app.excel_contract_binding import validated_excel_contract
 
 
 @pytest.mark.parametrize('changed', [False,True])
-def test_replay_binds_both_staged_sources_before_claim(tmp_path,monkeypatch,changed):
+@pytest.mark.parametrize('excel', [False,True])
+def test_replay_binds_staged_sources_before_claim(tmp_path,monkeypatch,changed,excel):
     monkeypatch.setattr(task_uploads,'ROOT',tmp_path)
     monkeypatch.setattr(task_uploads,'UPLOAD_ROOT',tmp_path/'uploads')
-    spec,run,naming = join_design()
+    captured=[]
+    spec,run,naming = excel_design(capture=captured) if excel else join_design()
     config = run['input_snapshot']['source_config']
-    for i,text in enumerate(('客戶編號,名稱\nA,left\n','客戶編號|名稱\nA|right\n')):
-        fields = config['sources'][i]['fields']
-        config['sources'][i] = {**task_uploads.save_and_profile(f'{i}.csv',text.encode()),
-                               'type':'CSV','has_actual_data':True,'fields':fields}
+    if excel:
+        upload=task_uploads.save_and_profile('input.xlsx',captured[0])
+        profile=selected_profile(upload['upload_id'],upload['checksum'],upload['size'],'明細',2)
+        config['sources']=[{**upload,**profile,'type':'EXCEL','has_actual_data':True}]
+        spec['excel_source']=validated_excel_contract(config)['reference']
+    else:
+        for i,text in enumerate(('客戶編號,名稱\nA,left\n','客戶編號|名稱\nA|right\n')):
+            fields = config['sources'][i]['fields']
+            config['sources'][i] = {**task_uploads.save_and_profile(f'{i}.csv',text.encode()),
+                                   'type':'CSV','has_actual_data':True,'fields':fields}
     compiled = compile_delivery_components(spec,run,naming)
     parts = {MEMBERS[k]:compiled[k.lower()].encode() for k in ('HPL','HWF','DDL','PARAMETERS')}
     candidate = {'checksum':'c'*64,'manifest':{'artifacts':[
         {'type':k,'checksum':compiled[k.lower()+'_checksum']} for k in ('HPL','HWF','DDL')]}}
-    binding = execution_sources(config,2)
-    if changed: binding['source_checksums']['source.1'] = '0'*64
+    binding = execution_sources(config,spec['version'])
+    if changed:
+        if excel: binding['source_format']='CSV'
+        else: binding['source_checksums']['source.1'] = '0'*64
     conn = MagicMock()
     def execute(sql,*args):
         row = {'binding':binding} if sql.startswith('SELECT binding') else {'check_id':uuid4()}
@@ -45,7 +58,11 @@ def test_replay_binds_both_staged_sources_before_claim(tmp_path,monkeypatch,chan
     def command(directory,**kwargs):
         from pathlib import Path
         path=Path(directory)
-        assert (path/'source-0/source.csv').is_file() and (path/'source-1/source.csv').is_file()
+        if excel:
+            assert (path/'source.xlsx').read_bytes()==captured[0]
+            assert not (path/'source.csv').exists()
+        else:
+            assert (path/'source-0/source.csv').is_file() and (path/'source-1/source.csv').is_file()
         commands.append(kwargs)
         return ['synthetic-hop','--file=candidate.hpl']
     monkeypatch.setattr(module,'hop_command',command)
@@ -62,8 +79,12 @@ def test_replay_binds_both_staged_sources_before_claim(tmp_path,monkeypatch,chan
     else:
         result=module.replay(queue,None,'task',run['run_id'],uuid4(),root=tmp_path)
         assert result['status'] == 'PASS' and not result['release_ready']
-        assert commands == [{'credential_launcher':True,'source_count':2}]
+        assert commands == ([{'credential_launcher':True,'source_count':1,'source_format':'XLSX'}] if excel else
+                            [{'credential_launcher':True,'source_count':2}])
         update = next(call for call in conn.execute.call_args_list if call.args[0].startswith('UPDATE'))
         proof=update.args[1][1].obj
-        assert proof['version'] == 2 and proof['source_checksums'] == binding['source_checksums']
+        if excel:
+            assert proof['version']==4 and proof['source_format']=='XLSX'
+        else:
+            assert proof['version'] == 2 and proof['source_checksums'] == binding['source_checksums']
         assert proof['source_checksum'] == binding['source_checksum'] and digest(proof) == result['checksum']

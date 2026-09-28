@@ -17,6 +17,11 @@
 
 整體目標保持未完成。人工基準依操作者決定保留未量測，不填入估算或代理工時。
 
+最新工程補充：[Excel SDM 與可攜重播](verification/excel-sdm-portability-2026-09-28.md)。
+Excel 文件政策、來源指紋、可攜 XLSX 路徑與 proof 綁定已接通；1675 項後端、
+4 項真實 HWF 正反例與 CSV 文件固定版本相容性通過。未部署、未以替身測試代替
+真實模型／Vertica／Release 驗收；下一步補 SA prompt 後驗證新的 Excel 全鏈案例。
+
 最新工程補充：[Excel 受控準備與 QA 綁定](verification/excel-execution-qa-binding-2026-09-28.md)。
 V4 規格 API／編輯、單次核准、XLSX 暫存／固定參數與 QA v14 已接通；
 1659 項隔離後端及 10 項原生 CLI／歷史相容性通過。本次未部署、未呼叫真實模型或

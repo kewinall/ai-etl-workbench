@@ -69,3 +69,20 @@ def test_existing_csv_qa_contexts_and_prompt_match_pre_execution_commit(monkeypa
     finally:
         sys.modules.pop(baseline_qa.__name__, None)
         sys.modules.pop(baseline_gateway.__name__, None)
+
+
+@pytest.mark.parametrize('factory', [design, join_design, ordered_design])
+def test_csv_sdm_content_unchanged_from_pre_excel_delivery(factory):
+    from app.sdm_specification import build_sdm_candidate
+    from app.sdm_xlsx_semantics import expected_sdm_cells
+    revision='16382fef797acdcab4593a9c5a967172cfcdd42b'
+    old_candidate=baseline_module('sdm_specification',revision)
+    old_cells=baseline_module('sdm_xlsx_semantics',revision)
+    old_cells.build_sdm_candidate=old_candidate.build_sdm_candidate
+    try:
+        args=factory()
+        assert build_sdm_candidate(*args)==old_candidate.build_sdm_candidate(*args)
+        assert expected_sdm_cells(*args)==old_cells.expected_sdm_cells(*args)
+    finally:
+        sys.modules.pop(old_candidate.__name__,None)
+        sys.modules.pop(old_cells.__name__,None)
