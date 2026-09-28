@@ -37,14 +37,34 @@ class SAInvocationError(ValueError):
         self.trace = trace
 
 
+def sa_material(context):
+    """Keep existing CSV prompt bytes stable; bind Excel guidance independently."""
+    excel=any(item.get('kind')=='EXCEL_INPUT' for item in context['evidence'])
+    prompt=PROMPT
+    if excel:
+        prompt += (' For EXCEL_INPUT, cite source.0.excel_input before returning READY_FOR_REVIEW. '
+                   'Review the confirmed worksheet, one-based header_row, blank_rows, missing_cells, '
+                   'extra_columns, formulas, trim_strings and on_error policies exactly as provided. '
+                   'XLSX is read natively by Apache Hop ExcelInput using POI; it is not a CSV conversion. '
+                   'CSV encoding, delimiter and quoting requirements apply only to CSV_INPUT, not Excel. '
+                   'The content, profile and contract checksums bind the selected input and read policy; '
+                   'CONFIRMED_INPUT_ONLY is not proof of full-file type conversion, engine execution or QA. '
+                   'Source field types are supplied separately in SOURCE_FIELD evidence. '
+                   'Do not invent a sheet, header, blank-row policy or unavailable workbook contents. '
+                   'Missing or conflicting Excel contracts must remain NEEDS_INPUT; never override the deterministic gate. '
+                   'Do not demand physical paths, upload IDs or source data omitted by the minimal-context policy.')
+    return {'prompt':prompt,'prompt_version':7 if excel else PROMPT_VERSION,'prompt_checksum':digest(prompt)}
+
+
 def complete_sa_review(run, profile, *, secret=None, completion=None):
     """No persistence or autonomous retries here; caller owns durable dispatch and final version check."""
     started = time.monotonic()
     context = build_sa_context(run)
+    material = sa_material(context)
     schema = sa_output_schema(context)
     trace = {'run_id': context['run_id'], 'input_checksum': context['input_checksum'],
-             'context_checksum': context['context_checksum'], 'prompt_version': PROMPT_VERSION,
-             'prompt_checksum': digest(PROMPT), 'schema_checksum': digest(schema),
+             'context_checksum': context['context_checksum'], 'prompt_version': material['prompt_version'],
+             'prompt_checksum': material['prompt_checksum'], 'schema_checksum': digest(schema),
              'provider': profile.get('provider_type'), 'model': (profile.get('model_routes') or {}).get('requirement_gate'),
              'usage': None, 'output_checksum': None, 'execution_authorized': False}
     def fail(code):
@@ -62,7 +82,7 @@ def complete_sa_review(run, profile, *, secret=None, completion=None):
         fail(str(error))
     if snapshot_models.get('requirement_gate') != trace['model']:
         fail('SA_MODEL_VERSION_MISMATCH')
-    messages = [{'role': 'system', 'content': PROMPT}, {'role': 'user', 'content': json.dumps(
+    messages = [{'role': 'system', 'content': material['prompt']}, {'role': 'user', 'content': json.dumps(
         {'schema': schema, 'context': context}, ensure_ascii=False)}]
     try:
         output, usage = complete_json(profile, 'requirement_gate', messages, secret=secret, completion=completion, max_output_tokens=2048)

@@ -28,7 +28,7 @@ def handle(queue, data):
         row = work.claim('LOCAL_COPILOT', task_id, run_id)
         if not row or row['status'] != 'DISPATCH_RESERVED':
             return {'status': row['status'] if row else 'IDLE'}
-        return {key: row[key] for key in ('status','task_id','run_id','invocation_id','claim_token','model','input_json')}
+        return {key: row[key] for key in ('status','task_id','run_id','invocation_id','claim_token','model','prompt_version','input_json')}
     invocation_id, token = UUID(data['invocation_id']), UUID(data['claim_token'])
     with queue.conn() as conn:
         row = conn.execute("SELECT * FROM platform.agent_invocation WHERE task_id=%s AND run_id=%s AND invocation_id=%s AND claim_token=%s AND provider='LOCAL_COPILOT'", (task_id, run_id, invocation_id, token)).fetchone()

@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 
-for (const version of [1,2]) test(`規格歷史與核准互動 V${version}（瀏覽器合成回應，非資料庫核准驗收）`, async ({page, request}) => {
+for (const version of [1,2,4]) test(`規格歷史與核准互動 V${version}（瀏覽器合成回應，非資料庫核准驗收）`, async ({page, request}) => {
   const project = await (await request.post('/api/projects', {data: {project_name: '規格UI-'+Date.now()}})).json();
   const response = await request.post(`/api/projects/${project.project_id}/tasks`, {data: {name: '規格UI', requirement: 'UI only', source_config: {sources: [{type: 'CSV', has_actual_data: false, fields: [{name: 'id', type: 'BIGINT'}]}]}, target_schema: 'ai_sample', target_table: 'ui_only'}});
   expect(response.status()).toBe(201);
@@ -16,6 +16,8 @@ for (const version of [1,2]) test(`規格歷史與核准互動 V${version}（瀏
     keys:[{left_column:'客戶編號',right_column:'客戶編號'}],null_key_policy:'NEVER_MATCH',
     duplicate_key_policy:'EXPAND',string_comparison:'CASE_SENSITIVE_NO_TRIM'}];
   if (version === 2) Object.assign(spec,{version:2,source_refs:['source.0','source.1'],joins});
+  const excelReference={content_checksum:'a'.repeat(64),profile_checksum:'b'.repeat(64),contract_checksum:'c'.repeat(64)};
+  if (version === 4) Object.assign(spec,{version:4,excel_source:excelReference});
   let stale = false;
   let approvals = 0;
   await page.route(`${base}/${runId}/specifications`, route => route.fulfill({json: {items: [{specification_id: 's1', version: 1, spec_json: spec, content_checksum: 'a'.repeat(64), reviewable: !stale, approval_id: approved ? 'approval1' : null, approval_effective: approved && !stale}]}}));
@@ -57,11 +59,34 @@ for (const version of [1,2]) test(`規格歷史與核准互動 V${version}（瀏
     await expect(sdm.getByRole('alert')).toHaveCount(0);
   }
   expect(approvals).toBe(1);
+  if(version===4){
+    const document={version:4,document_type:'SDM_CANDIDATE',specification_checksum:'a'.repeat(64),
+      source_ref:'source.0',source_format:'XLSX',excel_source:excelReference,
+      excel_input_contract:{version:1,engine:'POI',worksheet:'明細',header_row:2,blank_rows:'SKIP',missing_cells:'NULL',extra_columns:'REJECT',formulas:'REJECT',trim_strings:'NONE',on_error:'FAIL'},
+      target:{schema:'ai_sample',table:'totals',write_mode:'APPEND'},filter_logic:'ALL',filter_null_policy:'EXCLUDE_UNKNOWN',
+      filters:[],aggregation:null,naming:{checksum:'c'.repeat(64)},mappings:[]};
+    await page.route(`${base}/${runId}/specifications/s1/sdm-preview`,route=>route.fulfill({json:{
+      status:'SDM_CANDIDATE_NOT_RELEASED',qa_passed:false,release_ready:false,checksum:'b'.repeat(64),document}}));
+    await panel.getByRole('button',{name:'預覽 SDM 欄位對照'}).click();
+    const sdm=panel.getByRole('region',{name:'SDM 欄位對照預覽',exact:true});
+    await expect(sdm.getByRole('region',{name:'Excel 讀取契約摘要'})).toContainText('工作表：明細；標頭：第 2 列');
+    await expect(sdm.getByRole('alert')).toHaveCount(0);
+    await page.setViewportSize({width:390,height:1000});
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true);
+  }
   await panel.getByRole('button', {name: '檢查 Hop 編譯預覽'}).click();
   await panel.getByText('查看 HPL 候選（非交付產物）').click();
   await expect(panel.locator('details').filter({has:page.getByText('查看 HPL 候選（非交付產物）',{exact:true})}).locator('pre')).toContainText('UI fixture only');
+  if(version===4){
+    await panel.getByText('查看參數範本與環境需求',{exact:true}).click();
+    await expect(panel.locator('details').filter({has:page.getByText('查看參數範本與環境需求',{exact:true})})).toContainText('SOURCE_XLSX');
+  }
   await page.route(`${base}/${runId}/specification/editor-context`, route => route.fulfill({json: {status:'EDITOR_CONTEXT_READY', binding: {run_id:runId, naming:{version:1}, target_schema:'ai_sample', target_table:'totals', write_mode:'APPEND'}, source_columns:[{name:'category',source_name:'類別',data_type:'VARCHAR(32)',constant_type:'STRING'},{name:'amount',source_name:'金額',data_type:'NUMERIC(12,2)',constant_type:'DECIMAL'}], metric_columns:[{id:'sum',output_column:'total_amount',data_type:'NUMERIC(18,2)'}]}}));
   let saved = 0;
+  if(version===4) await page.route(`${base}/${runId}/specification/editor-context`,route=>route.fulfill({json:{
+    status:'EDITOR_CONTEXT_READY',binding:{version:4,run_id:runId,naming:{version:1},target_schema:'ai_sample',target_table:'totals',write_mode:'APPEND',source_ref:'source.0',excel_source:excelReference},
+    source_columns:[{name:'category',source_name:'類別',data_type:'VARCHAR(32)',constant_type:'STRING'},{name:'amount',source_name:'金額',data_type:'NUMERIC(12,2)',constant_type:'DECIMAL'}],
+    metric_columns:[{id:'sum',output_column:'total_amount',data_type:'NUMERIC(18,2)'}]}}));
   if (version === 2) await page.route(`${base}/${runId}/specification/editor-context`,route=>route.fulfill({json:{
     status:'EDITOR_CONTEXT_READY',binding:{version:2,run_id:runId,naming:{version:1},target_schema:'ai_sample',target_table:'totals',write_mode:'APPEND',source_refs:['source.0','source.1'],joins},
     source_columns:[{name:'category',source_name:'source.0.類別',data_type:'VARCHAR(32)',constant_type:'STRING'},
@@ -70,6 +95,7 @@ for (const version of [1,2]) test(`規格歷史與核准互動 V${version}（瀏
   await page.route(`${base}/${runId}/specifications`, async route => {
     if (route.request().method() === 'POST') {
       if(version===2) expect(route.request().postDataJSON().joins).toEqual(joins);
+      if(version===4){expect(route.request().postDataJSON().version).toBe(4);expect(route.request().postDataJSON().excel_source).toEqual(excelReference);}
       expect(route.request().postDataJSON().filters[0]).toEqual({column:'amount',operator:'GT',constant:{type:'DECIMAL',value:'200.00'}});
       expect(route.request().postDataJSON().aggregation.metrics[0]).toEqual({id:'sum',output_column:'total_amount',function:'SUM',column:'amount'});
       saved++;

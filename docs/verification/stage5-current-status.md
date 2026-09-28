@@ -1,5 +1,11 @@
 # 第 5 階段目前判定（2026-09-28）
 
+最新部署補充：[Excel SA 與網站接通](excel-sa-website-2026-09-28.md)。
+SA v7 跨 offer／journal／Worker 版本一致，SDM V4 預覽及 XLSX 參數說明已修正。
+1680 項隔離後端、8 項 Excel／規格／SDM 測試、4 項既有網站及 3 項正式唯讀回歸通過。
+本輪及前兩輪工程變更已部署；305／2861／24 筆 Run／事件／交付保持不變。
+下一步是全新 Excel 真實模型／Vertica／Release 案例，不代表第 5 階段完成。
+
 最新工程補充：[Excel SDM 與可攜重播](excel-sdm-portability-2026-09-28.md)。
 文件 V4 讀取政策與指紋、XLSX staging／HWF 參數及格式綁定 proof 已接通；
 1675 項隔離後端與 4 項原生 HWF 正反例通過，文件預覽可讀、CSV 文件相容。

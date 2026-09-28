@@ -50,6 +50,8 @@ def run_once(task_id=None, run_id=None, *, transport=bridge, completion=complete
     stage, review, trace = 'MODEL_CALL', None, None
     try:
         review, trace = completion(record['input_json'], record['model'], before_call=check)
+        if 'prompt_version' in record:
+            trace = {**trace, 'prompt_version': record['prompt_version']}
         stage = 'RESULT_CHECK'
         check()
         stage = 'RESULT_PERSISTENCE'

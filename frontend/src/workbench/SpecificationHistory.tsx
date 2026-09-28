@@ -76,7 +76,7 @@ export function SpecificationHistory({taskId, runId}: {taskId: string; runId: st
         <details><summary>查看 HPL 候選（非交付產物）</summary><pre>{preview.hpl}</pre></details>
         <details><summary>查看 HWF 候選（非交付產物）</summary><p>Start → Pipeline，等待完成，不自動重試。引用同目錄 pipeline.hpl；執行時仍須提供已驗證的來源與連線。</p><pre>{preview.hwf}</pre></details>
         <details><summary>查看 DDL 候選（未執行）</summary><p>只包含此規格的輸出欄位。不會自動建表、刪表或重建既有表；仍須確認目標環境及核准。</p><pre>{preview.ddl}</pre></details>
-        <details><summary>查看參數範本與環境需求</summary><p>{spec.version === 2 ? 'SOURCE_CSV_0（左側）與 SOURCE_CSV_1（右側）' : 'SOURCE_CSV'} 須在執行時指定，不隨包附帶資料。目的環境需另設 local 執行設定與 etl_target 連線；此範本不會由 Hop 自動載入，也不含平台密鑰。</p><pre>{preview.parameters}</pre><p className="spec-checksum">參數範本指紋：{preview.parameters_checksum}</p></details>
+        <details><summary>查看參數範本與環境需求</summary><p>{spec.version === 4 ? 'SOURCE_XLSX（已確認工作表與標頭的 Excel）' : spec.version === 2 ? 'SOURCE_CSV_0（左側）與 SOURCE_CSV_1（右側）' : 'SOURCE_CSV'} 須在執行時指定，不隨包附帶資料。目的環境需另設 local 執行設定與 etl_target 連線；此範本不會由 Hop 自動載入，也不含平台密鑰。</p><pre>{preview.parameters}</pre><p className="spec-checksum">參數範本指紋：{preview.parameters_checksum}</p></details>
         <details><summary>Hop 候選指紋</summary><p className="spec-checksum">HPL：{preview.hpl_checksum}</p><p className="spec-checksum">HWF：{preview.hwf_checksum}</p><p className="spec-checksum">DDL：{preview.ddl_checksum}</p></details>
       </div>)}
     </>}

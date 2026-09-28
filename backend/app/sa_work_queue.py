@@ -2,7 +2,7 @@
 from uuid import uuid4
 from .run_queue import RunConflict
 from .sa_contract import build_sa_context, digest, sa_output_schema
-from .sa_gateway import PROMPT, PROMPT_VERSION
+from .sa_gateway import PROMPT, PROMPT_VERSION, sa_material
 
 
 def authorization_offer(run):
@@ -10,7 +10,7 @@ def authorization_offer(run):
     identity = {
             'input_checksum': run['input_checksum'], 'settings_checksum': run['settings_snapshot']['checksum'],
             'context_checksum': context['context_checksum'],
-            'prompt_checksum': digest(PROMPT), 'schema_checksum': digest(sa_output_schema(context))}
+            'prompt_checksum': sa_material(context)['prompt_checksum'], 'schema_checksum': digest(sa_output_schema(context))}
     if run['settings_snapshot']['ai']['provider_type'] == 'LOCAL_COPILOT':
         return {**identity, 'consent': True, 'policy_version': 'copilot-cli-once-v1',
                 'max_cli_sessions': 1, 'automatic_retries': 0, 'token_cap_supported': False}
@@ -44,11 +44,17 @@ class SAWorkQueue:
             task = self.queue.locked_task(conn, record['task_id'])
             run = conn.execute('SELECT * FROM platform.task_run WHERE run_id=%s FOR UPDATE', (record['run_id'],)).fetchone()
             payload = record['input_json']
+            context=build_sa_context(run)
+            material=sa_material(context)
             valid = (run['state'] == 'NEEDS_REVIEW' and not run['write_started']
                      and self.queue.matches_current(conn, task, run)
                      and payload.get('authorization') == authorization_offer(run)
-                     and payload['context'] == build_sa_context(run)
-                     and record['prompt_version'] == PROMPT_VERSION)
+                     and payload['context'] == context
+                     and record['prompt_version'] == material['prompt_version']
+                     and payload.get('prompt') == material['prompt']
+                     and payload.get('prompt_checksum') == material['prompt_checksum']
+                     and payload.get('schema') == sa_output_schema(context)
+                     and payload.get('schema_checksum') == digest(sa_output_schema(context)))
             if not valid:
                 conn.execute("UPDATE platform.agent_invocation SET status='STALE_NOT_DISPATCHED' WHERE invocation_id=%s AND status='SA_QUEUED'", (record['invocation_id'],))
                 self.queue.event(conn, run['run_id'], 'SA_STALE_NOT_DISPATCHED', run['phase'])

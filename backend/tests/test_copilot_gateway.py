@@ -54,7 +54,9 @@ def test_native_worker_claims_and_finishes_once_without_credentials():
     def transport(data):
         calls.append(data['action'])
         if data['action'] == 'claim':
-            return {'status': 'DISPATCH_RESERVED', 'invocation_id': 'i', 'claim_token': 't', 'input_json': {}, 'model': 'copilot/gpt-5.4'}
+            return {'status': 'DISPATCH_RESERVED', 'invocation_id': 'i', 'claim_token': 't', 'input_json': {}, 'model': 'copilot/gpt-5.4','prompt_version':7}
+        if data['action']=='finish':
+            assert data['trace']['prompt_version']==7
         return {'status': 'VALIDATED_NOT_APPROVED' if data['action'] == 'finish' else 'LEASE_ACTIVE'}
     def complete(payload, model, *, before_call):
         before_call()
