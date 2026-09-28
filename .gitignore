@@ -21,6 +21,8 @@ scripts/hop/*
 !scripts/hop/InspectCompilerPlugins.java
 !scripts/hop/InspectExcelPlugin.java
 !scripts/hop/ExecuteExcelProbe.java
+!scripts/hop/ExecuteJsonProbe.java
+!scripts/hop/InspectJsonPlugins.java
 !scripts/hop/InspectJoinPlugin.java
 !scripts/hop/ExecuteJoinProbe.java
 !scripts/hop/ExecuteSourceOrderProbe.java

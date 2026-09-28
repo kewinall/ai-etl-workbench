@@ -13,6 +13,31 @@ from .csv_contract import validated_csv_contracts
 
 
 @contextmanager
+def stage_json_source(run_id, source, contract):
+    """Verified source bytes and explicit BOM-only reader copy; not Run authority."""
+    from .json_input_contract import prepare_json_reader_content
+    canonical_id = str(UUID(str(run_id)))
+    if source.get('type') != 'JSON' or source.get('has_actual_data') is not True:
+        raise ValueError('STAGING_REQUIRES_UPLOADED_JSON')
+    content = read_verified_upload(source.get('upload_id'), 'JSON', source.get('checksum'), source.get('size'))
+    fields = source.get('fields') or []
+    if any(not isinstance(field, dict) for field in fields):
+        raise ValueError('JSON_FIELDS_INVALID')
+    reader, evidence = prepare_json_reader_content(content, contract, [field.get('name') for field in fields])
+    root = task_uploads.ROOT / 'runtime-temp' / 'run-sources'
+    root.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=canonical_id + '-', dir=root) as directory:
+        path = Path(directory) / 'source.json'
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(descriptor, 'wb') as stream:
+            stream.write(reader); stream.flush(); os.fsync(stream.fileno())
+        if sha256(path.read_bytes()).hexdigest() != evidence['reader_content_checksum']:
+            raise ValueError('STAGING_COPY_MISMATCH')
+        yield {'path': path, 'directory': Path(directory), 'evidence': evidence,
+               'run_id': canonical_id, 'execution_authorized': False}
+
+
+@contextmanager
 def stage_excel_source(run_id, source, contract):
     """Bind confirmed XLSX selection and typed full scan to one private byte copy.
 

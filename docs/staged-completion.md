@@ -17,7 +17,11 @@
 
 整體目標保持未完成。人工基準依操作者決定保留未量測，不填入估算或代理工時。
 
-最新工程：[JSON 全檔欄位檢查](verification/json-profile-2026-09-28.md)。
+最新工程：[JSON 原生契約與副本](verification/json-native-contract-2026-09-28.md)。
+新增原生來源片段及 BOM 明示副本政策，驗證缺值／精度與失敗保護；
+尚未接入正式 Run／規格／QA／Release，不宣告 JSON 全鏈或第 5 階段完成。
+
+先前入口工程：[JSON 全檔欄位檢查](verification/json-profile-2026-09-28.md)。
 修正前 20 筆取樣漏欄位／型別與重複鍵覆寫；隔離 HTTP 通過，尚未部署正式 Pilot，
 也未接通 JSON 版本化執行鏈，不把 profile 驗證冒充 JSON E2E。
 

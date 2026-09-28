@@ -21,6 +21,8 @@ REQUIRED = [
     'scripts/hop/ValidatePipeline.java',
     'scripts/hop/ExecuteCompilerProbe.java',
     'scripts/hop/InspectCompilerPlugins.java',
+    'scripts/hop/ExecuteJsonProbe.java',
+    'scripts/hop/InspectJsonPlugins.java',
     'scripts/hop/InspectJoinPlugin.java',
     'scripts/hop/ExecuteJoinProbe.java',
     'scripts/hop/ExecuteSourceOrderProbe.java',
