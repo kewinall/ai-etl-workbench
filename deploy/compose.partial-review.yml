@@ -1,0 +1,35 @@
+# Review only the retained partial-write owner-loss fixture. No worker or Vertica network.
+name: ai-etl-partial-review
+services:
+  api:
+    image: ai-etl-workbench-api:dev
+    environment:
+      DATABASE_URL: postgresql://workbench@partial-loss-postgres:5432/partial_loss_probe_b
+      PLATFORM_SETTINGS_ENCRYPTION_KEY_FILE: /app/runtime-temp/partial-test.key
+      WORKBENCH_EXECUTION_ENABLED: 'false'
+      WORKBENCH_SA_DISPATCH_ENABLED: 'false'
+      WORKBENCH_DEVELOPER_DISPATCH_ENABLED: 'false'
+      WORKBENCH_QA_DISPATCH_ENABLED: 'false'
+    volumes:
+      - retained-runtime:/app/runtime-temp:ro
+    networks: [retained-test]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/api/ready', timeout=3)"]
+      interval: 3s
+      timeout: 5s
+      retries: 15
+  web:
+    image: ai-etl-workbench-web:latest
+    ports: ['127.0.0.1:5197:8080']
+    networks: [retained-test, browser-only]
+    depends_on:
+      api: {condition: service_healthy}
+volumes:
+  retained-runtime:
+    external: true
+    name: ai-etl-partial-worker-20260928-runtime-b
+networks:
+  retained-test:
+    external: true
+    name: ai-etl-partial-worker-20260928
+  browser-only: {}

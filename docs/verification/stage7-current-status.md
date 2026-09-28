@@ -2,6 +2,39 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 2026-09-28：同一部分提交 Run 的真實網站人工結案
+
+新增 `deploy/compose.partial-review.yml` 與 opt-in
+`frontend/tests/partial-write-reconciliation-live.spec.ts`。網站綁本機 5197，
+僅連前節保留的隔離控制 DB；API runtime 唯讀、四個執行／模型派發開關
+皆 false，沒有 Worker，也不連 portability Vertica 網路。原 owner 與 Vertica
+在本次網站驗收前後均 exited／PID=0，沒有為了測試畫面重跑 ETL。
+
+核對證據由實際保留的 partial-recovery.json 與同 Run 身分組成，只複製這份
+不含密鑰的證據至忽略 Git 的本機 runtime。這是引用前節真實新連線 SQL 的
+操作者查核證據，不聲稱網站自動查詢 Vertica。保留區別：列數是查核聲明，
+指紋是檔案雜湊；都不構成 QA／Release 核准。
+
+真實瀏覽器／API／PostgreSQL **1 passed（5.0 秒）**，無 route mock：
+
+- 讀到同一個 NEEDS_REVIEW／HOP_RESULT_UNKNOWN／write_started=true Run。
+- 未填確認／筆數／證據時按鈕禁用；390px 無水平溢出。
+- 填入 1,000 筆與真實保留證據，瀏覽器本地 SHA-256；只送出一次
+  reconciliation POST，檔案內容不會上傳，沒有其他變更請求。
+- 結案後重載仍顯示 CLOSED_WITHOUT_RETRY、1,000 筆及原未知結果。
+- API 狀態 FAILED，outcome 與 write_started 保留，QA／Release／retry 皆 false；
+  事件只增加 OPERATOR_RECONCILED_WITHOUT_RETRY 一筆，無 page error。
+
+獨立 SQL 再確認 reconciliation 1、close event 1、原 lease event 1、原
+reservation 1、model invocation 0、Release delivery 0。隔離 API／網站／DB
+已正常停止並保留卷，正式 5183 readiness 仍 ready。沒有修改網站元件來
+製造通過；既有結案功能通過了這個真正的部分提交案例。
+
+此測試是 one-shot：保留案例現在已 FAILED／結案，不能重跑同一驗收並
+重設歷史來冒充新案例。要重驗需另建新隔離 fixture、明確調整相應 Compose
+目標，再提供該新 Run 的實際證據。完整 pilot-hop-worker dispatcher 前端
+派發链仍不是本段範圍；本段補足的是同一 execute_once 失聯後的網站結案链。
+
 ## 2026-09-28：同一 Run 真實部分提交與 execute_once owner 失聯
 
 新增 `backend/tests/run_partial_write_worker.py`，限定專用 DB 名稱前綴及
