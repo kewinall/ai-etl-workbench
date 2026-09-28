@@ -54,6 +54,9 @@ def prepare_new_target(queue,repo,request):
 
 
 def run_once(queue,repo,task_id=None,run_id=None):
+    from .comparison_recovery_worker import run_once as recover_comparison
+    recovered=recover_comparison(queue,repo,task_id,run_id)
+    if recovered['status']!='IDLE':return recovered
     request=claim(queue,task_id,run_id)
     if not request:return {'status':'IDLE'}
     status='NEEDS_REVIEW';code='HOP_PREPARATION_OR_COMPARISON_FAILED'

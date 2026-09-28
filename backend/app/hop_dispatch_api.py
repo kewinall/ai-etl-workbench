@@ -24,6 +24,12 @@ class ReconcilePreparation(BaseModel):
     confirmed: StrictBool
 
 
+class RecoverComparison(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    confirmed: StrictBool
+    binding_checksum: str=Field(pattern=r'^[a-f0-9]{64}$')
+
+
 def read(queue,task_id,run_id):
     with queue.conn() as conn:
         queue.locked_task(conn,task_id)
@@ -57,6 +63,13 @@ def create_hop_dispatch_router(queue):
     @router.post('/{task_id}/runs/{run_id}/hop-dispatch')
     def dispatch(task_id:str,run_id:UUID,data:DispatchHop):
         return call(lambda:enqueue(queue,task_id,run_id,data.specification_id,data.binding_checksum,data.confirmed))
+    from . import comparison_recovery as recovery
+    @router.get('/{task_id}/runs/{run_id}/comparison-recovery')
+    def recovery_status(task_id:str,run_id:UUID):
+        return call(lambda:recovery.read(queue,task_id,run_id))
+    @router.post('/{task_id}/runs/{run_id}/comparison-recovery')
+    def recover(task_id:str,run_id:UUID,data:RecoverComparison):
+        return call(lambda:recovery.enqueue(queue,task_id,run_id,data.binding_checksum,data.confirmed))
     from . import hop_preparation_reconciliation as reconciliation
     @router.get('/{task_id}/runs/{run_id}/hop-preparation-reconciliation')
     def reconciliation_status(task_id:str,run_id:UUID):

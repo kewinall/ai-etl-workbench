@@ -6,13 +6,14 @@ pin from load_execution_oracle, never from an HTTP request.
 """
 from hashlib import sha256
 import json
+from contextlib import nullcontext
 from .execution_oracle import load_execution_oracle
 from .result_query_plan import build_result_query_plan
 from . import specification_store
 
 
-def load_bound_result_query(queue, task_id, run_id):
-    with queue.conn() as conn:
+def load_bound_result_query(queue, task_id, run_id, *, connection=None):
+    with (nullcontext(connection) if connection is not None else queue.conn()) as conn:
         pinned = load_execution_oracle(queue, task_id, run_id, connection=conn)
         run, naming = specification_store.context(queue, conn, task_id, run_id)
         row = conn.execute('''SELECT s.spec_json FROM platform.specification s

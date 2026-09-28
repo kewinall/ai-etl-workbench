@@ -16,6 +16,9 @@ from .qa_single_source_contract import inspect_contract, preserve_reviewed_conte
 def load_qa_context(queue,task_id,run_id,comparison_id,*,connection=None):
     with (nullcontext(connection) if connection is not None else queue.conn()) as conn:
         pinned=load_execution_oracle(queue,task_id,run_id,connection=conn)
+        recovery=conn.execute('SELECT status,comparison_id FROM platform.comparison_recovery WHERE run_id=%s FOR SHARE',(run_id,)).fetchone()
+        if recovery and (recovery['status']!='COMPLETED' or str(recovery['comparison_id'])!=str(comparison_id)):
+            raise ValueError('QA_COMPARISON_RECOVERY_REQUIRED')
         run,naming=specification_context(queue,conn,task_id,run_id)
         row=conn.execute('''SELECT s.* FROM platform.specification s
             JOIN platform.task_run_execution_authorization a USING(specification_id)

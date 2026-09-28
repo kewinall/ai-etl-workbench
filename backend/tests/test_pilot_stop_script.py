@@ -11,7 +11,7 @@ SCRIPT = Path(__file__).resolve().parents[2] / 'scripts' / 'stop-pilot.ps1'
 
 @pytest.mark.parametrize('scenario', [
     'idle', 'check', 'native_worker', 'opaque_process', 'other_container',
-    'pending_runs', 'pending_hop', 'pending_ai', 'pending_release',
+    'pending_runs', 'pending_hop', 'pending_comparison', 'pending_ai', 'pending_release',
     'post_pending', 'identity', 'paused', 'db_error', 'stop_error',
 ])
 def test_safe_stop(scenario):
@@ -45,7 +45,7 @@ function global:wsl.exe {
     if ($args -contains 'psql') {
         if ($scenario -eq 'db_error') { $global:LASTEXITCODE=1; return }
         $global:queries++
-        $counts=@{runs=0;hop=0;ai=0;release=0}
+        $counts=@{runs=0;hop=0;comparison=0;ai=0;release=0}
         if ($scenario.StartsWith('pending_')) { $counts[$scenario.Replace('pending_','')]=1 }
         if ($scenario -eq 'post_pending' -and $global:queries -gt 1) { $counts.hop=1 }
         return ($counts | ConvertTo-Json -Compress)

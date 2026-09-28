@@ -2,6 +2,19 @@ from unittest.mock import Mock
 import pytest
 import app.pilot_hop_worker as worker
 from app.hop_dispatch import require_sa_trace
+from app import comparison_recovery_worker
+
+
+@pytest.fixture(autouse=True)
+def no_comparison_recovery(monkeypatch):
+    monkeypatch.setattr(comparison_recovery_worker,'run_once',Mock(return_value={'status':'IDLE'}))
+
+
+def test_recovery_never_falls_through_to_hop(monkeypatch):
+    monkeypatch.setattr(comparison_recovery_worker,'run_once',Mock(return_value={'status':'COMPLETED'}))
+    claim=Mock();monkeypatch.setattr(worker,'claim',claim)
+    assert worker.run_once(Mock(),Mock())=={'status':'COMPLETED'}
+    claim.assert_not_called()
 
 
 def test_no_request_no_ddl_or_hop(monkeypatch):

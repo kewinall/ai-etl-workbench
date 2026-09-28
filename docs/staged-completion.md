@@ -17,6 +17,11 @@
 
 整體目標保持未完成。人工基準依操作者決定保留未量測，不填入估算或代理工時。
 
+最新工程：[受控結果比對恢復](verification/comparison-recovery-2026-09-28.md)。
+已加入不可重播的獨立恢復紀錄、網站確認、QA／Release lineage 與停機保護；
+1702 項隔離後端、16 項 Windows／發行檢查、4 項瀏覽器互動通過。
+正式部署及同一 Excel Run 的真實比對恢復仍待執行，不改寫原失敗或宣告 Excel E2E 完成。
+
 最新真實驗收：[Excel 模型與執行進度](verification/excel-real-execution-2026-09-28.md)。
 新案例經補正後完成真實角色與一次 Hop／Vertica 寫入，固定答案唯讀比對 2／2 MATCH。
 發現執行後答案讀取器漏接 v4；修正通過 1689 項回歸，尚待受控比對恢復、真實 QA 及 Release。

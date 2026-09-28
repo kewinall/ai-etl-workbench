@@ -1,6 +1,7 @@
 import {useEffect,useState} from 'react';
 import {jsonBody,request} from './api';
 import {ExecutionReconciliation} from './ExecutionReconciliation';
+import {ComparisonRecovery} from './ComparisonRecovery';
 
 export function HopDispatch({taskId,runId,onReconciled}:{taskId:string;runId:string;onReconciled?:()=>Promise<void>}) {
   const base=`/api/tasks/${encodeURIComponent(taskId)}/runs/${runId}/hop-dispatch`;
@@ -25,6 +26,7 @@ export function HopDispatch({taskId,runId,onReconciled}:{taskId:string;runId:str
           <button disabled={busy||!consent} onClick={dispatch}>授權並排入 Hop 執行</button>
         </>}
       </>}
+    {data?.request?.status==='NEEDS_REVIEW'&&data.request.outcome_code==='HOP_PREPARATION_OR_COMPARISON_FAILED'&&<ComparisonRecovery key={'comparison-'+base} base={`/api/tasks/${encodeURIComponent(taskId)}/runs/${runId}`}/>}
     {data?.request&&['CLAIMED','NEEDS_REVIEW'].includes(data.request.status)&&<ExecutionReconciliation key={base} base={`/api/tasks/${encodeURIComponent(taskId)}/runs/${runId}`} preparation onSaved={async()=>{await refresh();await onReconciled?.()}}/>}
   </section>;
 }

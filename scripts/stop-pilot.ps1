@@ -27,12 +27,13 @@ function Assert-NoPendingWork {
 SELECT json_build_object(
  'runs',(SELECT count(*) FROM platform.task_run WHERE lease_token IS NOT NULL OR state IN ('QUEUED','RUNNING')),
  'hop',(SELECT count(*) FROM platform.hop_dispatch_request WHERE status IN ('QUEUED','CLAIMED')),
+ 'comparison',(SELECT count(*) FROM platform.comparison_recovery WHERE status IN ('QUEUED','CLAIMED')),
  'ai',(SELECT count(*) FROM platform.agent_invocation WHERE status IN ('SA_QUEUED','DISPATCH_RESERVED','DEVELOPER_RESERVED','QA_RESERVED')),
  'release',(SELECT count(*) FROM platform.release_portability_check WHERE status='RUNNING')
 );
 '@
     $result = (Invoke-PilotDocker @('exec', 'ai-etl-workbench-postgres-1', 'psql', '-X', '-U', 'workbench', '-d', 'workbench', '-At', '-v', 'ON_ERROR_STOP=1', '-c', $sql)) | ConvertFrom-Json
-    foreach ($key in @('runs', 'hop', 'ai', 'release')) {
+    foreach ($key in @('runs', 'hop', 'comparison', 'ai', 'release')) {
         if ($null -eq $result.$key -or [long]$result.$key -ne 0) {
             throw "Pending or uncertain work ($key); shutdown not certified. Preserve state and reconcile; do not replay."
         }

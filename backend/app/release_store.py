@@ -27,8 +27,11 @@ def storage_root(root):
 
 
 def require_lineage(conn,run_id,specification_checksum):
-    job=conn.execute("SELECT * FROM platform.hop_dispatch_request WHERE run_id=%s AND status='COMPLETED' AND outcome_code='HOP_EXECUTED_QA_REQUIRED'",(run_id,)).fetchone()
+    job=conn.execute("SELECT * FROM platform.hop_dispatch_request WHERE run_id=%s",(run_id,)).fetchone()
     if not job:raise ValueError('RELEASE_WEBSITE_EXECUTION_REQUIRED')
+    if job['status']!='COMPLETED' or job['outcome_code']!='HOP_EXECUTED_QA_REQUIRED':
+        from .comparison_recovery import require_completed_recovery
+        require_completed_recovery(conn,job)
     sa=conn.execute("SELECT * FROM platform.agent_invocation WHERE run_id=%s AND role='pilot_sa'",(run_id,)).fetchone()
     require_sa_trace(sa)
     dev=conn.execute("SELECT * FROM platform.agent_invocation WHERE run_id=%s AND role='pilot_developer'",(run_id,)).fetchone()

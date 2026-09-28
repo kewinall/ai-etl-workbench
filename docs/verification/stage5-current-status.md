@@ -1,6 +1,11 @@
 # 第 5 階段目前判定（2026-09-28）
 
-最新真實驗收：[Excel 模型與 Hop／Vertica 進度](excel-real-execution-2026-09-28.md)。
+最新工程：[受控結果比對恢復](comparison-recovery-2026-09-28.md)。
+獨立恢復紀錄與網站確認已實作；不改寫原派發、不重跑 Hop，QA／Release 保留嚴格證據要求。
+1702 項後端、16 項 Windows／發行檢查及 4 項瀏覽器互動通過。尚未部署正式 Pilot，
+真實 Excel 比對恢復、QA 與 Release 仍待驗收；第 5 階段保持未完成。
+
+前次真實驗收：[Excel 模型與 Hop／Vertica 進度](excel-real-execution-2026-09-28.md)。
 新案例完成真實 SA／Developer、單次 Hop 寫入；唯讀核對結果為 2／2 完全一致。
 後處理漏接 v4 授權而被阻擋，修正通過 1689 項回歸，但正式 API 尚未部署此修正。
 不得重跑已寫入的 Hop；下一步補受控結果比對恢復，再接 QA／可攜 Release。第 5 階段未完成。
