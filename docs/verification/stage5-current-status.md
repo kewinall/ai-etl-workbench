@@ -1,6 +1,10 @@
 # 第 5 階段目前判定（2026-09-28）
 
-最新工程：[JSON 型別與 V5 編譯](json-types-v5-compiler-2026-09-28.md)。
+最新工程：[JSON 角色、規格 API 與網站](json-roles-specification-ui-2026-09-28.md)。
+1850 項隔離後端、3 項真實網站、3 項合成歷史 UI 及 10 項 HTTP／發行檢查通過。
+規格保存／核准／指紋呈現已接通；尚未部署正式，JSON 執行／QA／SDM／Release 仍待完成。
+
+先前工程：[JSON 型別與 V5 編譯](json-types-v5-compiler-2026-09-28.md)。
 完整型別攔截、來源副本與 V5 HPL／HWF 候選已接通；真正編譯的 Filter／Aggregation
 原生測試通過。139 項針對性與 1842 項隔離後端通過；未部署正式，JSON 執行授權仍阻擋。
 角色、規格 API／網站、正式 Hop／Vertica、QA／SDM／Release 尚待接通及新案例驗收。

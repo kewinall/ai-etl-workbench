@@ -40,6 +40,7 @@ class SAInvocationError(ValueError):
 def sa_material(context):
     """Keep existing CSV prompt bytes stable; bind Excel guidance independently."""
     excel=any(item.get('kind')=='EXCEL_INPUT' for item in context['evidence'])
+    json_source=any(item.get('kind')=='JSON_INPUT' for item in context['evidence'])
     prompt=PROMPT
     if excel:
         prompt += (' For EXCEL_INPUT, cite source.0.excel_input before returning READY_FOR_REVIEW. '
@@ -53,7 +54,19 @@ def sa_material(context):
                    'Do not invent a sheet, header, blank-row policy or unavailable workbook contents. '
                    'Missing or conflicting Excel contracts must remain NEEDS_INPUT; never override the deterministic gate. '
                    'Do not demand physical paths, upload IDs or source data omitted by the minimal-context policy.')
-    return {'prompt':prompt,'prompt_version':7 if excel else PROMPT_VERSION,'prompt_checksum':digest(prompt)}
+    if json_source:
+        prompt += (' For JSON_INPUT, cite source.0.json_input before returning READY_FOR_REVIEW. '
+                   'Review the explicit ARRAY or OBJECT root, UTF-8 encoding and BOM-only reader-copy policy, '
+                   'missing keys as NULL, extra/nested/duplicate keys rejection, no string trimming, '
+                   'all-null record preservation and fail-on-error policy exactly as provided. '
+                   'Apache Hop JsonInput reads JSON natively; do not substitute CSV or invent JSONPath expressions. '
+                   'Content/profile/contract checksums bind this source and policy; CONFIRMED_INPUT_ONLY '
+                   'does not prove execution, conversion success or QA. SOURCE_FIELD contains suggested types. '
+                   'Do not invent casting, flattening, date formats or numeric rounding. '
+                   'CSV delimiters and Excel worksheets do not apply to JSON_INPUT. '
+                   'Missing or conflicting contracts require NEEDS_INPUT; never override the deterministic gate. '
+                   'Do not request source samples, upload IDs or physical paths excluded from this context.')
+    return {'prompt':prompt,'prompt_version':8 if json_source else 7 if excel else PROMPT_VERSION,'prompt_checksum':digest(prompt)}
 
 
 def complete_sa_review(run, profile, *, secret=None, completion=None):

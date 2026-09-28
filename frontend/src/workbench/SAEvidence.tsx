@@ -1,7 +1,9 @@
 import {useState} from 'react';
 import {request} from './api';
+import {JsonInputSummary} from './JsonInputContract';
+import {ExcelInputSummary} from './ExcelInputContract';
 
-const kinds: Record<string, string> = {REQUIREMENT: '需求文字', TARGET: '目標', CONDITIONS: '使用者確認條件', SOURCE_FIELD: '來源欄位', CSV_INPUT: 'CSV 輸入契約'};
+const kinds: Record<string, string> = {REQUIREMENT: '需求文字', TARGET: '目標', CONDITIONS: '使用者確認條件', SOURCE_FIELD: '來源欄位', CSV_INPUT: 'CSV 輸入契約', EXCEL_INPUT: 'Excel 讀取契約', JSON_INPUT: 'JSON 讀取契約'};
 const labels: Record<string, string> = {schema: 'Schema', table: 'Table', version: '版本', write_mode: '寫入模式', date_scope: '資料期間', date_column: '日期欄位', start_date: '起日（包含）', end_date_exclusive: '迄日（不包含）', key_columns: '鍵欄位', name: '名稱', type: '型別', invalid: '條件格式不合法'};
 
 export function SAEvidence({taskId, runId}: {taskId: string; runId: string}) {
@@ -25,7 +27,7 @@ export function SAEvidence({taskId, runId}: {taskId: string; runId: string}) {
       <p>{result.context_origin === 'CAPTURED_AT_AUTHORIZATION' ? '顯示授權當時保存的 Context，不以新版規則改寫歷史。' : '這是目前規則產生的預覽，尚未派發模型。'}</p>
       <ol>{result.context.evidence.map((item: any) => <li key={item.id}>
         <strong>{kinds[item.kind] || item.kind} · {item.id}</strong>
-        {typeof item.value === 'string' ? <p>{item.value || '未提供'}</p> : <dl>{Object.entries(item.value).map(([key, value]) => <div key={key}><dt>{labels[key] || key}</dt><dd>{Array.isArray(value) ? value.join('、') || '未提供' : value === null || value === '' ? '未提供' : String(value)}</dd></div>)}</dl>}
+        {item.kind === 'JSON_INPUT' ? <JsonInputSummary value={item.value}/> : item.kind === 'EXCEL_INPUT' ? <ExcelInputSummary value={item.value}/> : typeof item.value === 'string' ? <p>{item.value || '未提供'}</p> : <dl>{Object.entries(item.value).map(([key, value]) => <div key={key}><dt>{labels[key] || key}</dt><dd>{Array.isArray(value) ? value.join('、') || '未提供' : value === null || value === '' ? '未提供' : String(value)}</dd></div>)}</dl>}
       </li>)}</ol>
     </>}
   </section>;

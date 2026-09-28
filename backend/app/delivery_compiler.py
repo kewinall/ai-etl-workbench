@@ -22,6 +22,10 @@ PARAMETERS_TEMPLATE_V2 = PARAMETERS_TEMPLATE.replace(
     'SOURCE_CSV_0=\nSOURCE_CSV_1=\n')
 
 PARAMETERS_TEMPLATE_V4 = PARAMETERS_TEMPLATE.replace('SOURCE_CSV', 'SOURCE_XLSX')
+PARAMETERS_TEMPLATE_V5 = PARAMETERS_TEMPLATE.replace('SOURCE_CSV', 'SOURCE_JSON') + (
+    '# JSON reader copy must be verified against the original upload and BOM policy.\n'
+    '# Pin HOP_JSON_INPUT_INCLUDE_NULLS=Y in the destination Hop runtime.\n'
+    '# These declarations are requirements, not proof of portable replay.\n')
 
 
 def compile_delivery_components(payload, run, naming):
@@ -29,7 +33,8 @@ def compile_delivery_components(payload, run, naming):
     if 'hwf' not in compiled:
         return compiled
     spec = compiled['specification']
-    parameters = (PARAMETERS_TEMPLATE_V4 if spec['version'] == 4 else
+    parameters = (PARAMETERS_TEMPLATE_V5 if spec['version'] == 5 else
+                  PARAMETERS_TEMPLATE_V4 if spec['version'] == 4 else
                   PARAMETERS_TEMPLATE_V2 if spec['version'] == 2 else PARAMETERS_TEMPLATE)
     columns = []
     for name in spec['output_columns']:

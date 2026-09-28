@@ -63,6 +63,18 @@ def developer_material(context):
             'Do not substitute CSV, another sheet, inferred parsing defaults, or a different fingerprint. '
             'Use source_ref source.0; the compiler owns ExcelInput XML and SOURCE_XLSX runtime binding.')
         version = 7
+    if context['version'] == 5:
+        prompt = prompt.replace('EtlSpecificationV1', 'EtlSpecificationV5') + (
+            ' Return proposal version 5 and specification version 5. Cite source.0.json_input. '
+            'Copy its reference object exactly into specification.json_source. '
+            'This is one native flat JSON source with confirmed ARRAY/OBJECT root and explicit read policies. '
+            'Do not substitute CSV/XLSX, invent flattening, implicit casts, trimming, date formats or defaults. '
+            'Use source_ref source.0. The compiler owns the filename parameter, JsonInput and projection nodes; '
+            'json_source_file is a reserved internal column, not a business field. '
+            'SOURCE_JSON binds only the verified reader copy; BOM removal preserves original and reader checksums. '
+            'All-null records must be preserved, strings untrimmed, and missing values remain NULL. '
+            'Do not interpret confirmed input or compiled candidates as native execution/QA proof.')
+        version = 8
     schema = model.model_json_schema()
     return {'prompt': prompt, 'prompt_version': version,
             'prompt_checksum': digest(prompt), 'schema': schema, 'schema_checksum': digest(schema)}

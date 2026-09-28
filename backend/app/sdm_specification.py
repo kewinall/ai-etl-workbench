@@ -10,6 +10,8 @@ def build_sdm_candidate(payload,run,naming):
     if validated['status']!='VALIDATED_NOT_APPROVED':
         raise ValueError('SDM_VALID_SPECIFICATION_REQUIRED')
     spec=validated['specification']
+    if spec['version'] == 5:
+        raise ValueError('SDM_JSON_NOT_READY')
     by_name={column['english_name']:column for column in naming['contract_json']['columns']}
     aggregate=spec.get('aggregation')
     order=spec.get('source_order') if spec['version']==3 else None

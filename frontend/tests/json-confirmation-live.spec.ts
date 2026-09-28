@@ -87,6 +87,10 @@ print(json.dumps(run_once(q)))`;
     await expect(page.getByRole('region', {name: 'JSON 讀取契約摘要'})).toContainText('尚未確認');
     await page.getByRole('button', {name: '補正需求並建立新版', exact: true}).click();
     const form = page.getByRole('form', {name: '需求補正'});
+    await form.getByLabel('寫入模式').selectOption('APPEND');
+    await form.getByLabel('資料期間').selectOption('ALL');
+    await form.getByLabel('目標 Schema').fill('ai_sample');
+    await form.getByLabel('目標 Table').fill(`json_ui_${nonce}`);
     const editor = form.getByRole('group', {name: 'JSON 讀取契約補正'});
     await expect(editor.getByRole('checkbox')).not.toBeChecked();
     await editor.getByRole('checkbox').check();
@@ -110,6 +114,56 @@ print(json.dumps(run_once(q)))`;
     const history = await (await request.get(`/api/tasks/${taskId}/runs/${parent.run_id}`)).json();
     expect(history.state).toBe('CANCELLED'); expect(history.approval.decision).toBe('APPROVE');
     expect(history.input_summary.json_input_contract_v1.contract_status).toBe('MISSING_OR_INVALID');
+    expect((await request.post(`/api/tasks/${taskId}/naming-contract/confirm`, {data: {columns:
+      source.fields.map((field: any, index: number) => ({source_name: field.name,
+        english_name: ['customer_id', 'amount'][index], vertica_type: field.type,
+        confidence: 1, reason: '人工指定合成測試'}))}})).ok()).toBe(true);
+    expect((await request.post(`/api/tasks/${taskId}/approvals`, {data: {run_id: child.run_id,
+      kind: 'INPUT_REVIEW', decision: 'APPROVE', input_checksum: persisted.input_checksum,
+      settings_checksum: persisted.settings_checksum}})).ok()).toBe(true);
+    const checked = execFileSync('wsl', ['-d', 'RockyLinux9', '-u', 'root', '--', 'docker', 'exec',
+      'ai-etl-ui-regression-api-1', 'python', '-c', script, child.run_id], {encoding: 'utf8', timeout: 30000});
+    expect(JSON.parse(checked).status).toBe('CHECKED');
+    await page.reload();
+    const evidence = page.getByRole('region', {name: 'SA 需求證據', exact: true});
+    await evidence.getByRole('button', {name: '查看 SA 證據清單'}).click();
+    await expect(evidence.getByRole('region', {name: 'JSON 讀取契約摘要'})).toContainText('已確認');
+    await expect(evidence).not.toContainText('[object Object]');
+    const specs = page.getByRole('region', {name: 'ETL 規格版本', exact: true});
+    await specs.getByRole('button', {name: '建立規格', exact: true}).click();
+    const specEditor = specs.getByRole('region', {name: '編輯 ETL 規格'});
+    await specEditor.getByRole('button', {name: '讀取已確認欄位'}).click();
+    await expect(specEditor.getByRole('region', {name: 'JSON 規格來源綁定'})).toBeVisible();
+    await specEditor.getByLabel('篩選方式').selectOption('ALL');
+    await specEditor.getByRole('checkbox', {name: 'customer_id', exact: true}).check();
+    await specEditor.getByRole('checkbox', {name: 'amount', exact: true}).check();
+    await specEditor.getByRole('checkbox', {name: '我已確認篩選、分組、聚合及輸出順序，保存為待核准規格。'}).check();
+    await specEditor.getByRole('button', {name: '驗證並保存規格新版'}).click();
+    await expect(specs).toContainText('已保存待核准規格');
+    const base = `/api/tasks/${taskId}/runs/${child.run_id}`;
+    const candidate = (await (await request.get(`${base}/specifications`)).json()).items[0];
+    expect(candidate.spec_json.version).toBe(5);
+    expect(candidate.spec_json.json_source.content_checksum).toBe(source.checksum);
+    expect(candidate.approval_id).toBeNull();
+    await specs.getByRole('checkbox', {name: '我已檢查來源、目標、篩選、分組與輸出，確認此規格；這不是執行授權。'}).check();
+    await specs.getByRole('button', {name: '核准此版規格'}).click();
+    await expect(specs).toContainText('規格核准已保存');
+    await page.reload();
+    await specs.getByRole('button', {name: '載入規格版本'}).click();
+    await expect(specs).toContainText('JSON SDM 與正式執行鏈尚未接通');
+    await expect(specs.getByRole('button', {name: '預覽 SDM 欄位對照'})).toHaveCount(0);
+    await specs.getByRole('button', {name: '檢查 Hop 編譯預覽'}).click();
+    await expect(specs).toContainText('source · 程式工具 JsonInput');
+    await specs.getByText('查看參數範本與環境需求', {exact: true}).click();
+    await expect(specs).toContainText('SOURCE_JSON');
+    await expect(specs).not.toContainText('SOURCE_CSV');
+    await specs.getByText('查看 JSON 版本指紋', {exact: true}).click();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2)).toBe(true);
+    await specs.screenshot({path: test.info().outputPath('json-specification-approved.png')});
+    const finalRun = await (await request.get(`${base}`)).json();
+    // CHECKED is the Gate result, not the durable Run state; review remains required.
+    expect(finalRun.state).toBe('NEEDS_REVIEW'); expect(finalRun.write_started).toBe(false);
+    expect((await (await request.get(`${base}/specifications`)).json()).items[0].approval_effective).toBe(true);
     expect(errors).toEqual([]);
   } finally {
     if (taskId) {

@@ -54,6 +54,14 @@ def editor_context(run, naming):
             return {**blocked, 'issues': [{'code': 'SPEC_EDITOR_EXCEL_CONTRACT_REQUIRED',
                 'message': '請先確認與來源一致的 Excel 讀取契約，再編輯規格。'}]}
         binding.update(version=4, excel_source=reference)
+    elif len(fields) == 1 and fields[0].get('type') == 'JSON':
+        from .json_contract_binding import validated_json_contract
+        try:
+            reference = validated_json_contract(run['input_snapshot']['source_config'])['reference']
+        except ValueError:
+            return {**blocked, 'issues': [{'code': 'SPEC_EDITOR_JSON_CONTRACT_REQUIRED',
+                'message': '請先確認與來源一致的 JSON 讀取契約，再編輯規格。'}]}
+        binding.update(version=5, json_source=reference)
     # Probe existing invariant validator; this is not returned as a proposed design.
     # Metric coverage alone is expected to be incomplete until the user specifies it.
     probe = validate_specification({**binding, 'filters': [], 'aggregation': None, 'output_columns': [c['name'] for c in source+generated]}, run, naming)

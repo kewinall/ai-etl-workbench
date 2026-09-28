@@ -73,11 +73,15 @@ def build_sa_context(run):
     excel_input = excel_evidence(snapshot.get('source_config') or {})
     if excel_input is not None:
         evidence.append({'id': 'source.0.excel_input', 'kind': 'EXCEL_INPUT', 'value': excel_input})
+    from .json_contract_binding import json_evidence
+    json_input = json_evidence(snapshot.get('source_config') or {})
+    if json_input is not None:
+        evidence.append({'id': 'source.0.json_input', 'kind': 'JSON_INPUT', 'value': json_input})
     for source_index, source in enumerate((snapshot.get('source_config') or {}).get('sources') or []):
         for field_index, field in enumerate(source.get('fields') or []):
             evidence.append({'id': f'source.{source_index}.field.{field_index}', 'kind': 'SOURCE_FIELD',
                              'value': {key: field.get(key) for key in ('name', 'type')}})
-    context = {'version': 5 if excel_input is not None else 4 if order is not None else 3 if intent is not None else 2, 'run_id': str(run['run_id']), 'input_checksum': run['input_checksum'],
+    context = {'version': 6 if json_input is not None else 5 if excel_input is not None else 4 if order is not None else 3 if intent is not None else 2, 'run_id': str(run['run_id']), 'input_checksum': run['input_checksum'],
                'settings_checksum': run['settings_snapshot']['checksum'], 'evidence': evidence,
                'deterministic_gate': check_requirements(snapshot)}
     return {**context, 'context_checksum': digest(context)}
@@ -100,6 +104,8 @@ def validate_sa_review(payload, context):
         raise ValueError('SA_SOURCE_ORDER_EVIDENCE_REQUIRED')
     if review.status == 'READY_FOR_REVIEW' and 'source.0.excel_input' in valid_ids and 'source.0.excel_input' not in review.evidence_ids:
         raise ValueError('SA_EXCEL_INPUT_EVIDENCE_REQUIRED')
+    if review.status == 'READY_FOR_REVIEW' and 'source.0.json_input' in valid_ids and 'source.0.json_input' not in review.evidence_ids:
+        raise ValueError('SA_JSON_INPUT_EVIDENCE_REQUIRED')
     if review.status == 'NEEDS_INPUT' and not review.issues:
         raise ValueError('SA_MISSING_ISSUE_DETAILS')
     # Citation existence does not establish semantic correctness or authorize execution.
