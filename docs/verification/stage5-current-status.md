@@ -1,4 +1,43 @@
-# 第 5 階段目前判定（2026-09-27）
+# 第 5 階段目前判定（2026-09-28）
+
+## 2026-09-28：來源說明可見性與 15 項回歸
+
+本次先對既有隔離網站重跑專案／歷史／設定／Task 的 14 項測試，
+**14 passed（17.5 秒）**。程式檢查發現來源支援公告與內部表單文案矛盾：
+External／Flex 宣稱自動轉送，範例來源宣稱建立檔案／資料表，但新版受控
+執行尚未驗收。修正為保存需求、不在此建立或重建資料表、不代表執行核准。
+保留所有設定入口，沒有刪除功能或放寬來源／Release gate。
+
+新增 `frontend/tests/source-capability-boundaries.spec.ts`，以真實隔離 API
+建立合成專案，不代理 API。首次失敗是輔助說明不可見；查得舊 CSS
+`.source-data-mode.choice.big button small{display:none}` 隱藏全部說明。
+修正為可見、12px 字級及按鈕上下排列，未把測試改為允許隱藏內容。
+
+最終同批加新測試 **15 passed（17.9 秒）**：
+
+- 專案新增、編輯、取消、預設继承、字典保存重載、等待及錯誤恢復。
+- 歷史篩選、節點詳情、Task 導覽／六頁籤／返回、單與雙 CSV 建立。
+- 設定分類草稿、讀取失敗恢復、政策保存重載及伺服器限制。
+- External／Flex／ODS 範例来源说明真正可見；切換期間零瀏覽器 mutation，
+  專案 Task 清單仍空，無 pageerror，390px 無水平溢出且截圖已人工檢視。
+
+上述專案／上傳／政策保存為隔離真實 API／PostgreSQL；延遲、故障及舊產物
+展示仍使用各測試明示的代理或 fixture，不把這 15 項算作模型／Hop E2E。
+控制服務與模型／ETL 派發未啟動，無正式憑證或 volumes。合成資料保留。
+
+已 build 並只部署正式 web，未更動 API、Worker、DB 或 migration；正式指南、
+量測及報告唯讀回歸 **3 passed（15.9 秒）**，既有 Run events 回讀一致，
+沒有模型／ETL 呼叫。隔離環境已停止，正式 `/api/ready` 為 ready、execution
+enabled。前端約 508 kB bundle 警告仍存在。
+
+**第 5 階段及整體目標仍未完成。** 這是呈現誠實性與既有功能回歸，並未
+補齐 Excel／JSON／Vertica 表來源的新版受控執行、範例來源重建 UI 與完整
+跨產物驗收。原需求不能因公告「尚未驗收」就刪除；下一步須追蹤這些來源
+從建立、profile、命名確認、Run 到 Hop／QA／Release 的實際缺口。
+人工基準依操作者決定維持未量測；knowledge-workspace 本機目錄仍不存在，
+尚未持久化至 knowledge-workspace。
+
+## 2026-09-27：歷史判定
 
 狀態：本次重新回歸的 7 項失敗已修正並全部重跑通過；只適用下列明列範圍，不等於全平台驗收。整體計畫未完成，Workspace 同步仍受阻。歷次操作證據仍見
 [驗證紀錄](stage5-exit-checklist.md)，不把舊段落的未完成敘述當作最新狀態。
