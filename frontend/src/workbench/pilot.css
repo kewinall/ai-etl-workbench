@@ -71,4 +71,9 @@ fieldset[aria-label="Task 建立表單"]{min-inline-size:0;max-width:100%;box-si
 .wb-task-workspace button.wb-run-node{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;min-width:0;overflow-wrap:anywhere}
 .wb-task-workspace button.wb-run-node[aria-pressed="true"]{border:2px solid #174e83;background:#e2effc}
 .wb-run-node small{color:#4d6175}.wb-run-node span{font-size:12px;white-space:nowrap}
+.wb-excel-selection{min-width:0;overflow-wrap:anywhere}
+.wb-excel-selection select,.wb-excel-selection button{width:100%;max-width:100%;min-width:0;box-sizing:border-box;padding:10px;border:1px solid #b9ccd9;border-radius:8px;background:#f7fbfd;color:#17394b;font-size:14px;white-space:normal}
+.wb-excel-selection button{margin-top:8px;cursor:pointer}
+.wb-excel-selection button:disabled{opacity:.6;cursor:not-allowed}
+.wb-excel-selection :focus-visible{outline:2px solid #167399;outline-offset:2px}
 @media(max-width:640px){.wb-task-workspace .wb-task-heading{align-items:flex-start;flex-direction:column}.wb-task-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.wb-task-workspace .panel{padding:14px}.wb-task-workspace .nodebutton{width:100%;min-width:0}.wb-task-workspace .nodebutton>div{min-width:0}}

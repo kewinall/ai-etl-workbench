@@ -25,6 +25,7 @@ from .requirement_engine import canonicalize, copilot_prompt, plan, requirement_
 from .source_profiler import profile_task
 from .sample_data import ensure_query_target, ensure_sample_target, materialize_samples, materialize_stage_server_sample, rebuild_managed_sample
 from .task_uploads import cleanup_expired, save_and_profile
+from .excel_profile import create_excel_profile_router, verify_excel_source
 from .platform_harness import checksum, encrypt_secret, litellm_complete, naming_suggestions, requirement_issues
 from .release import create_release, create_sdm, sha as artifact_sha
 
@@ -368,6 +369,7 @@ app.include_router(create_formal_release_router(RunQueue(DB),repo))
 app.include_router(create_specification_router(RunQueue(DB)))
 app.include_router(create_oracle_router(RunQueue(DB)))
 app.include_router(create_runtime_router(RunQueue(DB)))
+app.include_router(create_excel_profile_router())
 @app.post('/api/projects/{project_id}/tasks',status_code=201)
 def create_project_task(project_id:str,data:TaskCreate):
  if not repo.get_project(project_id):raise HTTPException(404,'Project not found')
@@ -394,6 +396,10 @@ def create(data:TaskCreate):
    table_sources=len(sources)>=2 and all(x.get('type')=='VERTICA' for x in sources)
    csv_join_sources=len(sources)==2 and all(x.get('type')=='CSV' for x in sources)
    if not (table_sources or csv_join_sources):raise HTTPException(422,'DW/DM 必須使用至少兩個 Vertica Table，或恰好兩個 CSV 來源；不可混用')
+ for source in sources:
+  if source.get('type')=='EXCEL' and (source.get('has_actual_data') or source.get('upload_id') or source.get('path')):
+   try:verify_excel_source(source)
+   except ValueError as error:raise HTTPException(422,str(error)) from None
  try:return repo.create_task(payload)
  except TaskCreationConflict:raise HTTPException(409,'建立請求內容已變更，請使用新的請求識別碼') from None
 @app.post('/api/tasks/{task_id}/requirements/validate')

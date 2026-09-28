@@ -39,6 +39,13 @@ def test_real_upload_preserves_identifiers_precision_and_utf8_width(kind):
         response = client.post('/api/task-sources/upload', files={'file': (f'synthetic.{kind}', content)})
         assert response.status_code == 200, response.status_code
         result = response.json()
+        if kind == 'xlsx':
+            assert result['worksheet'] is None and result['fields'] == []
+            chosen = client.post(f"/api/task-sources/{result['upload_id']}/excel-profile", json={
+                'checksum': result['checksum'], 'size': result['size'],
+                'worksheet': result['worksheets'][0], 'header_row': 1})
+            assert chosen.status_code == 200
+            result.update(chosen.json())
         assert result['source_type'] == {'csv': 'CSV', 'json': 'JSON', 'xlsx': 'EXCEL'}[kind]
         assert result['size'] == len(content)
         assert result['checksum'] == hashlib.sha256(content).hexdigest()

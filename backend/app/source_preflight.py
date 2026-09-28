@@ -20,6 +20,11 @@ def source_preflight(snapshot):
                                            source.get('checksum'), source.get('size'))
             item.update(status='UPLOAD_BYTES_VERIFIED', content_checksum=source['checksum'],
                         byte_count=len(content))
+            if source['type'] == 'EXCEL':
+                from .excel_profile import verify_excel_source
+                profile = verify_excel_source(source, content=content)
+                item['excel_selection_v1'] = profile['excel_selection_v1']
+                item['excel_full_file_validated'] = False
             if source['type'] == 'CSV':
                 try:
                     contract = source_csv_contract(config, f'source.{index}')

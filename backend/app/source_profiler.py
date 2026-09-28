@@ -71,6 +71,12 @@ def _profile_csv(source: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str,
 
 
 def _profile_excel(source: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    if source.get('excel_selection_v1'):
+        from .excel_profile import verify_excel_source
+        profile = verify_excel_source(source)
+        rows = profile['sample_rows']
+        return ({**source, **profile, 'masked_examples': [
+            {key: _masked(value) for key, value in row.items()} for row in rows[:3]]}, rows)
     try:
         from openpyxl import load_workbook
     except ImportError as exc:

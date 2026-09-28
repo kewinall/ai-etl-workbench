@@ -37,15 +37,8 @@ def _csv_profile(path: Path) -> dict[str, Any]:
 
 
 def _excel_profile(path: Path) -> dict[str, Any]:
-    from openpyxl import load_workbook
-    book = load_workbook(path, read_only=True, data_only=True)
-    worksheet = book.sheetnames[0]; sheet = book[worksheet]
-    values = list(sheet.iter_rows(min_row=1, max_row=21, values_only=True))
-    headers = [str(x).strip() if x is not None else f"column_{i+1}" for i, x in enumerate(values[0] if values else [])]
-    rows = [dict(zip(headers, row)) for row in values[1:]]
-    return {"worksheet": worksheet, "worksheets": book.sheetnames, "header_row": 1,
-            "fields": [{"name": name, "type": _field_type([row.get(name) for row in rows])} for name in headers],
-            "sample_rows": rows[:5]}
+    from .excel_profile import inspect_workbook
+    return inspect_workbook(path.read_bytes())
 
 def _json_profile(path: Path) -> dict[str, Any]:
     text=path.read_text(encoding="utf-8-sig");parsed=json.loads(text, parse_float=Decimal)
