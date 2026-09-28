@@ -17,7 +17,11 @@
 
 整體目標保持未完成。人工基準依操作者決定保留未量測，不填入估算或代理工時。
 
-最新验收：[Excel 真實交付](verification/excel-release-accepted-2026-09-28.md)。
+最新工程：[JSON 全檔欄位檢查](verification/json-profile-2026-09-28.md)。
+修正前 20 筆取樣漏欄位／型別與重複鍵覆寫；隔離 HTTP 通過，尚未部署正式 Pilot，
+也未接通 JSON 版本化執行鏈，不把 profile 驗證冒充 JSON E2E。
+
+最新驗收：[Excel 真實交付](verification/excel-release-accepted-2026-09-28.md)。
 最終 caf92f4 已部署，migration 057 已套用；同一 Excel Run 完成只讀比對恢復、
 真實 QA PASS、SDM、獨立 HWF 重播與正式 ZIP。原寫入仍只有一次、失敗歷史保留。
 正式唯讀瀏覽器回歸 5 passed；ZIP 清單／指紋及實際 SDM 閱讀性已核對。

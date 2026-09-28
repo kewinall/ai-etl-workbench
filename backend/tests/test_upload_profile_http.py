@@ -1,5 +1,6 @@
 """Opt-in actual isolated upload HTTP path; no model, Run or engine calls."""
 import hashlib
+import json
 from io import BytesIO
 import os
 
@@ -65,3 +66,38 @@ def test_real_upload_rejects_nested_json_instead_of_guessing_text():
             'file': ('nested.json', b'[{"nested":{"value":1}}]', 'application/json')})
         assert response.status_code == 422
         assert '巢狀欄位需要明確展開規格' in response.json()['detail']
+
+
+def test_json_full_scan_and_null_statistics_through_http():
+    records = [{'id': '001', 'amount': 1} for _ in range(20)]
+    records += [{'id': '002', 'amount': 'changed', 'late': None},
+                {'id': '003', 'late': ''}]
+    content = json.dumps(records).encode()
+    with httpx.Client(base_url='http://127.0.0.1:5195', trust_env=False, timeout=15) as client:
+        assert client.get('/api/ready').json()['execution_enabled'] is False
+        response = client.post('/api/task-sources/upload', files={
+            'file': ('synthetic.json', content, 'application/json')})
+        assert response.status_code == 200
+        profile = response.json()
+        assert profile['profile_scope'] == 'ALL_RECORDS' and profile['row_count'] == 22
+        assert profile['fields'][1] == {'name': 'amount', 'type': 'VARCHAR(32)'}
+        assert profile['fields'][2] == {'name': 'late', 'type': 'VARCHAR(255)'}
+        assert profile['column_statistics'][2] == {
+            'name': 'late', 'missing_count': 20, 'explicit_null_count': 1,
+            'null_ratio': 21 / 22, 'empty_string_count': 1}
+        assert profile['checksum'] == hashlib.sha256(content).hexdigest()
+
+
+@pytest.mark.parametrize('content,code', [
+    (b'{"x":1,"x":2}', 'JSON_DUPLICATE_KEY'),
+    (b'{"x":NaN}', 'JSON_NON_FINITE_NUMBER'),
+    (b'{"x":"\\ud800"}', 'JSON_INVALID_UNICODE'),
+    (b'{"x":1e99999999999999999999999999}', 'JSON_INVALID_DOCUMENT'),
+])
+def test_json_invalid_documents_are_422_not_silent_loss_or_500(content, code):
+    with httpx.Client(base_url='http://127.0.0.1:5195', trust_env=False, timeout=15) as client:
+        assert client.get('/api/ready').json()['execution_enabled'] is False
+        response = client.post('/api/task-sources/upload', files={
+            'file': ('synthetic-invalid.json', content, 'application/json')})
+        assert response.status_code == 422
+        assert code in response.json()['detail']

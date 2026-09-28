@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import csv
 import hashlib
-import json
 import os
 import uuid
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -41,11 +39,9 @@ def _excel_profile(path: Path) -> dict[str, Any]:
     return inspect_workbook(path.read_bytes())
 
 def _json_profile(path: Path) -> dict[str, Any]:
-    text=path.read_text(encoding="utf-8-sig");parsed=json.loads(text, parse_float=Decimal)
-    rows=parsed if isinstance(parsed,list) else [parsed]
-    if not rows or any(not isinstance(row,dict) for row in rows):raise ValueError("JSON 必須是 object 或 object array")
-    names=list(dict.fromkeys(key for row in rows[:20] for key in row))
-    return {"encoding":"utf-8-sig","fields":[{"name":name,"type":_field_type([row.get(name) for row in rows[:20]])} for name in names],"sample_rows":[{key: str(value) if isinstance(value, Decimal) else value for key, value in row.items()} for row in rows[:5]],"parser_format":"JSON"}
+    from .json_profile import inspect_json
+    profile, _ = inspect_json(path.read_bytes())
+    return profile
 
 
 def save_and_profile(filename: str, content: bytes, retention_days: int = 7, max_file_mb: int = 50) -> dict[str, Any]:

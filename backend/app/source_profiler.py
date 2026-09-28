@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import csv
 import hashlib
-import json
 import os
 import re
 from pathlib import Path
-from decimal import Decimal
 from typing import Any
 from .platform_harness import inferred_vertica_type
 
@@ -101,12 +99,18 @@ def _profile_excel(source: dict[str, Any]) -> tuple[dict[str, Any], list[dict[st
              "masked_examples": [{k: _masked(v) for k, v in r.items()} for r in rows[:3]]}, rows)
 
 def _profile_json(source: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    from .json_profile import inspect_json
     path=Path(str(source.get("path") or source.get("file_path") or ""))
     if not path.is_file():raise ValueError(f"JSON file not found: {path}")
-    parsed=json.loads(path.read_text(encoding=source.get("encoding") or "utf-8-sig"), parse_float=Decimal);rows=parsed if isinstance(parsed,list) else [parsed]
-    if not rows or any(not isinstance(row,dict) for row in rows):raise ValueError("JSON must contain objects")
-    names=list(dict.fromkeys(key for row in rows[:20] for key in row))
-    return ({**source,"path":str(path),"checksum":_checksum(path),"fields":[{"name":name,"type":inferred_vertica_type([row.get(name) for row in rows[:20]])} for name in names],"masked_examples":[{k:_masked(v) for k,v in row.items()} for row in rows[:3]]},rows[:10])
+    if str(source.get('encoding') or 'utf-8-sig').lower() not in ('utf-8', 'utf-8-sig'):
+        raise ValueError('JSON_ENCODING_NOT_SUPPORTED: 僅接受 UTF-8 JSON')
+    profile, rows = inspect_json(path.read_bytes())
+    profile.pop('sample_rows')
+    fields = [{**field, 'type': field['type'].replace('DECIMAL(', 'NUMERIC(')}
+              for field in profile['fields']]
+    return ({**source, **profile, 'path': str(path), 'fields': fields,
+             'masked_examples': [{k: _masked(v) for k, v in row.items()}
+                                 for row in rows[:3]]}, rows[:10])
 
 
 def _vertica_connection():
