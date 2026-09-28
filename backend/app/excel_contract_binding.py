@@ -2,6 +2,7 @@
 from hashlib import sha256
 import json
 import re
+from copy import deepcopy
 from .excel_input_contract import ExcelInputContractV1
 
 
@@ -56,3 +57,20 @@ def excel_evidence(config):
     except ValueError:
         return {'source_ref': 'source.0', 'contract_status': 'MISSING_OR_INVALID'}
     return {'source_ref': 'source.0', 'contract_status': 'CONFIRMED_INPUT_ONLY', **bound}
+
+
+def revise_excel_contract(config, changes):
+    result = deepcopy(config)
+    if changes is None:
+        return result
+    result['excel_input_contract_v1'] = ExcelInputContractV1.model_validate(changes).model_dump()
+    validated_excel_contract(result)
+    return result
+
+
+def excel_selection_offer(config):
+    sources = config.get('sources') or []
+    if len(sources) != 1 or sources[0].get('type') != 'EXCEL' or not sources[0].get('excel_selection_v1'):
+        return None
+    source = sources[0]
+    return {'worksheet': source.get('worksheet'), 'header_row': source.get('header_row')}

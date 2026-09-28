@@ -12,6 +12,8 @@ from .source_replacement import CsvReplacementV1
 from .transformation_contract import TransformationContractV1, intent_evidence, source_refs
 from .etl_specification import SourceOrderV1
 from .source_order_input import order_evidence
+from .excel_input_contract import ExcelInputContractV1
+from .excel_contract_binding import excel_evidence, excel_selection_offer
 from .csv_contract import (CsvInputContractV1, CsvInputContractsV1, editable_csv_source,
                           csv_evidence, editable_csv_sources, csv_sources_evidence)
 
@@ -93,6 +95,7 @@ class ReviseRun(BaseModel):
     transformation_contract_v1: TransformationContractV1 | None = None
     qa_revision_checksum: str | None = Field(default=None, pattern=r'^[a-f0-9]{64}$')
     source_order_v1: SourceOrderV1 | None = None
+    excel_input_contract_v1: ExcelInputContractV1 | None = None
 
 
 def public_run(row):
@@ -118,6 +121,10 @@ def public_run(row):
     if join_input is not None:
         result['input_summary']['join_contract_v1'] = join_input
     source = row['input_snapshot'].get('source_config') or {}
+    excel = excel_evidence(source)
+    if excel is not None:
+        result['input_summary']['excel_input_contract_v1'] = excel
+        result['input_summary']['excel_selection'] = excel_selection_offer(source)
     result['input_summary']['source_fields_editable'] = editable_source(source)
     result['input_summary']['csv_contract_editable'] = editable_csv_source(source)
     result['input_summary']['csv_input_contract_v1'] = csv_evidence(source)
@@ -243,7 +250,8 @@ def create_run_router(queue):
                                data.csv_input_contracts_v1.model_dump() if data.csv_input_contracts_v1 else None,
                                data.transformation_contract_v1.model_dump(mode='json') if data.transformation_contract_v1 else None,
                                data.qa_revision_checksum,
-                               data.source_order_v1.model_dump() if data.source_order_v1 else None))
+                               data.source_order_v1.model_dump() if data.source_order_v1 else None,
+                               data.excel_input_contract_v1.model_dump() if data.excel_input_contract_v1 else None))
 
     @router.get('/{task_id}/runs/{run_id}/sa-invocation')
     def sa_invocation(task_id: str, run_id: UUID):

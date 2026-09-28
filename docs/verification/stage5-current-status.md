@@ -1,5 +1,9 @@
 # 第 5 階段目前判定（2026-09-28）
 
+最新補充：[Excel 契約補正與網站](excel-contract-revision-2026-09-28.md) 已部署。
+真實補正 API／DB／UI、16 項隔離網站與 3 項正式唯讀回歸通過；
+既有 Run／事件／交付數未變。下一步接正式執行與 QA，不代表 Excel E2E 完成。
+
 最新補充：[Excel V4 規格與角色證據](excel-v4-specification-2026-09-28.md)
 已通過真實 Hop 篩選／聚合標準答案、CSV V1–V3 與前版完整輸出相容性，
 以及全後端回歸；尚待契約確認 UI／revision、正式派發與 Vertica／Release 驗收。

@@ -17,6 +17,10 @@
 
 整體目標保持未完成。人工基準依操作者決定保留未量測，不填入估算或代理工時。
 
+最新部署補充：[Excel 契約補正與網站](verification/excel-contract-revision-2026-09-28.md)
+完成新 revision／舊版保留／重新核准及真實 UI 回讀；16 項隔離 UI、3 項正式唯讀
+與 1587 項後端回歸通過。正式 Run／事件／交付數未變；Excel 執行全鏈仍未完成。
+
 最新工程補充：[Excel V4 規格與角色證據](verification/excel-v4-specification-2026-09-28.md)
 接通來源三重指紋、角色輸出驗證與 HPL/HWF 候選編譯；原生篩選／聚合答案正確，
 CSV V1–V3 與前版輸出一致。正式 Run／Vertica／QA／Release 尚未接通，不宣稱完成。
