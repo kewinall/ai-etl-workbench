@@ -2,6 +2,51 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 2026-09-28：同一 Run 真實部分提交與 execute_once owner 失聯
+
+新增 `backend/tests/run_partial_write_worker.py`，限定專用 DB 名稱前綴及
+明確 opt-in，serve 要求控制 DB 沒有 Run、runtime 沒有既有試驗狀態。
+建立隔離 Project／Task、真實來源上傳、Naming／Specification／答案核准、
+同 Project 範例表登錄與 target claim；呼叫實際 `hop_worker.execute_once`，
+不是直接修改 write_started。測試規格與標準答案是明示合成資料，模型呼叫 0。
+
+首次在答案保存階段被拒，尚未建立 Vertica 表：共用 oracle_fixture 沒保留
+version 2 的 comparison／ordinal_column。修正測試 helper 並新增兩版本
+回歸 **2 passed（0.29 秒）**，沒有放寬正式 Oracle validator。保留第一次
+控制 DB／runtime，另建新空 DB 與卷再測，未覆蓋失敗紀錄。
+
+第二次使用 Java 原生測試 adapter 綁定 execute_once 實際準備的 HPL、來源
+及版本化連線 metadata，真實 empty-target SQL、授權預約與寫入開始均經
+既有程式控制。TableOutput 讀入第 1,001 筆時暫停；新連線確認
+COUNT=1000／DISTINCT ordinal=1000／MIN=1／MAX=1000／SUM=500500。
+同一 Run 此時 SQL 顯示 RUNNING／HOP_EXECUTION／write_started=true／有效
+lease，容器實際有 Python owner 與 Java child。僅 kill 這個明確命名的測試
+容器，兩者一起結束；Docker 回 exited、exit=137、PID=0。
+
+全新恢復容器等待 lease **自然到期**，沒有 UPDATE lease_until 或清除狀態。
+真正 reaper 將同一 Run 轉為 NEEDS_REVIEW／HOP_RESULT_UNKNOWN，lease 清空。
+重複 reaper 不新增事件，兩次 claim 皆空；已消耗授權再 reserve 被拒、另建
+request key 被 ACTIVE_RUN_EXISTS 拒絕、相同 key 回原 Run、舊 lease 不能發布
+SUCCEEDED。前後新連線皆 1,000 筆，未重跑 ETL、沒有新增重複序號。
+
+獨立 SQL 回讀：Run／reservation／registered target／claim 各 1，
+LEASE_EXPIRED_NEEDS_REVIEW 事件 1，Release delivery 0，agent invocation 0。
+恢復容器 exit=0，私有 partial-recovery.json PASS。崩潰前 Hop 日誌 747 bytes
+保留在私有 runtime，SHA-256
+`b7efc6d5e9f1128f8fa829f6e321083470c60c0725a6f99eaef3bce22dd82559`；
+另驗證日誌不含實際密碼，不把原始日誌／表名／私有 IDs 加入 Git。
+
+完整隔離後端回歸 **1486 passed／78 skipped／1 warning（33.99 秒）**。
+skip 包含 opt-in native／live 及 Linux 未提供 PowerShell 的測試，不冒充全跑。
+隔離 DB 與專用 Vertica 已正常停止並保留資料，正式網站 ready。
+
+此證據補足「同一 execute_once Run + 真實 Hop／Vertica 部分提交 + 容器
+owner 死亡 + 自然 lease 回收 + 禁止重跑」；不是兩份獨立測試拼接。
+仍不宣稱完整 UI／SA／Developer／pilot-hop-worker dispatcher 重新驗收，
+也不涵蓋只殺 Python 而留下容器外 Java 孤兒、宿主機 crash 或磁碟故障。
+原生 adapter 為受控測試 listener，不是修改正式執行器自動插入暫停。
+這些邊界以及宿主機啟動、異機保管、全站完整功能對照仍待後續完成。
+
 ## 2026-09-28：原生 Hop 真實部分提交中斷（尚未串接 Run 失聯）
 
 新增 opt-in `backend/tests/run_partial_write_probe.py` 與

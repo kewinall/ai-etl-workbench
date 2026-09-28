@@ -12,15 +12,17 @@ import org.apache.hop.pipeline.transform.RowAdapter;
 /** Opt-in native test only: pause after one batch, supervisor observes DB then cancels. */
 class ExecutePartialWriteProbe {
   public static void main(String[] args) throws Exception {
-    if (args.length != 0 || !"dedicated-portability-database-v1".equals(System.getenv("WORKBENCH_PARTIAL_WRITE_PROBE")))
+    if ((args.length != 0 && args.length != 2) || !"dedicated-portability-database-v1".equals(System.getenv("WORKBENCH_PARTIAL_WRITE_PROBE")))
       throw new IllegalStateException("Explicit isolated probe required");
+    Path directory = Path.of(args.length == 0 ? "/candidate" : args[0]);
+    String source = args.length == 0 ? "/candidate/input.csv" : args[1];
     HopEnvironment.init();
     var factory = DocumentBuilderFactory.newInstance();
     factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
     factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
     factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-    var document = factory.newDocumentBuilder().parse(Path.of("/candidate/candidate.hpl").toFile());
-    var provider = new SerializableMetadataProvider(Files.readString(Path.of("/candidate/metadata.json")));
+    var document = factory.newDocumentBuilder().parse(directory.resolve("candidate.hpl").toFile());
+    var provider = new SerializableMetadataProvider(Files.readString(directory.resolve("metadata.json")));
     var meta = new PipelineMeta(document.getDocumentElement(), provider);
     var allowed = java.util.Set.of("CSVInput", "SortRows", "SelectValues", "TableOutput");
     for (var node : meta.getTransforms())
@@ -28,7 +30,7 @@ class ExecutePartialWriteProbe {
     if (!"TableOutput".equals(meta.findTransform("target").getTransformPluginId()))
       throw new IllegalStateException("Real database sink required");
     var variables = new Variables();
-    variables.setVariable("SOURCE_CSV", "/candidate/input.csv");
+    variables.setVariable("SOURCE_CSV", source);
     variables.setVariable("WORKBENCH_VERTICA_PASSWORD", System.getenv("WORKBENCH_VERTICA_PASSWORD"));
     var engine = new LocalPipelineEngine(meta, variables, null);
     engine.setMetadataProvider(provider);
@@ -38,8 +40,8 @@ class ExecutePartialWriteProbe {
       public void rowReadEvent(IRowMeta rowMeta, Object[] row) {
         if (++read == 1001) {
           try {
-            Files.writeString(Path.of("/candidate/partial-ready"), "1001 input events; not a commit claim");
-            Thread.sleep(60_000);
+            Files.writeString(directory.resolve("partial-ready"), "1001 input events; not a commit claim");
+            Thread.sleep(300_000);
           } catch (Exception error) { throw new IllegalStateException("Probe pause failed", error); }
         }
       }
