@@ -116,7 +116,7 @@ class RunQueue:
             self.event(conn, run_id, 'ENQUEUED', 'PREFLIGHT')
             return result
 
-    def revise(self, task_id, parent_id, request_key, input_checksum, requirement_text, target_schema, target_table, requirements_v1=None, source_fields_v1=None, csv_input_contract_v1=None, csv_replacement_v1=None, join_contract_v1=None, csv_input_contracts_v1=None, transformation_contract_v1=None, qa_revision_checksum=None, source_order_v1=None, excel_input_contract_v1=None):
+    def revise(self, task_id, parent_id, request_key, input_checksum, requirement_text, target_schema, target_table, requirements_v1=None, source_fields_v1=None, csv_input_contract_v1=None, csv_replacement_v1=None, join_contract_v1=None, csv_input_contracts_v1=None, transformation_contract_v1=None, qa_revision_checksum=None, source_order_v1=None, excel_input_contract_v1=None, json_input_contract_v1=None):
         from .source_replacement import replace_csv_source, verify_csv_replacement
         if csv_replacement_v1 is not None and source_fields_v1 is not None:
             raise ValueError('CONFLICTING_SOURCE_CHANGES')
@@ -142,11 +142,13 @@ class RunQueue:
             from .source_revision import revise_source
             from .csv_contract import revise_csv_contract, revise_csv_contracts
             from .excel_contract_binding import revise_excel_contract
+            from .json_contract_binding import revise_json_contract
             source = revise_source(parent['input_snapshot'].get('source_config') or {}, source_fields_v1)
             source = replace_csv_source(source, csv_replacement_v1)
             source = revise_csv_contract(source, csv_input_contract_v1)
             source = revise_csv_contracts(source, csv_input_contracts_v1)
             source = revise_excel_contract(source, excel_input_contract_v1)
+            source = revise_json_contract(source, json_input_contract_v1)
             if requirements_v1 is not None:
                 from .requirement_contract import RequirementConditionsV1
                 target['requirements_v1'] = RequirementConditionsV1.model_validate(requirements_v1).model_dump()
@@ -198,6 +200,9 @@ class RunQueue:
             if excel_input_contract_v1 is not None:
                 from .excel_profile import verify_excel_source
                 verify_excel_source(source['sources'][0])
+            if json_input_contract_v1 is not None:
+                from .json_source_profile import verify_json_source
+                verify_json_source(source['sources'][0])
             if requirement_text == task['requirement_text'] and target == task['target_config'] and source == without_secrets(task['source_config']):
                 raise RunConflict('REVISION_HAS_NO_CHANGES')
             overrides = parent['input_snapshot'].get('execution_overrides', {})
@@ -207,6 +212,7 @@ class RunQueue:
             source = revise_csv_contract(source, csv_input_contract_v1)
             source = revise_csv_contracts(source, csv_input_contracts_v1)
             source = revise_excel_contract(source, excel_input_contract_v1)
+            source = revise_json_contract(source, json_input_contract_v1)
             updated_task = {**task, 'requirement_text': requirement_text, 'target_config': target, 'source_config': source}
             resolved = resolve_settings(LockedSettings(conn), updated_task, overrides)
             if resolved['status'] == 'BLOCKED':

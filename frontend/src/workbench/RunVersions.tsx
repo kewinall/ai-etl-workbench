@@ -14,6 +14,7 @@ import {ExecutionDiagnosis} from './ExecutionDiagnosis';
 import {TransformationEditor, TransformationSummary, intentPayload} from './TransformationIntent';
 import {SourceOrderEditor, SourceOrderSummary, ordinalRef, validateOrderDraft} from './SourceOrder';
 import {ExcelInputEditor, ExcelInputSummary} from './ExcelInputContract';
+import {JsonInputEditor, JsonInputSummary} from './JsonInputContract';
 
 const states: Record<string, string> = {QUEUED: '待處理（未啟動）', RUNNING: '處理中', NEEDS_REVIEW: '需要人工檢查', SUCCEEDED: '流程已結束', FAILED: '失敗', CANCELLED: '已取消'};
 
@@ -30,6 +31,7 @@ export function RunVersions({taskId}: {taskId: string}) {
   const [sourceFields, setSourceFields] = useState<any[] | null>(null);
   const [csvContract, setCsvContract] = useState<any>(null);
   const [excelContract, setExcelContract] = useState<any>(null);
+  const [jsonContract, setJsonContract] = useState<any>(null);
   const [replacement, setReplacement] = useState<any>(null);
   const [replacementPending, setReplacementPending] = useState(false);
   const [draft, setDraft] = useState({requirement_text: '', target_schema: '', target_table: ''});
@@ -67,6 +69,7 @@ export function RunVersions({taskId}: {taskId: string}) {
       ...(detail.qa_revision ? {qa_revision_checksum: detail.qa_revision.checksum} : {}),
       ...(sourceOrder ? {source_order_v1: sourceOrder} : {}),
       ...(excelContract ? {excel_input_contract_v1: excelContract} : {}),
+      ...(jsonContract ? {json_input_contract_v1: jsonContract} : {}),
     }));
     // Reload the entire Task so legacy input/history panels cannot show stale data.
     window.location.reload();
@@ -124,6 +127,7 @@ export function RunVersions({taskId}: {taskId: string}) {
       <TransformationSummary value={detail.input_summary.transformation_contract_v1}/>
       <SourceOrderSummary value={detail.input_summary.source_order_v1}/>
       <ExcelInputSummary value={detail.input_summary.excel_input_contract_v1}/>
+      <JsonInputSummary value={detail.input_summary.json_input_contract_v1}/>
       <p>目標：{detail.input_summary.target_schema || '未指定'}.{detail.input_summary.target_table || '未指定'}</p>
       {!!detail.input_summary.source_fields?.length && <p>來源欄位：{detail.input_summary.source_fields.map((field: any) => `${field.name} (${field.type || '未指定型別'})`).join('、')}</p>}
       {detail.input_summary.csv_input_contract_v1 && <section aria-label="CSV 輸入契約摘要"><h4>CSV 輸入契約</h4>{detail.input_summary.csv_input_contract_v1.contract_status === 'CONFIRMED_INPUT_ONLY' ? <p>編碼：{detail.input_summary.csv_input_contract_v1.encoding}；分隔：{JSON.stringify(detail.input_summary.csv_input_contract_v1.delimiter)}；標題列：{detail.input_summary.csv_input_contract_v1.header ? '有' : '無'}；額外欄位：{detail.input_summary.csv_input_contract_v1.extra_columns === 'REJECT' ? '拒收' : '忽略'}。</p> : <p>尚未確認或格式不合法，請補正後建立新版。</p>}<p>綁定來源 source.0；只確認解析需求，不代表檔案已驗證或已執行匯入。</p></section>}
@@ -143,11 +147,13 @@ export function RunVersions({taskId}: {taskId: string}) {
           setReplacement(null); setReplacementPending(false);
           setCsvContract(null);
           setExcelContract(null);
+          setJsonContract(null);
           revisionKey.current = crypto.randomUUID(); setEditing(true);
         }}>補正需求並建立新版</button>}
         {editing && <form aria-label="需求補正" onSubmit={event => {event.preventDefault(); revise()}}>
           <ExcelInputEditor selection={detail.input_summary.excel_selection} evidence={detail.input_summary.excel_input_contract_v1}
             value={excelContract} disabled={busy} onChange={setExcelContract}/>
+          <JsonInputEditor profile={detail.input_summary.json_profile} value={jsonContract} disabled={busy} onChange={setJsonContract}/>
           <SourceOrderEditor value={sourceOrder} eligible={!!detail.input_summary.csv_contract_editable} disabled={busy} onChange={value => {
             setSourceOrder(value);
             const current = transformation && !transformation.invalid ? transformation : {version: 1, filters: [], filter_logic: 'ALL', filter_null_policy: 'EXCLUDE_UNKNOWN', aggregation: null, output_columns: []};

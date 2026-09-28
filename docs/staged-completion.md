@@ -17,7 +17,11 @@
 
 整體目標保持未完成。人工基準依操作者決定保留未量測，不填入估算或代理工時。
 
-最新工程：[JSON 原生契約與副本](verification/json-native-contract-2026-09-28.md)。
+最新工程：[JSON 來源確認與補正網站](verification/json-confirmation-revision-2026-09-28.md)。
+Gate／Run revision／舊核准失效及真實隔離 UI 保存回讀已通過；1771 項後端、
+3 項瀏覽器及 10 項 HTTP／發行驗證通過。尚未部署正式，JSON 執行全鏈仍未完成。
+
+先前工程：[JSON 原生契約與副本](verification/json-native-contract-2026-09-28.md)。
 新增原生來源片段及 BOM 明示副本政策，驗證缺值／精度與失敗保護；
 尚未接入正式 Run／規格／QA／Release，不宣告 JSON 全鏈或第 5 階段完成。
 

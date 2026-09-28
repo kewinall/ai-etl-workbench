@@ -1,6 +1,10 @@
 # 第 5 階段目前判定（2026-09-28）
 
-最新工程：[JSON 原生契約與副本](json-native-contract-2026-09-28.md)。
+最新工程：[JSON 來源確認與補正网站](json-confirmation-revision-2026-09-28.md)。
+1771 項隔離後端、3 項真實瀏覽器及 10 項 HTTP／發行檢查通過；Gate／版本化補正、
+舊版與核准保留已接通。未部署正式，typed validation、規格／執行／QA／Release 仍待接通。
+
+先前工程：[JSON 原生契約與副本](json-native-contract-2026-09-28.md)。
 已處理原生來源片段的路徑／檔案／單欄行為，保留嚴格失敗檢查；BOM 副本保存雙指紋。
 尚未接入正式 Run、規格、QA／Release 或部署，不把原生片段當作全鏈完成。
 

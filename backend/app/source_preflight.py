@@ -20,6 +20,16 @@ def source_preflight(snapshot):
                                            source.get('checksum'), source.get('size'))
             item.update(status='UPLOAD_BYTES_VERIFIED', content_checksum=source['checksum'],
                         byte_count=len(content))
+            if source['type'] == 'JSON':
+                from .json_source_profile import verify_json_source
+                profile = verify_json_source(source, content=content)
+                item['json_profile_binding_v1'] = profile['json_profile_binding_v1']
+                if 'json_input_contract_v1' in config:
+                    from .json_contract_binding import validated_json_contract
+                    from .json_input_contract import prepare_json_reader_content
+                    contract = validated_json_contract(config)['contract']
+                    _, item['json'] = prepare_json_reader_content(content, contract,
+                                                                  [field['name'] for field in source['fields']])
             if source['type'] == 'EXCEL':
                 from .excel_profile import verify_excel_source
                 profile = verify_excel_source(source, content=content)
