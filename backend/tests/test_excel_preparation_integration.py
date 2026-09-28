@@ -17,6 +17,30 @@ from test_excel_specification import excel_design
 from oracle_fixture import approved_answer
 
 
+def test_excel_completed_execution_can_load_pinned_oracle_without_replay(context,tmp_path,monkeypatch):
+    from app.hop_worker import execute_once
+    from app.execution_oracle import load_execution_oracle
+    from app.bound_result_query import load_bound_result_query
+    queue,task,run,sid,*_=prepared_excel(context,tmp_path,monkeypatch)
+    approved_answer(queue,task,run['run_id'],sid,rows=[dict(category='A',total_amount='150.25',row_count=1)])
+    with queue.conn() as conn:current=offer(queue,conn,task,run['run_id'],sid)
+    auth=authorize(queue,task,run['run_id'],sid,current['binding_checksum'],True)
+    calls=[]
+    def synthetic_engine(candidate,lost,log_sink):
+        calls.append(candidate['source_path'].name)
+        log=log_sink(b'Synthetic control test only, no Hop/Vertica execution')
+        return dict(status='COMPLETED',exit_code=0,errors=0,log_checksum=log['checksum'])
+    monkeypatch.setenv('WORKBENCH_EXECUTION_ENABLED','true')
+    result=execute_once(queue,task,run['run_id'],sid,UUID(auth['authorization_id']),synthetic_engine)
+    assert result['status']=='HOP_EXECUTED_QA_REQUIRED' and calls==['source.xlsx']
+    pin=load_execution_oracle(queue,task,run['run_id'])
+    assert pin['binding_checksum']==current['binding_checksum']
+    assert pin['status']=='EXECUTION_ORACLE_PINNED_NOT_COMPARED'
+    query,again=load_bound_result_query(queue,task,run['run_id'])
+    assert again==pin and query['checksum']==pin['result_query_checksum']
+    assert not pin['qa_passed'] and not pin['release_ready']
+
+
 def prepared_excel(context, tmp_path, monkeypatch):
     monkeypatch.setattr(task_uploads, 'ROOT', tmp_path)
     monkeypatch.setattr(task_uploads, 'UPLOAD_ROOT', tmp_path / 'uploads')

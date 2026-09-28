@@ -16,6 +16,23 @@ def required_result_query_checksum(binding):
     return value
 
 
+def validate_execution_sources(binding,config):
+    """Post-write check only; never grants a second execution authorization."""
+    policy=binding.get('policy_version')
+    if policy=='hop-single-attempt-v4':
+        expected=execution_sources(config,4)
+        if 'source_checksums' in binding or any(binding.get(key)!=value for key,value in expected.items()):
+            raise ValueError('EXECUTION_ORACLE_BINDING_CHANGED')
+    elif ('source_format' in binding or any(source.get('type')=='EXCEL' for source in config.get('sources',[]))):
+        raise ValueError('EXECUTION_ORACLE_BINDING_CHANGED')
+    elif policy=='hop-single-attempt-v3':
+        expected=execution_sources(config,2)
+        if any(binding.get(key)!=value for key,value in expected.items()):
+            raise ValueError('EXECUTION_ORACLE_BINDING_CHANGED')
+    elif policy!='hop-single-attempt-v2' or 'source_checksums' in binding:
+        raise ValueError('EXECUTION_ORACLE_BINDING_CHANGED')
+
+
 def load_execution_oracle(queue,task_id,run_id,*,connection=None):
     with (nullcontext(connection) if connection is not None else queue.conn()) as conn:
         queue.locked_task(conn,task_id)
@@ -38,16 +55,11 @@ def load_execution_oracle(queue,task_id,run_id,*,connection=None):
         binding=consent['binding']
         digest=sha256(json.dumps(binding,sort_keys=True,separators=(',',':')).encode()).hexdigest()
         policy=binding.get('policy_version')
-        if (policy not in ('hop-single-attempt-v2','hop-single-attempt-v3') or digest!=consent['binding_checksum']
+        if (policy not in ('hop-single-attempt-v2','hop-single-attempt-v3','hop-single-attempt-v4') or digest!=consent['binding_checksum']
                 or digest!=consent['reserved_checksum'] or binding.get('run_id')!=str(run_id)
                 or binding.get('specification_id')!=str(consent['specification_id'])):
             raise ValueError('EXECUTION_ORACLE_BINDING_CHANGED')
-        if policy == 'hop-single-attempt-v3':
-            expected_sources=execution_sources(run['input_snapshot']['source_config'],2)
-            if any(binding.get(key)!=value for key,value in expected_sources.items()):
-                raise ValueError('EXECUTION_ORACLE_BINDING_CHANGED')
-        elif 'source_checksums' in binding:
-            raise ValueError('EXECUTION_ORACLE_BINDING_CHANGED')
+        validate_execution_sources(binding,run['input_snapshot'].get('source_config') or {})
         query_checksum = required_result_query_checksum(binding)
         row=conn.execute('''SELECT o.*,a.approval_id,a.document_checksum AS approved_checksum
             FROM platform.result_oracle o JOIN platform.result_oracle_approval a USING(oracle_id)
