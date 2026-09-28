@@ -17,6 +17,10 @@
 
 整體目標保持未完成。人工基準依操作者決定保留未量測，不填入估算或代理工時。
 
+最新工程補充：[Excel 原生 fragment 驗證](verification/excel-native-fragment-2026-09-28.md)
+已完成獨立結構契約與兩項真實 Hop 讀取比對；全後端 1544 passed／84 skipped。
+尚未部署為完整受控 Run 能力，下一步補齊原生型別邊界並接入版本化規格及 staging。
+
 2026-09-28 來源基礎補充：[共用型別建議與三格式真實上傳驗證](verification/source-type-inference-2026-09-28.md)
 已部署；未改變 Excel／JSON／資料表完整執行尚未完成的判定。
 
