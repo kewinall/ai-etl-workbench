@@ -10,8 +10,6 @@ def build_sdm_candidate(payload,run,naming):
     if validated['status']!='VALIDATED_NOT_APPROVED':
         raise ValueError('SDM_VALID_SPECIFICATION_REQUIRED')
     spec=validated['specification']
-    if spec['version'] == 5:
-        raise ValueError('SDM_JSON_NOT_READY')
     by_name={column['english_name']:column for column in naming['contract_json']['columns']}
     aggregate=spec.get('aggregation')
     order=spec.get('source_order') if spec['version']==3 else None
@@ -60,6 +58,12 @@ def build_sdm_candidate(payload,run,naming):
         document.update(version=4, source_format='XLSX',
                         excel_source=deepcopy(bound['reference']),
                         excel_input_contract=deepcopy(bound['contract']))
+    elif spec['version'] == 5:
+        from .json_contract_binding import validated_json_contract
+        bound = validated_json_contract(run['input_snapshot']['source_config'])
+        document.update(version=5, source_format='JSON',
+                        json_source=deepcopy(bound['reference']),
+                        json_input_contract=deepcopy(bound['contract']))
     checksum=sha256(json.dumps(document,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest()
     return {'status':'SDM_CANDIDATE_NOT_RELEASED','document':document,'checksum':checksum,
             'qa_passed':False,'release_ready':False}

@@ -42,6 +42,22 @@ def expected_sdm_cells(payload, run, naming, *, release_binding=None):
             ['Excel 來源 SHA-256',reference['content_checksum']],
             ['Excel Profile SHA-256',reference['profile_checksum']],
             ['Excel 讀取契約 SHA-256',reference['contract_checksum']]])
+    if d['version']==5:
+        policy=d['json_input_contract'];reference=d['json_source']
+        rules.extend([
+            ['來源格式','JSON；Apache Hop JsonInput'],
+            ['JSON 根結構',policy['root_shape']],
+            ['JSON 編碼與 BOM','UTF-8-SIG；僅於讀取副本移除 UTF-8 BOM，原始檔不修改、不重新序列化'],
+            ['缺少鍵值','NULL（不補造資料）'],
+            ['額外鍵值','REJECT（拒絕未確認欄位）'],
+            ['巢狀值與重複鍵','REJECT（不展開、不覆寫）'],
+            ['全空物件','PRESERVE（保留資料列）；HOP_JSON_INPUT_INCLUDE_NULLS=Y'],
+            ['文字空白','NONE（不自動去除前後空白）'],
+            ['型別與錯誤','依 Naming Contract 型別驗證；FAIL（轉換錯誤停止，不略過資料或四捨五入）'],
+            ['JSON 來源 SHA-256',reference['content_checksum']],
+            ['JSON Profile SHA-256',reference['profile_checksum']],
+            ['JSON 讀取契約 SHA-256',reference['contract_checksum']],
+            ['讀取副本證據','本文件記錄已確認讀取政策；副本指紋與啟動紀錄須另由執行證據驗證，不代表已執行或 QA 通過']])
     for join in d.get('joins', []):
         prefix = 'Join ' + join['id']
         rules.extend([[prefix, f'{join["left_source"]} {join["join_type"]} JOIN {join["right_source"]}'],

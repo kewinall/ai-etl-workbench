@@ -64,13 +64,20 @@ def test_json_api_preview_save_approval_history_and_runtime_block(context, tmp_p
     history = api.get(base + '/specifications').json()['items']
     assert len(history) == 1 and history[0]['approval_effective'] is True
     assert history[0]['spec_json'] == spec
-    assert api.get(base + '/specifications/' + saved['specification_id'] + '/sdm-preview').status_code == 409
+    preview = api.get(base + '/specifications/' + saved['specification_id'] + '/sdm-preview')
+    assert preview.status_code == 200, preview.text
+    document = preview.json()
+    assert document['document']['version'] == 5
+    assert document['document']['json_source'] == spec['json_source']
+    assert not document['qa_passed'] and not document['release_ready']
+    assert not document['execution_authorized']
     with queue.conn() as conn:
         with pytest.raises(ValueError, match='EXPECTED_RESULT_ORACLE_REQUIRED'):
             offer(queue, conn, task, run['run_id'], saved['specification_id'])
         conn.execute("UPDATE platform.task SET requirement_text=requirement_text||' changed' WHERE task_id=%s", (task,))
     historical = api.get(base + '/specifications').json()['items'][0]
     assert historical['approval_id'] and not historical['approval_effective']
+    assert api.get(base + '/specifications/' + saved['specification_id'] + '/sdm-preview').status_code == 409
     assert not queue.detail(task, run['run_id'])['write_started']
 
 
