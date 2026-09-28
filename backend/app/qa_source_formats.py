@@ -11,7 +11,7 @@ def expected_formats(plan, hpl_checksum):
             fields=[dict(name=f['stream_name'], format={
                 'DATE': 'yyyy-MM-dd', 'TIMESTAMP': 'yyyy-MM-dd HH:mm:ss'
             }.get(_type(f['data_type'])[0], '')) for f in s['fields']])
-            for s in plan['stages'] if s['component'] in ('CSVInput', 'ExcelInput')],
+            for s in plan['stages'] if s['component'] in ('CSVInput', 'ExcelInput', 'JsonInput')],
         limitation='Configured Hop masks only; not proof of strict rejection of every malformed date, timezone behavior or exhaustive parser testing.')
 
 

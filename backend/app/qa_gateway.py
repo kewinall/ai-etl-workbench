@@ -78,6 +78,21 @@ def qa_material(context):
             'Cite semantic_design and actual supplied node IDs; never invent Excel-specific citation aliases. '
             'Do not treat a synthetic probe reference, preflight success or model PASS as human approval or release authority.')
         version = 11
+    if context and (context.get('semantics', {}).get('specification') or {}).get('version') == 5:
+        prompt += (' For specification V5, inspect native JSON evidence, not CSV or XLSX. '
+            'json_input_contract binds the explicit ARRAY/OBJECT root, missing keys as NULL, strict whole-file preflight, '
+            'untrimmed strings, fail-on-error and all-null record preservation. No flattening or implicit CSV conversion occurs. '
+            'json_source and json_reader bind the original/profile/policy and BOM-only reader-copy fingerprints and sizes. '
+            'json_structure_validation is preflight, not verified engine type conversion; use hop_execution and result_comparison for outcomes. '
+            'runtime_options independently checks source_file RowGenerator, native JsonInput and source_columns projection; '
+            'the filename field is internal metadata, not a business column. JSONPath expressions address literal original keys. '
+            'json_runtime_receipt comes from the saved private launcher log and binds INCLUDE_NULLS=Y to hop_execution checksum; '
+            'it is configuration evidence, not a complete correctness or version attestation. '
+            'source_formats describes JsonInput here, and target_contract describes the saved DDL claim, not live catalog inspection. '
+            'Map transformation_intent through JsonInput fields. Use semantic_design and actual node.<id> citations, '
+            'not invented JSON citation IDs. Missing evidence cannot PASS; deterministic failures cannot be overridden. '
+            'Neither native probe references, source preflight nor model advice grants QA approval or Release.')
+        version = 12
     return {'prompt': prompt, 'prompt_version': version, 'prompt_checksum': digest(prompt)}
 
 

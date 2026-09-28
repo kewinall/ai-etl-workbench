@@ -73,9 +73,23 @@ def generation_plan(task: dict) -> dict:
     }
 
 
-def validate_pipeline_graph(root) -> list[str]:
+def validate_pipeline_graph(root, *, json_compilation=None) -> list[str]:
     """Validate component policy and ordering constraints on an HPL XML root."""
     errors: list[str] = []
+    reviewed_json = set()
+    if json_compilation is not None:
+        from xml.etree import ElementTree as ET
+        from .qa_runtime_options import inspect_options
+        try:
+            if (json_compilation['specification']['version'] != 5
+                    or ET.tostring(root) != ET.tostring(ET.fromstring(json_compilation['hpl']))):
+                raise ValueError()
+            options = inspect_options(json_compilation)
+            if options['version'] != 3 or len(options['sources']) != 1:
+                raise ValueError()
+            reviewed_json = {('source_file', 'RowGenerator'), ('source', 'JsonInput')}
+        except (ValueError, KeyError, TypeError, ET.ParseError):
+            errors.append('Reviewed JSON source contract is missing or changed')
     transforms = root.findall("transform")
     names = {node.findtext("name") or "" for node in transforms}
     types = {node.findtext("name") or "": node.findtext("type") or "" for node in transforms}
@@ -89,6 +103,8 @@ def validate_pipeline_graph(root) -> list[str]:
 
     known = NATIVE_COMPONENTS | REVIEW_COMPONENTS
     for name, component in types.items():
+        if (name, component) in reviewed_json:
+            continue
         if not component:
             errors.append(f"Transform type missing: {name}")
         elif component not in known:

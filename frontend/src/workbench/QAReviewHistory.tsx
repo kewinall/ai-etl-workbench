@@ -2,6 +2,7 @@ import {useEffect,useState} from 'react';
 import {request} from './api';
 import {QAApproval} from './QAApproval';
 import {QAAuthorization} from './QAAuthorization';
+import {QASourceEvidence} from './QASourceEvidence';
 
 const labels:Record<string,string>={QA_RESERVED:'已保存審查意圖（不代表模型已完成）',QA_OUTCOME_UNKNOWN:'結果不確定，需人工核對',VALIDATED_NOT_APPROVED:'建議已通過格式驗證，尚未核准',STALE_RESULT_NEEDS_REVIEW:'歷史版本建議，需重新核對'};
 const checks:Record<string,string>={specification:'規格與命名',static_validation:'流程靜態檢查',hop_execution:'Hop 執行',result_comparison:'標準答案比對',result_source:'結果來源'};
@@ -35,8 +36,7 @@ export function QAReviewHistory({taskId,runId}:{taskId:string;runId:string}) {
         <p>篩選條件 {item.context.semantics.specification.filters.length} 項；{item.context.semantics.specification.aggregation ? `聚合 ${item.context.semantics.specification.aggregation.metrics.length} 項` : '沒有聚合'}。完整版本仍可在需求與規格頁查閱。</p>
         <ul>{item.context.semantics.nodes.map((node:any)=><li key={node.id}>{node.id} · 程式元件 {node.component}</li>)}</ul>
         {item.context.semantics.execution_details&&<>
-          <p>CSV：{item.context.semantics.execution_details.csv_input_contract.encoding}；標題列：{item.context.semantics.execution_details.csv_input_contract.header?'有':'無'}；額外欄位：{item.context.semantics.execution_details.csv_input_contract.extra_columns}。整批結構檢查在 Hop 前執行；本證據重新核對相同 checksum 的來源，不重跑 ETL。</p>
-          <p>來源完整掃描：{item.context.semantics.execution_details.csv_structure_validation.records_checked} 筆。</p>
+          <QASourceEvidence details={item.context.semantics.execution_details}/>
           <ul>{Object.entries(item.context.semantics.execution_details.output_types).map(([name,type])=><li key={name}>{name} · {String(type)}</li>)}</ul>
           <ul>{item.context.semantics.execution_details.compiler_plan.stages.map((stage:any)=><li key={stage.id}>{stage.id} · {stage.component}{stage.component==='SortRows'?` · 大小寫區分：${stage.case_sensitive?'是':'否'}`:''}</li>)}</ul>
         </>}

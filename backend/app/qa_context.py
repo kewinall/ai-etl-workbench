@@ -45,16 +45,17 @@ def load_qa_context(queue,task_id,run_id,comparison_id,*,connection=None):
             ORDER BY created_at DESC,invocation_id DESC LIMIT 1""",(task_id,run_id)).fetchone()
         from .qa_source_formats import inspect_formats, should_enrich
         excel = row['spec_json']['version'] == 4
-        if excel or should_enrich(latest):
+        json_source = row['spec_json']['version'] == 5
+        if excel or json_source or should_enrich(latest):
             details['source_formats']=inspect_formats(compiled)
-        if row['spec_json']['version'] not in (2, 4):
+        if row['spec_json']['version'] not in (2, 4, 5):
             if not preserve_reviewed_context(latest):
                 claim=conn.execute('SELECT * FROM platform.task_run_target_claim WHERE run_id=%s FOR SHARE',
                                    (run_id,)).fetchone()
                 details['single_source_contract']=inspect_contract(compiled,details,claim)
         else:
             from .qa_target_contract import inspect_target, should_enrich as enrich_target
-            if excel or enrich_target(latest):
+            if excel or json_source or enrich_target(latest):
                 claim=conn.execute('SELECT * FROM platform.task_run_target_claim WHERE run_id=%s FOR SHARE',
                                    (run_id,)).fetchone()
                 details['target_contract']=inspect_target(compiled,details,claim)
@@ -63,11 +64,14 @@ def load_qa_context(queue,task_id,run_id,comparison_id,*,connection=None):
             details['source_order_evidence']=inspect_order(compiled,evidence,comparison['checksum'],pinned['result_query_checksum'])
     root=ET.fromstring(compiled['hpl'])
     names=[node.findtext('name') for node in root.findall('transform')]
-    errors=validate_pipeline_graph(root)
+    errors=validate_pipeline_graph(root, json_compilation=compiled) if json_source else validate_pipeline_graph(root)
     if root.tag!='pipeline' or len(names)!=len(set(names)):errors.append('INVALID_PIPELINE_STRUCTURE')
     log=read_private_log(queue,task_id,run_id)
     execution=hop_log_evidence({'started':True,'reason':'EXITED','exit_code':0,'output':log},names)
     if execution['result']['log_checksum']!=pinned['hop_log_checksum']:raise ValueError('QA_LOG_BINDING_CHANGED')
+    if json_source:
+        from .json_runtime_evidence import require_json_runtime_receipt
+        details['json_runtime_receipt'] = {**require_json_runtime_receipt(log), 'log_checksum': pinned['hop_log_checksum']}
     source_valid=bool(provenance and provenance['comparison_checksum']==comparison['checksum']
         and provenance['query_checksum']==pinned['result_query_checksum']
         and provenance['settings_checksum']==run['settings_snapshot']['checksum']

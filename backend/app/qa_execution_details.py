@@ -9,6 +9,32 @@ from .qa_runtime_options import inspect_options
 def execution_details(run, compiled, authorization):
     config=run['input_snapshot']['source_config']
     sources=config.get('sources') or []
+    if compiled['specification']['version'] == 5:
+        from .json_contract_binding import validated_json_contract
+        from .json_source_profile import verify_json_source
+        from .json_input_contract import prepare_json_reader_content
+        from .json_execution_binding import reader_binding, validate_reader_binding
+        bound = validated_json_contract(config)
+        validate_reader_binding(authorization)
+        if (authorization['source_checksum'] != bound['reference']['content_checksum']
+                or compiled['hpl_checksum'] != authorization.get('hpl_checksum')
+                or compiled['specification']['json_source'] != bound['reference']
+                or any(authorization['json_reader'][key] != bound['reference'][key]
+                       for key in ('profile_checksum', 'contract_checksum'))):
+            raise ValueError('QA_EXECUTED_SOURCE_BINDING_CHANGED')
+        source = sources[0]
+        content = read_verified_upload(source['upload_id'], 'JSON', source['checksum'], source['size'])
+        verify_json_source(source, content=content)
+        _, result = prepare_json_reader_content(content, bound['contract'], [f['name'] for f in source['fields']],
+                                                column_types=[f['type'] for f in source['fields']])
+        binding = reader_binding(result, bound['reference'])
+        if any(authorization.get(key) != value for key, value in binding.items()):
+            raise ValueError('QA_EXECUTED_SOURCE_BINDING_CHANGED')
+        return dict(json_input_contract=bound['contract'], json_source=bound['reference'],
+            json_structure_validation=result, **binding, runtime_options=inspect_options(compiled),
+            compiler_plan=compiled['plan'], output_types=compiled['output_types'], hpl_checksum=compiled['hpl_checksum'],
+            validation_scope='SAME_EXECUTED_BYTES_RECHECKED_NO_ETL_REPLAY',
+            extra_columns_enforcement='WHOLE_BATCH_VALIDATION_BEFORE_HOP')
     if compiled['specification']['version'] == 4:
         from .excel_contract_binding import validated_excel_contract
         from .excel_profile import verify_excel_source

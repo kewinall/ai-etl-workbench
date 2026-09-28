@@ -7,6 +7,11 @@ from .etl_specification import _type
 def expected_options(plan,hpl_checksum):
     sources=[]
     for stage in plan['stages']:
+        if stage['component'] == 'JsonInput':
+            from .qa_json_options import expected_json_source, validate_json_stages
+            validate_json_stages(plan)
+            sources.append(expected_json_source(stage))
+            continue
         if stage['component'] == 'ExcelInput':
             from .qa_excel_options import expected_excel_source
             sources.append(expected_excel_source(stage))
@@ -40,6 +45,11 @@ def expected_options(plan,hpl_checksum):
             raise ValueError('QA_RUNTIME_EXCEL_SOURCE_SCOPE_INVALID')
         from .qa_excel_options import excel_behavior_reference
         result.update(version=2, behavior_reference=excel_behavior_reference())
+    if any(source.get('component') == 'JsonInput' for source in sources):
+        if len(sources) != 1:
+            raise ValueError('QA_RUNTIME_JSON_SOURCE_SCOPE_INVALID')
+        from .qa_json_options import json_behavior_reference
+        result.update(version=3, behavior_reference=json_behavior_reference())
     return result
 
 
@@ -56,6 +66,10 @@ def inspect_options(compiled):
         if len(nodes) != 1:
             raise ValueError('QA_RUNTIME_SOURCE_OPTIONS_CHANGED')
         node = nodes[0]
+        if source.get('component') == 'JsonInput':
+            from .qa_json_options import inspect_json_source
+            inspect_json_source(root, source)
+            continue
         if source.get('component') == 'ExcelInput':
             from .qa_excel_options import inspect_excel_source
             inspect_excel_source(node, source)

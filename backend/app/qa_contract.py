@@ -2,8 +2,9 @@
 from typing import Literal
 from pydantic import BaseModel,ConfigDict,Field
 from .sa_contract import digest
-from .etl_specification import EtlSpecificationV1,EtlSpecificationV2,EtlSpecificationV3,EtlSpecificationV4,ExcelSourceReferenceV1
+from .etl_specification import EtlSpecificationV1,EtlSpecificationV2,EtlSpecificationV3,EtlSpecificationV4,EtlSpecificationV5,ExcelSourceReferenceV1,JsonSourceReferenceV1
 from .excel_input_contract import ExcelInputContractV1
+from .json_input_contract import JsonInputContractV1
 from .requirement_contract import RequirementConditionsV1
 from .csv_contract import CsvInputContractV1
 from .join_contract import JoinContractV1
@@ -101,6 +102,30 @@ class QASemanticsV4(QASemanticsV1):
     execution_details: QAExecutionDetailsV4
 
 
+class QAExecutionDetailsV5(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    source_format: Literal['JSON']
+    json_source: JsonSourceReferenceV1
+    json_input_contract: JsonInputContractV1
+    json_structure_validation: dict
+    json_reader: dict
+    json_runtime_receipt: dict
+    source_checksum: str=Field(pattern=r'^[a-f0-9]{64}$')
+    hpl_checksum: str=Field(pattern=r'^[a-f0-9]{64}$')
+    compiler_plan: dict
+    output_types: dict[str,str]
+    runtime_options: dict
+    source_formats: dict
+    target_contract: dict
+    validation_scope: Literal['SAME_EXECUTED_BYTES_RECHECKED_NO_ETL_REPLAY']
+    extra_columns_enforcement: Literal['WHOLE_BATCH_VALIDATION_BEFORE_HOP']
+
+
+class QASemanticsV5(QASemanticsV1):
+    specification: EtlSpecificationV5
+    execution_details: QAExecutionDetailsV5
+
+
 class QACheckV1(BaseModel):
     model_config=ConfigDict(extra='forbid',str_strip_whitespace=True)
     id: Literal['specification','static_validation','hop_execution','result_comparison','result_source']
@@ -144,7 +169,8 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
         multi = (semantics.get('specification') or {}).get('version') == 2
         ordered = (semantics.get('specification') or {}).get('version') == 3
         excel = (semantics.get('specification') or {}).get('version') == 4
-        value=(QASemanticsV4 if excel else QASemanticsV3 if ordered else QASemanticsV2 if multi else QASemanticsV1).model_validate(semantics).model_dump(mode='json')
+        json_source = (semantics.get('specification') or {}).get('version') == 5
+        value=(QASemanticsV5 if json_source else QASemanticsV4 if excel else QASemanticsV3 if ordered else QASemanticsV2 if multi else QASemanticsV1).model_validate(semantics).model_dump(mode='json')
         if multi and value['join_conditions']['joins'] != value['specification']['joins']:
             raise ValueError('QA_JOIN_SEMANTICS_CHANGED')
         # Keep historic v2 JSON/checksums byte-for-byte compatible.
@@ -170,14 +196,14 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
                 from .qa_source_formats import expected_formats
                 if details['source_formats'] != expected_formats(plan,details['hpl_checksum']):
                     raise ValueError('QA_SOURCE_FORMATS_CHANGED')
-            if not multi and not excel:
+            if not multi and not excel and not json_source:
                 if details.get('single_source_contract') is None:
                     details.pop('single_source_contract',None)
                 else:
                     from .qa_single_source_contract import expected_contract
                     if details['single_source_contract'] != expected_contract(value['specification'],details):
                         raise ValueError('QA_SINGLE_SOURCE_CONTRACT_CHANGED')
-            if multi or excel:
+            if multi or excel or json_source:
                 if details.get('target_contract') is None:
                     details.pop('target_contract',None)
                 else:
@@ -200,6 +226,10 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
             elif excel:
                 from .qa_excel_details import validate_excel_details
                 validate_excel_details(value['specification'], details)
+                csv_items = []
+            elif json_source:
+                from .qa_json_details import validate_json_details
+                validate_json_details(value['specification'], details, {c['id']: c for c in values})
                 csv_items = []
             else:
                 csv_items = [(details['csv_structure_validation'], details['source_checksum'], details['csv_input_contract'])]
@@ -231,6 +261,8 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
             context['version']=13
         if excel:
             context['version']=14
+        if json_source:
+            context['version']=15
     return {**context,'context_checksum':digest(context)}
 
 

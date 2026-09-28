@@ -17,7 +17,11 @@
 
 整體目標保持未完成。人工基準依操作者決定保留未量測，不填入估算或代理工時。
 
-最新工程：[JSON 執行綁定與原生啟動](verification/json-execution-binding-2026-09-28.md)。
+最新工程：[JSON QA 證據與來源格式呈現](verification/json-qa-evidence-2026-09-28.md)。
+1962 項隔離後端、116 項針對性及 6 項瀏覽器檢查通過；QA context 與來源歷史呈現已接通。
+未部署正式，合成 QA 不算真實模型／Vertica 驗收；JSON SDM／可攜交付與新案例全鏈仍未完成。
+
+先前工程：[JSON 執行綁定與原生啟動](verification/json-execution-binding-2026-09-28.md)。
 119 項針對性（含 8 項 JSON／Excel 原生 CLI）、1898 項隔離後端通過。
 已接雙指紋與單次執行；未部署正式，JSON 真實 Vertica／QA／SDM／Release 仍待完成。
 
