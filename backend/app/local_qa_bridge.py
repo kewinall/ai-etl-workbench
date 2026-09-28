@@ -32,10 +32,11 @@ def handle(queue,data):
             if pending['status']!='QA_RESERVED':return {'status':pending['status']}
             data={**data,'authorize_model_call':True,'comparison_id':pending['input_json']['comparison_id'],
                 'context_checksum':pending['context_checksum']}
-            from .qa_gateway import PROMPT,PROMPT_VERSION
+            from .qa_gateway import qa_material
             from .qa_contract import QAReviewV1
             from .sa_contract import digest
-            if (pending['prompt_version']!=PROMPT_VERSION or pending['input_json']['prompt_checksum']!=digest(PROMPT)
+            material = qa_material(pending['input_json']['context'])
+            if (pending['prompt_version']!=material['prompt_version'] or pending['input_json']['prompt_checksum']!=material['prompt_checksum']
                     or pending['input_json']['schema_checksum']!=digest(QAReviewV1.model_json_schema())):
                 raise ValueError('QA_CONTEXT_VERSION_CHANGED')
         if data.get('authorize_model_call') is not True:

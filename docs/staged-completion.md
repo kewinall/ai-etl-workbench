@@ -17,6 +17,11 @@
 
 整體目標保持未完成。人工基準依操作者決定保留未量測，不填入估算或代理工時。
 
+最新工程補充：[Excel 受控準備與 QA 綁定](verification/excel-execution-qa-binding-2026-09-28.md)。
+V4 規格 API／編輯、單次核准、XLSX 暫存／固定參數與 QA v14 已接通；
+1659 項隔離後端及 10 項原生 CLI／歷史相容性通過。本次未部署、未呼叫真實模型或
+寫入 Vertica；下一步接 Excel SDM／可攜重播、SA prompt 與完整新案例，目標仍未完成。
+
 最新部署補充：[Excel 契約補正與網站](verification/excel-contract-revision-2026-09-28.md)
 完成新 revision／舊版保留／重新核准及真實 UI 回讀；16 項隔離 UI、3 項正式唯讀
 與 1587 項後端回歸通過。正式 Run／事件／交付數未變；Excel 執行全鏈仍未完成。

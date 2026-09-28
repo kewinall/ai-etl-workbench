@@ -16,7 +16,7 @@ from .csv_contract import validated_csv_contracts
 def stage_excel_source(run_id, source, contract):
     """Bind confirmed XLSX selection and typed full scan to one private byte copy.
 
-    Not yet a Run authorization path. Original bytes are never converted to CSV.
+    Staging does not grant Run authorization. Original bytes are never converted to CSV.
     The caller must recheck approvals and mount the attempt directory read-only.
     """
     from .excel_input_contract import ExcelInputContractV1, validate_excel_content

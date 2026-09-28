@@ -41,16 +41,17 @@ def load_qa_context(queue,task_id,run_id,comparison_id,*,connection=None):
             WHERE task_id=%s AND run_id=%s AND role='pilot_qa'
             ORDER BY created_at DESC,invocation_id DESC LIMIT 1""",(task_id,run_id)).fetchone()
         from .qa_source_formats import inspect_formats, should_enrich
-        if should_enrich(latest):
+        excel = row['spec_json']['version'] == 4
+        if excel or should_enrich(latest):
             details['source_formats']=inspect_formats(compiled)
-        if row['spec_json']['version'] != 2:
+        if row['spec_json']['version'] not in (2, 4):
             if not preserve_reviewed_context(latest):
                 claim=conn.execute('SELECT * FROM platform.task_run_target_claim WHERE run_id=%s FOR SHARE',
                                    (run_id,)).fetchone()
                 details['single_source_contract']=inspect_contract(compiled,details,claim)
         else:
             from .qa_target_contract import inspect_target, should_enrich as enrich_target
-            if enrich_target(latest):
+            if excel or enrich_target(latest):
                 claim=conn.execute('SELECT * FROM platform.task_run_target_claim WHERE run_id=%s FOR SHARE',
                                    (run_id,)).fetchone()
                 details['target_contract']=inspect_target(compiled,details,claim)

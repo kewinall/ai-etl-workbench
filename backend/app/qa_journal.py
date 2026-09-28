@@ -4,7 +4,7 @@ import re
 from psycopg.types.json import Jsonb
 from .qa_context import load_qa_context
 from .qa_contract import QAReviewV1,validate_qa_review,build_qa_context
-from .qa_gateway import PROMPT,PROMPT_VERSION
+from .qa_gateway import PROMPT,PROMPT_VERSION,qa_material
 from .sa_contract import digest
 from .invocation_usage import checked_usage
 
@@ -33,10 +33,11 @@ class QAJournal:
             self.queue.locked_task(conn,task_id)
             captured=load_qa_context(self.queue,task_id,run_id,comparison_id,connection=conn)
             context=captured['context'];run=captured['run']
+            material = qa_material(context)
             if context['context_checksum']!=context_checksum:raise ValueError('QA_CONTEXT_VERSION_CHANGED')
             rows=conn.execute("SELECT * FROM platform.agent_invocation WHERE run_id=%s AND role='pilot_qa' ORDER BY created_at DESC,invocation_id DESC FOR SHARE",(run_id,)).fetchall()
             existing=rows[0] if rows else None
-            if expected_prompt_checksum is not None and expected_prompt_checksum!=digest(PROMPT):
+            if expected_prompt_checksum is not None and expected_prompt_checksum!=material['prompt_checksum']:
                 raise ValueError('QA_PROMPT_VERSION_CHANGED')
             if existing:
                 if reassess_invocation_id is None:
@@ -55,13 +56,13 @@ class QAJournal:
             identity=uuid4()
             payload={'context':context,'comparison_id':str(comparison_id),'comparison_checksum':captured['comparison_checksum'],
                 'operator_id':str(operator['operator_id']),'consent_recorded':True,
-                'prompt':PROMPT,'prompt_checksum':digest(PROMPT),'schema':QAReviewV1.model_json_schema(),
+                'prompt':material['prompt'],'prompt_checksum':material['prompt_checksum'],'schema':QAReviewV1.model_json_schema(),
                 'schema_checksum':digest(QAReviewV1.model_json_schema())}
             if reassess_invocation_id is not None:
                 payload['reassesses_invocation_id']=str(reassess_invocation_id)
             conn.execute("""INSERT INTO platform.agent_invocation(invocation_id,task_id,run_id,role,provider,model,prompt_version,context_checksum,input_json,status)
                 VALUES(%s,%s,%s,'pilot_qa',%s,%s,%s,%s,%s,'QA_RESERVED')""",
-                (identity,task_id,run_id,settings['ai']['provider_type'],model,PROMPT_VERSION,context_checksum,Jsonb(payload)))
+                (identity,task_id,run_id,settings['ai']['provider_type'],model,material['prompt_version'],context_checksum,Jsonb(payload)))
             self.queue.event(conn,run_id,'QA_REASSESSMENT_AUTHORIZED' if reassess_invocation_id else 'QA_INTENT_RECORDED','QA_REVIEW',{'invocation_id':str(identity),'context_checksum':context_checksum,'automatic_retry':False,'reassesses_invocation_id':str(reassess_invocation_id) if reassess_invocation_id else None})
         return {'invocation_id':str(identity),'status':'QA_RESERVED'}
 
@@ -98,14 +99,15 @@ class QAJournal:
 
 def can_reassess(record,count,context=None):
     """Bounded explicit clarification; new evidence may only enrich the same execution."""
-    if count not in (1,2) or record['status']!='VALIDATED_NOT_APPROVED' or record['prompt_version']>=PROMPT_VERSION:
+    material = qa_material(context or record['input_json'].get('context'))
+    if count not in (1,2) or record['status']!='VALIDATED_NOT_APPROVED' or record['prompt_version']>=material['prompt_version']:
         return False
     previous=record['input_json'].get('context')
     if context is not None and previous!=context:
         if not same_execution_enrichment(previous,context):return False
     elif count==2:
         return False
-    return (record['input_json'].get('prompt_checksum')!=digest(PROMPT)
+    return (record['input_json'].get('prompt_checksum')!=material['prompt_checksum']
         and public_record(record)['review']['status']=='NEEDS_REVIEW')
 
 

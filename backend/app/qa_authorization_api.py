@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from .qa_context import load_qa_context
 from .qa_contract import QAReviewV1
-from .qa_gateway import PROMPT
+from .qa_gateway import qa_material
 from .qa_journal import QAJournal,can_reassess
 from .sa_contract import digest
 
@@ -43,7 +43,7 @@ def offer(queue,task_id,run_id):
         'dispatch_enabled':os.getenv('WORKBENCH_QA_DISPATCH_ENABLED')=='true',
         'comparison_id':str(comparison['comparison_id']) if comparison else None,
         'context_checksum':captured['context']['context_checksum'] if captured else None,
-        'model':model,'prompt_checksum':digest(PROMPT),'schema_checksum':digest(QAReviewV1.model_json_schema()),
+        'model':model,'prompt_checksum':qa_material(captured['context'] if captured else None)['prompt_checksum'],'schema_checksum':digest(QAReviewV1.model_json_schema()),
         'invocation':{'invocation_id':str(existing['invocation_id']),'status':existing['status']} if existing else None,
         'qa_approved':False,'release_ready':False}
 

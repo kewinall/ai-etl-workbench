@@ -14,7 +14,8 @@ def offer(queue, conn, task_id, run_id, specification_id, preparing=False):
     run = candidate['run']
     source_binding = execution_sources(run['input_snapshot']['source_config'], candidate['compiled']['specification']['version'])
     oracle=approved_oracle_binding(conn,candidate)
-    binding = {'policy_version':'hop-single-attempt-v3' if 'source_checksums' in source_binding else 'hop-single-attempt-v2',
+    binding = {'policy_version':('hop-single-attempt-v4' if source_binding.get('source_format') == 'XLSX' else
+                                'hop-single-attempt-v3' if 'source_checksums' in source_binding else 'hop-single-attempt-v2'),
                'max_attempts':1, 'automatic_retry':False,
                'run_id':str(run_id), 'specification_id':str(specification_id),
                'specification_checksum':candidate['specification_checksum'],

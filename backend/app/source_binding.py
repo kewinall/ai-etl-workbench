@@ -14,6 +14,10 @@ def source_set_checksum(checksums):
 
 def execution_sources(config, specification_version):
     """Canonical input binding; this does not grant execution permission."""
+    if type(specification_version) is int and specification_version == 4:
+        from .excel_contract_binding import validated_excel_contract
+        bound = validated_excel_contract(config)
+        return {'source_checksum': bound['reference']['content_checksum'], 'source_format': 'XLSX'}
     sources = config.get('sources') or []
     if (type(specification_version) is not int or specification_version not in (1, 2, 3)
             or len(sources) != (2 if specification_version == 2 else 1)
@@ -32,6 +36,10 @@ def expected_prepared_binding(authorization):
     expected = {key: authorization[key] for key in ('run_id', 'specification_id',
         'specification_checksum', 'input_checksum', 'settings_checksum', 'hpl_checksum', 'source_checksum')}
     expected['approval_id'] = authorization['specification_approval_id']
+    if 'source_format' in authorization:
+        if authorization['source_format'] != 'XLSX' or 'source_checksums' in authorization:
+            raise ValueError('SOURCE_FORMAT_BINDING_INVALID')
+        expected['source_format'] = 'XLSX'
     if 'source_checksums' in authorization:
         checksums = authorization['source_checksums']
         if source_set_checksum(checksums) != authorization['source_checksum']:

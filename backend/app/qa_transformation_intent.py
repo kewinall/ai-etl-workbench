@@ -3,16 +3,16 @@
 No inference from results/oracles, model output, or user-supplied PASS labels.
 The QA loader separately reconstructs HPL and verifies the executed checksum.
 """
-from .etl_specification import EtlSpecificationV1, EtlSpecificationV2, EtlSpecificationV3
+from .etl_specification import EtlSpecificationV1, EtlSpecificationV2, EtlSpecificationV3, EtlSpecificationV4
 from .transformation_contract import validate_intent
 
 
 def check_intent(contract, specification, plan):
-    model = EtlSpecificationV3 if specification.get('version') == 3 else EtlSpecificationV2 if specification.get('version') == 2 else EtlSpecificationV1
+    model = EtlSpecificationV4 if specification.get('version') == 4 else EtlSpecificationV3 if specification.get('version') == 3 else EtlSpecificationV2 if specification.get('version') == 2 else EtlSpecificationV1
     spec = model.model_validate(specification)
     multi = spec.version == 2
     stages = plan.get('stages') or []
-    sources = [stage for stage in stages if stage.get('component') == 'CSVInput']
+    sources = [stage for stage in stages if stage.get('component') == ('ExcelInput' if spec.version == 4 else 'CSVInput')]
     if len(sources) != (2 if multi else 1) or plan.get('naming_checksum') != specification['naming']['checksum']:
         raise ValueError('QA_TRANSFORMATION_MAPPING_INVALID')
     columns, source_items = [], []

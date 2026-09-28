@@ -24,13 +24,13 @@ def test_result_requires_saved_log_and_contains_no_raw_output(setup):
     assert result['result']['status']=='COMPLETED'
     assert 'output' not in result and 'directory' not in result
     process.assert_called_once()
-    hop_cli.hop_command.assert_called_once_with(prepared['directory'].as_posix(),credential_launcher=False,source_count=1)
+    hop_cli.hop_command.assert_called_once_with(prepared['directory'].as_posix(),credential_launcher=False,source_count=1,source_format='CSV')
 
 def test_credential_environment_selects_launcher_without_secret_in_arguments(setup):
     prepared,process,options=setup
     options['environment']={'WORKBENCH_VERTICA_PASSWORD':'synthetic-only'}
     hop_cli.run_hop_cli(prepared,Event(),**options)
-    hop_cli.hop_command.assert_called_once_with(prepared['directory'].as_posix(),credential_launcher=True,source_count=1)
+    hop_cli.hop_command.assert_called_once_with(prepared['directory'].as_posix(),credential_launcher=True,source_count=1,source_format='CSV')
     assert 'synthetic-only' not in repr(process.call_args.args)
 
 def test_metadata_change_prevents_process_start(setup):
@@ -49,3 +49,24 @@ def test_execution_disabled_prevents_process_start(setup,monkeypatch):
     monkeypatch.setenv('WORKBENCH_EXECUTION_ENABLED','false')
     with pytest.raises(ValueError,match='EXECUTION_DISABLED'):hop_cli.run_hop_cli(prepared,Event(),**options)
     process.assert_not_called()
+
+
+def test_excel_uses_bound_format_after_last_use_checks(setup):
+    prepared, process, options = setup
+    path = prepared['source_path'].with_name('source.xlsx')
+    prepared['source_path'].rename(path)
+    prepared['source_path'] = path
+    prepared['binding']['source_format'] = 'XLSX'
+    hop_cli.run_hop_cli(prepared, Event(), **options)
+    hop_cli.hop_command.assert_called_once_with(prepared['directory'].as_posix(),
+        credential_launcher=False, source_count=1, source_format='XLSX')
+    process.assert_called_once()
+
+
+def test_excel_format_cannot_relabel_csv_path(setup):
+    prepared, process, options = setup
+    prepared['binding']['source_format'] = 'XLSX'
+    with pytest.raises(ValueError, match='PREPARED_FILES_CHANGED_OR_UNAVAILABLE'):
+        hop_cli.run_hop_cli(prepared, Event(), **options)
+    process.assert_not_called()
+    hop_cli.hop_command.assert_not_called()

@@ -41,3 +41,21 @@ def test_invalid_binding_is_rejected(prepared):
     prepared['binding']['source_checksum'] = 'invalid'
     with pytest.raises(ValueError, match='PREPARED_FILES_CHANGED_OR_UNAVAILABLE'):
         verify_prepared_files(prepared)
+
+
+def test_excel_checks_original_bytes_and_returns_only_binding(prepared):
+    path = prepared['source_path'].with_name('source.xlsx')
+    prepared['source_path'].rename(path)
+    prepared['source_path'] = path
+    prepared['binding']['source_format'] = 'XLSX'
+    assert verify_prepared_files(prepared) == prepared['binding']
+    path.write_bytes(b'changed')
+    with pytest.raises(ValueError, match='PREPARED_FILES_CHANGED_OR_UNAVAILABLE'):
+        verify_prepared_files(prepared)
+
+
+@pytest.mark.parametrize('kind', ['XLSX', 'CSV', None, 'JSON'])
+def test_format_field_cannot_relabel_existing_csv(prepared, kind):
+    prepared['binding']['source_format'] = kind
+    with pytest.raises(ValueError, match='PREPARED_FILES_CHANGED_OR_UNAVAILABLE'):
+        verify_prepared_files(prepared)

@@ -11,7 +11,7 @@ def expected_formats(plan, hpl_checksum):
             fields=[dict(name=f['stream_name'], format={
                 'DATE': 'yyyy-MM-dd', 'TIMESTAMP': 'yyyy-MM-dd HH:mm:ss'
             }.get(_type(f['data_type'])[0], '')) for f in s['fields']])
-            for s in plan['stages'] if s['component'] == 'CSVInput'],
+            for s in plan['stages'] if s['component'] in ('CSVInput', 'ExcelInput')],
         limitation='Configured Hop masks only; not proof of strict rejection of every malformed date, timezone behavior or exhaustive parser testing.')
 
 
@@ -22,7 +22,8 @@ def inspect_formats(compiled):
     root = ET.fromstring(compiled['hpl'])
     for source in expected['sources']:
         nodes = [n for n in root.findall('transform') if n.findtext('name') == source['node_id']]
-        if len(nodes) != 1 or nodes[0].findtext('type') != 'CSVInput':
+        expected_component = next(s['component'] for s in compiled['plan']['stages'] if s['id'] == source['node_id'])
+        if len(nodes) != 1 or nodes[0].findtext('type') != expected_component:
             raise ValueError('QA_FORMAT_SOURCE_CHANGED')
         fields = [dict(name=f.findtext('name'), format=f.findtext('format'))
                   for f in nodes[0].findall('./fields/field')]

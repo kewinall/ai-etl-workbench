@@ -23,6 +23,11 @@ def verify_prepared_files(prepared):
             if stat.S_ISLNK(info.st_mode) or getattr(info, 'st_file_attributes', 0) & 0x400:
                 raise ValueError()
         result = {}
+        excel = 'source_format' in binding
+        if excel:
+            if binding['source_format'] != 'XLSX' or 'source_checksums' in binding:
+                raise ValueError()
+            result['source_format'] = 'XLSX'
         if 'source_checksums' in binding:
             checksums = binding['source_checksums']
             if source_set_checksum(checksums) != binding['source_checksum'] or 'source_path' in prepared:
@@ -36,7 +41,7 @@ def verify_prepared_files(prepared):
         else:
             if 'source_paths' in prepared:
                 raise ValueError()
-            files = [(prepared['source_path'], 'source.csv', binding['source_checksum'], 'source_checksum')]
+            files = [(prepared['source_path'], 'source.xlsx' if excel else 'source.csv', binding['source_checksum'], 'source_checksum')]
         files.append((prepared['hpl_path'], 'candidate.hpl', binding['hpl_checksum'], 'hpl_checksum'))
         for raw_path, name, expected, checksum_key in files:
             path = Path(raw_path)

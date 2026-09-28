@@ -7,6 +7,10 @@ from .etl_specification import _type
 def expected_options(plan,hpl_checksum):
     sources=[]
     for stage in plan['stages']:
+        if stage['component'] == 'ExcelInput':
+            from .qa_excel_options import expected_excel_source
+            sources.append(expected_excel_source(stage))
+            continue
         if stage['component']!='CSVInput':continue
         fields=[]
         for field in stage['fields']:
@@ -18,7 +22,7 @@ def expected_options(plan,hpl_checksum):
         sources.append(dict(node_id=stage['id'],source_ref=stage.get('source_ref','source.0'),
                             lazy_conversion='N',fields=fields))
     target=next(stage for stage in plan['stages'] if stage['component']=='TableOutput')
-    return dict(version=1,hpl_checksum=hpl_checksum,
+    result = dict(version=1,hpl_checksum=hpl_checksum,
         scope='EXECUTED_HPL_OPTIONS_RECHECKED_NO_REPLAY',sources=sources,
         target=dict(node_id=target['id'],ignore_errors='N',use_batch='Y',commit='1000',truncate='N'),
         error_handling_hops=False,
@@ -31,6 +35,12 @@ def expected_options(plan,hpl_checksum):
                 'CSVInput invalid integer fails the pipeline; VARCHAR length metadata does not truncate a 33-character value.',
                 'Unmodified compiler TableOutput accepted 32-byte VARCHAR(32) and failed on 33-byte ASCII and UTF-8 values; fresh sessions saw zero rows for the single-row failures.'],
             limits='Separate synthetic probes; not exhaustive parser/encoding/type testing, current-run version attestation or proof of rollback of previously committed batches.'))
+    if any(source.get('component') == 'ExcelInput' for source in sources):
+        if len(sources) != 1:
+            raise ValueError('QA_RUNTIME_EXCEL_SOURCE_SCOPE_INVALID')
+        from .qa_excel_options import excel_behavior_reference
+        result.update(version=2, behavior_reference=excel_behavior_reference())
+    return result
 
 
 def inspect_options(compiled):
@@ -42,7 +52,14 @@ def inspect_options(compiled):
     if root.findall('./transform_error_handling/error') or root.findall('./error_handling/error'):
         raise ValueError('QA_RUNTIME_ERROR_HANDLING_CHANGED')
     for source in expected['sources']:
-        node=root.find(f"./transform[name='{source['node_id']}']")
+        nodes = [node for node in root.findall('transform') if node.findtext('name') == source['node_id']]
+        if len(nodes) != 1:
+            raise ValueError('QA_RUNTIME_SOURCE_OPTIONS_CHANGED')
+        node = nodes[0]
+        if source.get('component') == 'ExcelInput':
+            from .qa_excel_options import inspect_excel_source
+            inspect_excel_source(node, source)
+            continue
         if node is None or node.findtext('type')!='CSVInput' or node.findtext('lazy_conversion')!='N':
             raise ValueError('QA_RUNTIME_SOURCE_OPTIONS_CHANGED')
         fields=[{key:field.findtext(key) for key in ('name','type','length','precision','trim_type')}

@@ -2,7 +2,8 @@
 from typing import Literal
 from pydantic import BaseModel,ConfigDict,Field
 from .sa_contract import digest
-from .etl_specification import EtlSpecificationV1,EtlSpecificationV2,EtlSpecificationV3
+from .etl_specification import EtlSpecificationV1,EtlSpecificationV2,EtlSpecificationV3,EtlSpecificationV4,ExcelSourceReferenceV1
+from .excel_input_contract import ExcelInputContractV1
 from .requirement_contract import RequirementConditionsV1
 from .csv_contract import CsvInputContractV1
 from .join_contract import JoinContractV1
@@ -78,6 +79,28 @@ class QASemanticsV2(BaseModel):
     transformation_intent: TransformationContractV1 | None=None
 
 
+class QAExecutionDetailsV4(BaseModel):
+    model_config=ConfigDict(extra='forbid')
+    source_format: Literal['XLSX']
+    excel_source: ExcelSourceReferenceV1
+    excel_input_contract: ExcelInputContractV1
+    excel_structure_validation: dict
+    source_checksum: str=Field(pattern=r'^[a-f0-9]{64}$')
+    hpl_checksum: str=Field(pattern=r'^[a-f0-9]{64}$')
+    compiler_plan: dict
+    output_types: dict[str,str]
+    runtime_options: dict
+    source_formats: dict
+    target_contract: dict
+    validation_scope: Literal['SAME_EXECUTED_BYTES_RECHECKED_NO_ETL_REPLAY']
+    extra_columns_enforcement: Literal['WHOLE_BATCH_VALIDATION_BEFORE_HOP']
+
+
+class QASemanticsV4(QASemanticsV1):
+    specification: EtlSpecificationV4
+    execution_details: QAExecutionDetailsV4
+
+
 class QACheckV1(BaseModel):
     model_config=ConfigDict(extra='forbid',str_strip_whitespace=True)
     id: Literal['specification','static_validation','hop_execution','result_comparison','result_source']
@@ -120,7 +143,8 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
     if semantics is not None:
         multi = (semantics.get('specification') or {}).get('version') == 2
         ordered = (semantics.get('specification') or {}).get('version') == 3
-        value=(QASemanticsV3 if ordered else QASemanticsV2 if multi else QASemanticsV1).model_validate(semantics).model_dump(mode='json')
+        excel = (semantics.get('specification') or {}).get('version') == 4
+        value=(QASemanticsV4 if excel else QASemanticsV3 if ordered else QASemanticsV2 if multi else QASemanticsV1).model_validate(semantics).model_dump(mode='json')
         if multi and value['join_conditions']['joins'] != value['specification']['joins']:
             raise ValueError('QA_JOIN_SEMANTICS_CHANGED')
         # Keep historic v2 JSON/checksums byte-for-byte compatible.
@@ -146,14 +170,14 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
                 from .qa_source_formats import expected_formats
                 if details['source_formats'] != expected_formats(plan,details['hpl_checksum']):
                     raise ValueError('QA_SOURCE_FORMATS_CHANGED')
-            if not multi:
+            if not multi and not excel:
                 if details.get('single_source_contract') is None:
                     details.pop('single_source_contract',None)
                 else:
                     from .qa_single_source_contract import expected_contract
                     if details['single_source_contract'] != expected_contract(value['specification'],details):
                         raise ValueError('QA_SINGLE_SOURCE_CONTRACT_CHANGED')
-            if multi:
+            if multi or excel:
                 if details.get('target_contract') is None:
                     details.pop('target_contract',None)
                 else:
@@ -173,6 +197,10 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
                     raise ValueError('QA_EXECUTION_DETAILS_BINDING_CHANGED')
                 csv_items = [(details['csv_structure_validations'][ref], details['source_checksums'][ref],
                               details['csv_input_contracts'][ref]) for ref in sorted(refs)]
+            elif excel:
+                from .qa_excel_details import validate_excel_details
+                validate_excel_details(value['specification'], details)
+                csv_items = []
             else:
                 csv_items = [(details['csv_structure_validation'], details['source_checksum'], details['csv_input_contract'])]
             csv_invalid = any(csv.get('content_checksum') != checksum
@@ -201,6 +229,8 @@ def build_qa_context(run_id,specification_checksum,checks,semantics=None):
             from .qa_source_order import validate_order_details
             validate_order_details(value['specification'],details,{c['id']:c for c in values})
             context['version']=13
+        if excel:
+            context['version']=14
     return {**context,'context_checksum':digest(context)}
 
 

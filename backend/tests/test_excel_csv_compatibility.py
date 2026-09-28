@@ -16,14 +16,14 @@ BASELINE = '25120fc520cd14d01004e20aa9a8a1718fe3ddc5'
 pytestmark = pytest.mark.skipif(not (ROOT / '.git').exists(), reason='Git checkout required for immutable baseline comparison')
 
 
-def baseline_module(name):
+def baseline_module(name, revision=BASELINE):
     result = subprocess.run(['git', '-c', 'safe.directory=' + ROOT.as_posix(), '-C', str(ROOT),
-                             'show', BASELINE + ':backend/app/' + name + '.py'],
+                             'show', revision + ':backend/app/' + name + '.py'],
                             capture_output=True, text=True, encoding='utf-8', check=True)
     module = ModuleType('app._excel_baseline_' + name)
     module.__package__ = 'app'
     sys.modules[module.__name__] = module
-    exec(compile(result.stdout, BASELINE + '/' + name, 'exec'), module.__dict__)
+    exec(compile(result.stdout, revision + '/' + name, 'exec'), module.__dict__)
     return module
 
 
@@ -45,3 +45,27 @@ def test_csv_v1_v2_v3_outputs_exactly_match_previous_commit(factory):
     finally:
         for module in (baseline_spec, baseline_compiler, baseline_sa, baseline_hwf):
             sys.modules.pop(module.__name__, None)
+
+
+def test_existing_csv_qa_contexts_and_prompt_match_pre_execution_commit(monkeypatch):
+    from app.qa_contract import build_qa_context
+    from app.qa_gateway import qa_material
+    from test_qa_single_source_contract import contexts
+    from test_qa_multisource import context_fixture
+    from test_qa_source_order import fixture as ordered_fixture, build
+    revision = '7521a9ab97396499e093731654595509df87748b'
+    baseline_qa = baseline_module('qa_contract', revision)
+    baseline_gateway = baseline_module('qa_gateway', revision)
+    try:
+        single_old, single_new, *_ = contexts(monkeypatch)
+        run, compiled, checks, semantics = context_fixture(monkeypatch)
+        multi = build_qa_context(run['run_id'], compiled['specification_checksum'], checks, semantics)
+        ordered = build(*ordered_fixture(monkeypatch))
+        for context in (single_old, single_new, multi, ordered):
+            assert baseline_qa.build_qa_context(context['run_id'], context['specification_checksum'],
+                context['evidence'], context['semantics']) == context
+            assert qa_material(context)['prompt'] == baseline_gateway.PROMPT
+            assert qa_material(context)['prompt_version'] == baseline_gateway.PROMPT_VERSION
+    finally:
+        sys.modules.pop(baseline_qa.__name__, None)
+        sys.modules.pop(baseline_gateway.__name__, None)

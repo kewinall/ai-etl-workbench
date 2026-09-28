@@ -9,6 +9,26 @@ from .qa_runtime_options import inspect_options
 def execution_details(run, compiled, authorization):
     config=run['input_snapshot']['source_config']
     sources=config.get('sources') or []
+    if compiled['specification']['version'] == 4:
+        from .excel_contract_binding import validated_excel_contract
+        from .excel_profile import verify_excel_source
+        from .excel_input_contract import validate_excel_content
+        binding = execution_sources(config, 4)
+        bound = validated_excel_contract(config)
+        if (any(authorization.get(key) != value for key, value in binding.items())
+                or compiled['hpl_checksum'] != authorization.get('hpl_checksum')
+                or compiled['specification']['excel_source'] != bound['reference']):
+            raise ValueError('QA_EXECUTED_SOURCE_BINDING_CHANGED')
+        source = sources[0]
+        content = read_verified_upload(source['upload_id'], 'EXCEL', source['checksum'], source['size'])
+        verify_excel_source(source, content=content)
+        result = validate_excel_content(content, bound['contract'], [field['name'] for field in source['fields']],
+                                        column_types=[field['type'] for field in source['fields']])
+        return dict(excel_input_contract=bound['contract'], excel_source=bound['reference'],
+            excel_structure_validation=result, **binding, runtime_options=inspect_options(compiled),
+            compiler_plan=compiled['plan'], output_types=compiled['output_types'], hpl_checksum=compiled['hpl_checksum'],
+            validation_scope='SAME_EXECUTED_BYTES_RECHECKED_NO_ETL_REPLAY',
+            extra_columns_enforcement='WHOLE_BATCH_VALIDATION_BEFORE_HOP')
     if compiled['specification']['version'] == 2:
         binding = execution_sources(config, 2)
         if (any(authorization.get(key) != value for key, value in binding.items())

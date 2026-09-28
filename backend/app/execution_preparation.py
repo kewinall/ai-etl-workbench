@@ -2,8 +2,8 @@
 from contextlib import contextmanager
 from hashlib import sha256
 from .approved_candidate import load_approved_candidate
-from .source_staging import stage_csv_source, stage_csv_sources
-from .source_binding import source_set_checksum
+from .source_staging import stage_csv_source, stage_csv_sources, stage_excel_source
+from .source_binding import source_set_checksum, execution_sources
 from .prepared_integrity import verify_prepared_files
 
 
@@ -13,10 +13,12 @@ def prepare_approved_source(queue, task_id, run_id, specification_id):
         candidate = load_approved_candidate(queue, conn, task_id, run_id, specification_id)
     config = candidate['run']['input_snapshot']['source_config']
     sources = config.get('sources') or []
-    multi = candidate['compiled']['specification']['version'] == 2
-    if len(sources) != (2 if multi else 1) or any(source.get('type') != 'CSV' or not source.get('upload_id') for source in sources):
-        raise ValueError('VERIFIED_UPLOADED_CSV_REQUIRED')
-    staging = stage_csv_sources(run_id, config) if multi else stage_csv_source(run_id, sources[0], config.get('csv_input_contract_v1'))
+    version = candidate['compiled']['specification']['version']
+    expected_sources = execution_sources(config, version)
+    multi = version == 2
+    staging = (stage_excel_source(run_id, sources[0], config['excel_input_contract_v1']) if version == 4 else
+               stage_csv_sources(run_id, config) if multi else
+               stage_csv_source(run_id, sources[0], config.get('csv_input_contract_v1')))
     with staging as staged:
         # Do not hold database locks during file I/O. Revalidate afterwards;
         # a future dispatcher must STILL atomically reserve its own permission.
@@ -36,6 +38,10 @@ def prepare_approved_source(queue, task_id, run_id, specification_id):
         checksums = {ref: item['evidence']['content_checksum'] for ref,item in staged['sources'].items()} if multi else None
         source_binding = ({'source_checksums': checksums, 'source_checksum': source_set_checksum(checksums)} if multi else
                           {'source_checksum': staged['evidence']['content_checksum']})
+        if version == 4:
+            source_binding['source_format'] = 'XLSX'
+        if source_binding != expected_sources:
+            raise ValueError('PREPARED_SOURCE_BINDING_MISMATCH')
         prepared = {'status':'PREPARED_NOT_AUTHORIZED', 'execution_authorized':False,
                **paths, 'hpl_path':hpl, 'directory':staged['directory'],
                'binding':{'run_id':str(run_id), 'specification_id':str(specification_id),

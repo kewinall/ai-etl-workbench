@@ -21,13 +21,16 @@ PARAMETERS_TEMPLATE_V2 = PARAMETERS_TEMPLATE.replace(
     '# SOURCE_CSV_0 binds source.0 (left); SOURCE_CSV_1 binds source.1 (right).\n'
     'SOURCE_CSV_0=\nSOURCE_CSV_1=\n')
 
+PARAMETERS_TEMPLATE_V4 = PARAMETERS_TEMPLATE.replace('SOURCE_CSV', 'SOURCE_XLSX')
+
 
 def compile_delivery_components(payload, run, naming):
     compiled = compile_hwf(payload, run, naming)
     if 'hwf' not in compiled:
         return compiled
     spec = compiled['specification']
-    parameters = PARAMETERS_TEMPLATE_V2 if spec['version'] == 2 else PARAMETERS_TEMPLATE
+    parameters = (PARAMETERS_TEMPLATE_V4 if spec['version'] == 4 else
+                  PARAMETERS_TEMPLATE_V2 if spec['version'] == 2 else PARAMETERS_TEMPLATE)
     columns = []
     for name in spec['output_columns']:
         declared = _type(compiled['output_types'][name])

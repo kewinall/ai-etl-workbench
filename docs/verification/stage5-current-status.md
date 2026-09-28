@@ -1,5 +1,10 @@
 # 第 5 階段目前判定（2026-09-28）
 
+最新工程補充：[Excel 受控準備與 QA 綁定](excel-execution-qa-binding-2026-09-28.md)。
+V4 API／編輯綁定、單次核准／準備、固定 XLSX launcher 與 QA context 已接通；
+1659 項後端回歸、10 項原生 CLI／固定版本相容性通過。尚未部署本次變更，
+Excel SDM／可攜重播及真實模型／Vertica E2E 仍待驗證，不代表第 5 階段完成。
+
 最新補充：[Excel 契約補正與網站](excel-contract-revision-2026-09-28.md) 已部署。
 真實補正 API／DB／UI、16 項隔離網站與 3 項正式唯讀回歸通過；
 既有 Run／事件／交付數未變。下一步接正式執行與 QA，不代表 Excel E2E 完成。
