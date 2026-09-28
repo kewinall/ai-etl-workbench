@@ -2,6 +2,40 @@
 
 狀態：進行中，尚未完成。人工基準延後不等於其他工程驗收可略過。
 
+## 2026-09-28：原生 Hop 真實部分提交中斷（尚未串接 Run 失聯）
+
+新增 opt-in `backend/tests/run_partial_write_probe.py` 與
+`scripts/hop/ExecutePartialWriteProbe.java`。只連既有專用 portability DB，
+實測版本 Vertica 25.3.0-2；三次各新建唯一 ai_sample.interrupt_* 合成表，
+不重用、不 DROP、不操作正式 Task 或來源資料庫。私有證據放獨立 0700
+candidate volume，未加入 Git。這是原生引擎 primitive，不偽造模型、平台
+Project／Run 核准或 QA／Release 證據。
+
+使用現有 V3 編譯器產生 2,000 筆來源列序流程及 deterministic DDL，保持
+TableOutput commit=1000／truncate=N。測試 listener 僅負責暫停，不能把
+listener 事件當作 commit；另一條 Vertica 連線確認可見行數後才取消 JVM。
+
+三次真實結果全部保留：
+
+- A：classpath 使用 jdbc/* 意外帶入額外 plugin，缺少 PostgreSqlDatabaseMeta
+  而退出，未到 Hop 寫入。最終獨立 SQL 查到 0 筆。
+- B：改成指定 Vertica JDBC 後，第 1,001 次輸出事件才暫停時，其實已提交
+  2,000 筆。探針逾時返回 FAILED，不冒充部分提交成功；最終 SQL 2,000 筆。
+- C：改在 TableOutput 讀入第 1,001 筆時暫停，新連線看到正好 1,000 筆後
+  取消真正的 Hop JVM。CANCELLED／負 exit code，hop_log_evidence 為 UNKNOWN，
+  qa_passed=false、release_ready=false、未重跑。再次新連線確認 COUNT=1000、
+  DISTINCT source_position=1000、MIN=1、MAX=1000、SUM=500500。
+
+另一次獨立容器 SQL 回查 A/B/C 分別 0/2000/1000 筆，沒有重複序號。
+來源列序編譯與 Hop log 判定回歸 **14 passed（0.28 秒）**。專用 Vertica
+驗收後恢復停止狀態，表及三份失敗／成功證據保留，正式網站 ready。
+
+依 Vertica 技能的交易驗證原則，使用新連線判定已提交結果；24.4.x 文件
+僅作交易觀念參考，不用來宣稱 25.3 的未測行為。上述是 native cancellation
+後的真實 DB 副作用，不是控制 Worker 自身死亡。仍需同一 Run 的 write-start、
+lease 失聯、NEEDS_REVIEW、重複請求拒絕與不可自動重跑串接驗收；不能將
+先前的合成佇列死亡測試與本段拼接為已完成 E2E。第 7 階段仍未完成。
+
 ## 2026-09-28：手動 WSL 保活及 owner 身分實測
 
 新增 `app/wsl_holder.py`（stdlib、WSL Python 3.9 實跑）及

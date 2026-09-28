@@ -22,6 +22,7 @@ scripts/hop/*
 !scripts/hop/InspectJoinPlugin.java
 !scripts/hop/ExecuteJoinProbe.java
 !scripts/hop/ExecuteSourceOrderProbe.java
+!scripts/hop/ExecutePartialWriteProbe.java
 !scripts/hop/probe_vertica_width.py
 !scripts/hop/InspectVerticaMetadata.java
 !scripts/hop/VerifyMetadataExport.java
