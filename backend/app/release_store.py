@@ -78,6 +78,15 @@ def approval_offer(queue,repo,conn,task_id,run_id,candidate_id,*,root=None):
     expected=compare_oracle_document(oracle['content'],[],document_checksum=oracle['document_checksum'],
         specification_checksum=auth['specification_checksum'],naming_checksum=delivery['specification']['naming']['checksum'])
     excel=delivery['specification']['version']==4
+    json_source=delivery['specification']['version']==5
+    if json_source:
+        from .json_execution_binding import validate_reader_binding
+        reader=validate_reader_binding(auth)
+        reference=delivery['specification']['json_source']
+        if (auth['source_checksum']!=reference['content_checksum'] or
+                reader['profile_checksum']!=reference['profile_checksum'] or
+                reader['contract_checksum']!=reference['contract_checksum']):
+            raise ValueError('RELEASE_EXECUTED_JSON_SOURCE_CHANGED')
     if excel and (auth.get('source_format')!='XLSX' or
                   auth['source_checksum']!=delivery['specification']['excel_source']['content_checksum']):
         raise ValueError('RELEASE_EXECUTED_EXCEL_SOURCE_CHANGED')
@@ -85,6 +94,7 @@ def approval_offer(queue,repo,conn,task_id,run_id,candidate_id,*,root=None):
         expected_checksum=expected['expected_checksum'],expected_count=expected['expected_count'],
         source_checksums=auth.get('source_checksums'),
         **({'source_format':'XLSX'} if excel else {}),
+        **({'source_format':'JSON','json_reader':reader} if json_source else {}),
         **({'source_order':delivery['specification']['source_order'],
             'result_query_checksum':oracle['result_query_checksum']} if delivery['specification']['version']==3 else {}))
     sdm=conn.execute('SELECT checksum FROM platform.sdm_artifact WHERE sdm_id=%s',(candidate['sdm_id'],)).fetchone()

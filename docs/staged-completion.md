@@ -17,7 +17,11 @@
 
 整體目標保持未完成。人工基準依操作者決定保留未量測，不填入估算或代理工時。
 
-最新工程：[JSON SDM 候選文件](verification/json-sdm-candidate-2026-09-28.md)。
+最新工程：[JSON 可攜證據契約](verification/json-portability-contract-2026-09-28.md)。
+1980 項隔離後端與 35 項可攜契約測試通過；JSON 核准端綁定已接通，重播 Worker 仍待實作。
+SDM 網站預覽／保存／下載已通過隔離實測，未部署正式，JSON 全鏈仍未完成。
+
+先前工程：[JSON SDM 候選文件](verification/json-sdm-candidate-2026-09-28.md)。
 24 項針對性、1968 項隔離後端通過；後端候選文件與預覽 API 已接通。
 UI、可攜交付、視覺與真實全鏈驗收仍待完成，未部署正式。
 

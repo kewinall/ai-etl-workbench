@@ -43,15 +43,36 @@ class PortabilityEvidenceV4(PortabilityEvidenceV1):
     source_format: Literal['XLSX']
 
 
+class PortabilityEvidenceV5(PortabilityEvidenceV1):
+    version: Literal[5]
+    source_format: Literal['JSON']
+    json_reader: dict
+    json_runtime_receipt: dict
+
+
 def validate_portability(row,candidate,source_checksum,*,expected_checksum,expected_count,source_checksums=None,
-                         source_order=None,result_query_checksum=None,source_format=None):
+                         source_order=None,result_query_checksum=None,source_format=None,json_reader=None):
     if not row or row['status']!='PASS':raise ValueError('RELEASE_PORTABILITY_REQUIRED')
     ordered=source_order is not None
-    if source_format is not None and (source_format!='XLSX' or source_checksums is not None or ordered):
+    if source_format is not None and (source_format not in ('XLSX','JSON') or source_checksums is not None or ordered):
         raise ValueError('RELEASE_PORTABILITY_FORMAT_BINDING_REQUIRED')
+    if (source_format=='JSON') != (json_reader is not None):
+        raise ValueError('RELEASE_PORTABILITY_JSON_BINDING_REQUIRED')
     if (ordered and (source_checksums is not None or result_query_checksum is None)) or (not ordered and result_query_checksum is not None):
         raise ValueError('RELEASE_PORTABILITY_ORDER_BINDING_REQUIRED')
-    evidence=(PortabilityEvidenceV4 if source_format=='XLSX' else PortabilityEvidenceV3 if ordered else PortabilityEvidenceV2 if source_checksums is not None else PortabilityEvidenceV1).model_validate(row['evidence']).model_dump()
+    evidence=(PortabilityEvidenceV5 if source_format=='JSON' else PortabilityEvidenceV4 if source_format=='XLSX' else PortabilityEvidenceV3 if ordered else PortabilityEvidenceV2 if source_checksums is not None else PortabilityEvidenceV1).model_validate(row['evidence']).model_dump()
+    if source_format=='JSON':
+        from .json_execution_binding import validate_reader_binding
+        expected_reader=validate_reader_binding({'source_format':'JSON','source_checksum':source_checksum,'json_reader':json_reader})
+        validate_reader_binding(evidence)
+        receipt=evidence['json_runtime_receipt']
+        if (evidence['json_reader']!=expected_reader or
+                set(receipt)!={'version','scope','HOP_JSON_INPUT_INCLUDE_NULLS','qa_passed','log_checksum'} or
+                type(receipt.get('version')) is not int or receipt['version']!=1 or
+                receipt.get('scope')!='PRIVATE_LAUNCHER_SYSTEM_PROPERTY_RECEIPT' or
+                receipt.get('HOP_JSON_INPUT_INCLUDE_NULLS')!='Y' or receipt.get('qa_passed') is not False or
+                receipt.get('log_checksum')!=evidence['hop_log_checksum']):
+            raise ValueError('RELEASE_PORTABILITY_JSON_EVIDENCE_CHANGED')
     if ordered and (evidence['source_order']!=SourceOrderV1.model_validate(source_order).model_dump()
                     or evidence['result_query_checksum']!=result_query_checksum):
         raise ValueError('RELEASE_PORTABILITY_ORDER_CHANGED')
