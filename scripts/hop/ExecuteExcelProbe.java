@@ -38,7 +38,8 @@ class ExecuteExcelProbe {
         var values = new ArrayList<String>();
         for (int i = 0; i < rowMeta.size(); i++)
           values.add(row[i] == null ? "NULL" : Base64.getEncoder().encodeToString(
-              row[i].toString().getBytes(StandardCharsets.UTF_8)));
+              (row[i] instanceof java.util.Date ? ((java.util.Date) row[i]).toInstant().toString()
+                  : row[i].toString()).getBytes(StandardCharsets.UTF_8)));
         rows.add(String.join("|", values));
       }
     });

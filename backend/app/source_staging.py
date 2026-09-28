@@ -12,6 +12,39 @@ from .csv_content_validation import validate_csv_content
 from .csv_contract import validated_csv_contracts
 
 
+@contextmanager
+def stage_excel_source(run_id, source, contract):
+    """Bind confirmed XLSX selection and typed full scan to one private byte copy.
+
+    Not yet a Run authorization path. Original bytes are never converted to CSV.
+    The caller must recheck approvals and mount the attempt directory read-only.
+    """
+    from .excel_input_contract import ExcelInputContractV1, validate_excel_content
+    from .excel_profile import verify_excel_source
+    canonical_id = str(UUID(str(run_id)))
+    policy = ExcelInputContractV1.model_validate(contract)
+    if source.get('type') != 'EXCEL' or source.get('has_actual_data') is not True:
+        raise ValueError('STAGING_REQUIRES_UPLOADED_EXCEL')
+    if (policy.worksheet, policy.header_row) != (source.get('worksheet'), source.get('header_row')):
+        raise ValueError('STAGING_EXCEL_SELECTION_MISMATCH')
+    content = read_verified_upload(source.get('upload_id'), 'EXCEL', source.get('checksum'), source.get('size'))
+    verify_excel_source(source, content=content)
+    fields = source.get('fields') or []
+    evidence = validate_excel_content(content, policy.model_dump(), [field.get('name') for field in fields],
+                                      column_types=[field.get('type') for field in fields])
+    root = task_uploads.ROOT / 'runtime-temp' / 'run-sources'
+    root.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=canonical_id + '-', dir=root) as directory:
+        path = Path(directory) / 'source.xlsx'
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(descriptor, 'wb') as stream:
+            stream.write(content); stream.flush(); os.fsync(stream.fileno())
+        if sha256(path.read_bytes()).hexdigest() != evidence['content_checksum']:
+            raise ValueError('STAGING_COPY_MISMATCH')
+        yield {'path': path, 'directory': Path(directory), 'evidence': evidence,
+               'run_id': canonical_id, 'execution_authorized': False}
+
+
 def _copy_source(canonical_id, source, contract, directory):
     if source.get('type') != 'CSV':
         raise ValueError('STAGING_REQUIRES_CSV')

@@ -1,5 +1,7 @@
 """Explicit XLSX read policy; standalone until the versioned Run path supports it."""
 from io import BytesIO
+from hashlib import sha256
+import json
 from typing import Literal
 from openpyxl import load_workbook
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator
@@ -26,18 +28,26 @@ class ExcelInputContractV1(BaseModel):
         return value
 
 
-def validate_excel_content(content, contract, field_names, *, max_rows=100000):
+def validate_excel_content(content, contract, field_names, *, max_rows=100000, column_types=None):
     """Full selected-sheet structural check, not data conversion or execution QA.
 
     Inspect formulas without cached-value substitution. Unselected sheets are
     outside this contract. Scan limits never produce a successful complete proof.
     """
     policy = ExcelInputContractV1.model_validate(contract)
+    if not isinstance(content, bytes) or len(content) > 50 * 1024 * 1024:
+        raise ValueError('EXCEL_BYTES_OR_SIZE_INVALID')
     if (not field_names or len(field_names) > 512 or any(not isinstance(name, str) or not name for name in field_names)
             or len(set(field_names)) != len(field_names)):
         raise ValueError('EXCEL_FIELDS_INVALID')
     if type(max_rows) is not int or max_rows < 1:
         raise ValueError('EXCEL_SCAN_LIMIT_INVALID')
+    if column_types is not None:
+        from .excel_value_validation import validate_excel_value
+        if not isinstance(column_types, list) or len(column_types) != len(field_names):
+            raise ValueError('EXCEL_TYPE_COVERAGE_INVALID')
+        for declared_type in column_types:
+            validate_excel_value(None, declared_type)
     book = load_workbook(BytesIO(content), read_only=True, data_only=False)
     try:
         if policy.worksheet not in book.sheetnames:
@@ -70,11 +80,18 @@ def validate_excel_content(content, contract, field_names, *, max_rows=100000):
                 blanks += 1
                 if policy.blank_rows == 'SKIP':
                     continue
+            if column_types is not None:
+                for value, declared_type in zip(values, column_types):
+                    validate_excel_value(value, declared_type)
             records += 1
         if not header_found:
             raise ValueError('EXCEL_HEADER_MISSING')
         return {'status': 'EXCEL_STRUCTURE_VALIDATED_NOT_EXECUTABLE', 'complete': True,
                 'rows_scanned': scanned, 'records_expected': records, 'blank_rows': blanks,
+                'content_checksum': sha256(content).hexdigest(), 'byte_count': len(content),
+                'contract_checksum': sha256(json.dumps(policy.model_dump(), sort_keys=True,
+                    ensure_ascii=False, separators=(',', ':')).encode()).hexdigest(),
+                'column_types_checked': column_types is not None,
                 'type_conversion_verified': False, 'execution_authorized': False}
     finally:
         book.close()

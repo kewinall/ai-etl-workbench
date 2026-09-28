@@ -1,5 +1,9 @@
 # 第 5 階段目前判定（2026-09-28）
 
+最新補充：[Excel 全檔型別與暫存副本](excel-typed-staging-2026-09-28.md)
+完成 9 項真實 Hop 比對、1571 項後端回歸。來源準備尚未接入版本化 Run；
+正式 Excel／Vertica／QA／Release 全鏈仍未完成，下一步接版本化規格與證據。
+
 最新補充：[Excel 原生讀取元件](excel-native-fragment-2026-09-28.md)
 完成獨立契約與兩項無網路 Hop 實測，完整後端 1544 passed／84 skipped。
 尚未接入正式 Run／Vertica／Release，不變更第 5 階段未完成判定。

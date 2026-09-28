@@ -17,6 +17,10 @@
 
 整體目標保持未完成。人工基準依操作者決定保留未量測，不填入估算或代理工時。
 
+最新工程補充：[Excel 型別及暫存](verification/excel-typed-staging-2026-09-28.md)
+完成 9 項真實 Hop 原生讀取及 1571 項後端回歸，包含全檔型別錯誤攔截與
+已確認 bytes 的唯讀暫存。尚未接入正式 Run／Vertica／Release。
+
 最新工程補充：[Excel 原生 fragment 驗證](verification/excel-native-fragment-2026-09-28.md)
 已完成獨立結構契約與兩項真實 Hop 讀取比對；全後端 1544 passed／84 skipped。
 尚未部署為完整受控 Run 能力，下一步補齊原生型別邊界並接入版本化規格及 staging。
