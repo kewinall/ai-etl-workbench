@@ -1,10 +1,13 @@
 """Real fixed JSON CLI and private metrics launcher; no network or DB sink."""
 import os
+import json
 import subprocess
 from pathlib import Path
 from xml.etree import ElementTree as ET
 import pytest
 from app.hpl_compiler import compile_hpl
+from app.hwf_compiler import compile_hwf
+from app.workflow_log_evidence import workflow_log_evidence
 from app.hop_command import hop_command
 from app.hop_metadata import local_metadata_json
 from app.hop_log_evidence import hop_log_evidence
@@ -17,8 +20,9 @@ pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_JSON_TEST') != '1',
 
 @pytest.mark.parametrize('missing', [False, True])
 @pytest.mark.parametrize('private', [False, True])
-def test_json_fixed_cli_preserves_null_records_and_missing_file_fails(tmp_path, missing, private):
-    compiled = compile_hpl(*json_design())
+@pytest.mark.parametrize('workflow', [False, True])
+def test_json_fixed_cli_preserves_null_records_and_missing_file_fails(tmp_path, missing, private, workflow):
+    compiled = compile_hwf(*json_design()) if workflow else compile_hpl(*json_design())
     root = ET.fromstring(compiled['hpl'])
     target = root.find("transform[name='target']")
     assert target.findtext('type') == 'TableOutput'
@@ -28,10 +32,16 @@ def test_json_fixed_cli_preserves_null_records_and_missing_file_fails(tmp_path, 
     assert all(node.findtext('type') in {'RowGenerator', 'JsonInput', 'FilterRows', 'SortRows', 'GroupBy', 'SelectValues', 'Dummy'}
                for node in root.findall('transform'))
     (tmp_path / 'candidate.hpl').write_text(ET.tostring(root, encoding='unicode'), encoding='utf-8')
-    (tmp_path / 'metadata.json').write_text(local_metadata_json(), encoding='utf-8')
+    metadata=json.loads(local_metadata_json())
+    if workflow:
+        (tmp_path/'pipeline.hpl').write_text(ET.tostring(root,encoding='unicode'),encoding='utf-8')
+        (tmp_path/'workflow.hwf').write_text(compiled['hwf'],encoding='utf-8')
+        metadata['workflow-run-configuration']=[{'name':'local','defaultSelection':False,'engineRunConfiguration':{'Local':{'safe_mode':False}}}]
+    (tmp_path / 'metadata.json').write_text(json.dumps(metadata), encoding='utf-8')
     if not missing: (tmp_path / 'source.json').write_bytes(CONTENT)
     mount = '/candidate with spaces,comma'
     args = hop_command(mount, source_format='JSON', credential_launcher=private)
+    if workflow:args=[('--file='+mount+'/workflow.hwf') if arg.startswith('--file=') else arg for arg in args]
     extra = []
     if private:
         launcher = Path(__file__).resolve().parents[2] / 'backend/app/java/WorkbenchHopRun.java'
@@ -46,6 +56,11 @@ def test_json_fixed_cli_preserves_null_records_and_missing_file_fails(tmp_path, 
         'output': (result.stdout + result.stderr).encode()}, [node.findtext('name') for node in root.findall('transform')])
     assert 'synthetic-unused' not in result.stdout + result.stderr
     assert evidence['result']['status'] == ('FAILED' if missing else 'COMPLETED'), (evidence, result.stdout, result.stderr)
+    if workflow:
+        proof=workflow_log_evidence({'started':True,'reason':'EXITED','exit_code':result.returncode,
+            'output':(result.stdout+result.stderr).encode()},
+            [node.findtext('name') for node in root.findall('transform')],ET.fromstring(compiled['hwf']).findtext('name'))
+        assert proof['workflow_completed'] is (not missing)
     if missing:
         assert result.returncode != 0
     else:

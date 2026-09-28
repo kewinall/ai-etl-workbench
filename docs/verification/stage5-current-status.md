@@ -1,6 +1,10 @@
 # 第 5 階段目前判定（2026-09-28）
 
-最新工程：[JSON 可攜證據契約](json-portability-contract-2026-09-28.md)。
+最新工程：[JSON 重播 Worker 與原生 HWF](json-replay-worker-2026-09-28.md)。
+1994 項完整後端、30 項針對性、8 項原生 Hop 通過；Dummy 目標不算真實 Vertica／ZIP 全鏈。
+尚未部署正式，JSON 新案例完整驗收仍待完成。
+
+先前工程：[JSON 可攜證據契約](json-portability-contract-2026-09-28.md)。
 1980 項隔離後端與 35 項可攜契約測試通過；SDM 網站預覽／保存／下載亦已隔離驗證。
 重播 Worker、文件視覺及真實 JSON 全鏈仍待完成，未部署正式。
 

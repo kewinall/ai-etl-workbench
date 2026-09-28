@@ -21,7 +21,9 @@ from .formal_release_bundle import candidate_parts
 from .release_bundle import MEMBERS
 from .release_portability import validate_portability
 from .delivery_context import load_delivery_context
-from .source_staging import stage_csv_source,stage_csv_sources,stage_excel_source
+from .source_staging import stage_csv_source,stage_csv_sources,stage_excel_source,stage_json_source
+from .json_replay_source import verify_staged_json
+from .json_runtime_evidence import require_json_runtime_receipt
 from .source_binding import execution_sources
 from .bound_result_query import load_bound_result_query,execute_bound_result_query
 from .result_oracle import compare_oracle_document
@@ -88,10 +90,13 @@ def replay(queue,repo,task_id,run_id,candidate_id,*,root=None):
     try:
         sources=source_config['sources'];multi=spec['version']==2
         excel=spec['version']==4
-        staging=(stage_excel_source(run_id,sources[0],source_config['excel_input_contract_v1']) if excel else
+        json_source=spec['version']==5
+        staging=(stage_json_source(run_id,sources[0],source_config['json_input_contract_v1']) if json_source else
+                 stage_excel_source(run_id,sources[0],source_config['excel_input_contract_v1']) if excel else
                  stage_csv_sources(run_id,source_config) if multi else
                  stage_csv_source(run_id,sources[0],source_config['csv_input_contract_v1']))
         with staging as staged:
+            if json_source:verify_staged_json(staged,source_binding,spec['json_source'])
             directory=staged['directory'];(directory/'hop').mkdir()
             for name,data in parts.items():
                 with (directory/name).open('xb') as stream:stream.write(data)
@@ -105,7 +110,7 @@ def replay(queue,repo,task_id,run_id,candidate_id,*,root=None):
                 cursor.execute('CREATE SCHEMA IF NOT EXISTS ai_sample')
                 cursor.execute(parts[MEMBERS['DDL']].decode('utf-8'));db.commit()
             command=hop_command(directory.as_posix(),credential_launcher=True,source_count=2 if multi else 1,
-                                **({'source_format':'XLSX'} if excel else {}))
+                                **({'source_format':'JSON'} if json_source else {'source_format':'XLSX'} if excel else {}))
             command=[('--file='+str(directory/MEMBERS['HWF'])) if arg.startswith('--file=') else arg for arg in command]
             environment={key:os.environ[key] for key in ('PATH','HOME','JAVA_HOME','LANG','LC_ALL') if key in os.environ}
             environment.update(HOP_HOME='/opt/hop',HOP_SHARED_JDBC_FOLDERS='/opt/hop/lib/jdbc',WORKBENCH_VERTICA_PASSWORD=secret)
@@ -118,10 +123,14 @@ def replay(queue,repo,task_id,run_id,candidate_id,*,root=None):
             nodes=[n.findtext('name') for n in ET.fromstring(parts[MEMBERS['HPL']]).findall('transform')]
             workflow_name=ET.fromstring(parts[MEMBERS['HWF']]).findtext('name')
             hop=workflow_log_evidence(process,nodes,workflow_name)
+            receipt=({**require_json_runtime_receipt(process['output']),
+                      'log_checksum':sha256(process['output']).hexdigest()} if json_source else None)
             if hop['result']['status']!='COMPLETED' or not hop['workflow_completed']:
                 raise ValueError('PORTABILITY_HOP_NOT_COMPLETED')
             if any((directory/name).read_bytes()!=content for name,content in parts.items()):raise ValueError('PORTABILITY_ARTIFACT_CHANGED')
-            source_paths=({ref:item['path'] for ref,item in staged['sources'].items()} if multi else {'source.0':staged['path']})
+            if json_source:verify_staged_json(staged,source_binding,spec['json_source'])
+            source_paths=({ref:item['path'] for ref,item in staged['sources'].items()} if multi else
+                          {'source.0':staged['original_path'] if json_source else staged['path']})
             for i,source in enumerate(sources):
                 if sha256(source_paths[f'source.{i}'].read_bytes()).hexdigest()!=source['checksum']:
                     raise ValueError('PORTABILITY_SOURCE_CHANGED')
@@ -137,18 +146,20 @@ def replay(queue,repo,task_id,run_id,candidate_id,*,root=None):
             if ordered and (comparison['comparison']!='EXACT_SOURCE_SEQUENCE'
                     or comparison['ordinal_column']!=spec['source_order']['ordinal_column']):
                 raise ValueError('PORTABILITY_ORDER_CONTRACT_MISMATCH')
-            evidence=dict(version=4 if excel else 3 if ordered else 2 if multi else 1,candidate_checksum=candidate['checksum'],**source_binding,
+            evidence=dict(version=5 if json_source else 4 if excel else 3 if ordered else 2 if multi else 1,candidate_checksum=candidate['checksum'],**source_binding,
                 hop_log_checksum=hop['result']['log_checksum'],result_expected_checksum=comparison['expected_checksum'],
                 result_actual_checksum=comparison['actual_checksum'],expected_count=comparison['expected_count'],actual_count=comparison['actual_count'],
                 exit_code=0,isolated_target_created=True,original_artifacts_unmodified=True,workflow_completed=hop['workflow_completed'],
                 **{kind.lower()+'_checksum':sha256(parts[MEMBERS[kind]]).hexdigest() for kind in ('HPL','HWF','DDL')})
+            if json_source:evidence['json_runtime_receipt']=receipt
             if ordered:
                 evidence.update(**order_binding,comparison=comparison['comparison'],
                                 position_mismatch_count=comparison['position_mismatch_count'])
             validate_portability({'status':'PASS','evidence':evidence,'checksum':digest(evidence)},candidate,source_binding['source_checksum'],
                 expected_checksum=comparison['expected_checksum'],expected_count=comparison['expected_count'],
                 source_checksums=source_binding.get('source_checksums'),**order_binding,
-                **({'source_format':'XLSX'} if excel else {}))
+                **({'source_format':'JSON','json_reader':source_binding['json_reader']} if json_source else
+                   {'source_format':'XLSX'} if excel else {}))
             with queue.conn() as conn:
                 current=replay_context(queue,repo,conn,task_id,run_id,candidate_id,root)
                 if current[0]['checksum']!=candidate['checksum']:raise ValueError('PORTABILITY_UPSTREAM_CHANGED')

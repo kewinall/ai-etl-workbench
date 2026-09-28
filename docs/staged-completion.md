@@ -17,7 +17,10 @@
 
 整體目標保持未完成。人工基準依操作者決定保留未量測，不填入估算或代理工時。
 
-最新工程：[JSON 可攜證據契約](verification/json-portability-contract-2026-09-28.md)。
+最新工程：[JSON 重播 Worker 與原生 HWF](verification/json-replay-worker-2026-09-28.md)。
+1994 項完整後端、30 項針對性與 8 項原生 Hop 測試通過；仍未部署或完成真實 Vertica／ZIP 全鏈。
+
+先前工程：[JSON 可攜證據契約](verification/json-portability-contract-2026-09-28.md)。
 1980 項隔離後端與 35 項可攜契約測試通過；JSON 核准端綁定已接通，重播 Worker 仍待實作。
 SDM 網站預覽／保存／下載已通過隔離實測，未部署正式，JSON 全鏈仍未完成。
 

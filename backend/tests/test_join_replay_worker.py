@@ -2,6 +2,7 @@
 from contextlib import nullcontext
 from unittest.mock import MagicMock
 from uuid import uuid4
+from hashlib import sha256
 import pytest
 from app import release_replay_worker as module, task_uploads
 from app.delivery_compiler import compile_delivery_components
@@ -12,17 +13,28 @@ from test_join_semantics import join_design
 from test_excel_specification import excel_design
 from app.excel_profile import selected_profile
 from app.excel_contract_binding import validated_excel_contract
+from test_json_specification import json_design,CONTENT
+from app.json_source_profile import confirmed_json_profile
+from app.json_contract_binding import validated_json_contract
+from app.json_runtime_evidence import MARKER
 
 
 @pytest.mark.parametrize('changed', [False,True])
-@pytest.mark.parametrize('excel', [False,True])
+@pytest.mark.parametrize('excel', [False,True,'JSON','JSON_BOM'])
 def test_replay_binds_staged_sources_before_claim(tmp_path,monkeypatch,changed,excel):
     monkeypatch.setattr(task_uploads,'ROOT',tmp_path)
     monkeypatch.setattr(task_uploads,'UPLOAD_ROOT',tmp_path/'uploads')
     captured=[]
-    spec,run,naming = excel_design(capture=captured) if excel else join_design()
+    json_source=excel in ('JSON','JSON_BOM')
+    content=(b'\xef\xbb\xbf' if excel=='JSON_BOM' else b'')+CONTENT
+    spec,run,naming = json_design(content) if json_source else excel_design(capture=captured) if excel else join_design()
     config = run['input_snapshot']['source_config']
-    if excel:
+    if json_source:
+        upload=task_uploads.save_and_profile('input.json',content)
+        profile=confirmed_json_profile(upload['upload_id'],upload['checksum'],upload['size'])
+        config['sources']=[{**upload,**profile,'type':'JSON','has_actual_data':True}]
+        spec['json_source']=validated_json_contract(config)['reference']
+    elif excel:
         upload=task_uploads.save_and_profile('input.xlsx',captured[0])
         profile=selected_profile(upload['upload_id'],upload['checksum'],upload['size'],'明細',2)
         config['sources']=[{**upload,**profile,'type':'EXCEL','has_actual_data':True}]
@@ -58,7 +70,11 @@ def test_replay_binds_staged_sources_before_claim(tmp_path,monkeypatch,changed,e
     def command(directory,**kwargs):
         from pathlib import Path
         path=Path(directory)
-        if excel:
+        if json_source:
+            assert (path/'source-original.json').read_bytes()==content
+            assert (path/'source.json').read_bytes()==CONTENT
+            assert not (path/'source.csv').exists()
+        elif excel:
             assert (path/'source.xlsx').read_bytes()==captured[0]
             assert not (path/'source.csv').exists()
         else:
@@ -66,8 +82,9 @@ def test_replay_binds_staged_sources_before_claim(tmp_path,monkeypatch,changed,e
         commands.append(kwargs)
         return ['synthetic-hop','--file=candidate.hpl']
     monkeypatch.setattr(module,'hop_command',command)
-    monkeypatch.setattr(module,'run_managed',lambda *a,**k:{'output':b'synthetic-log'})
-    monkeypatch.setattr(module,'workflow_log_evidence',lambda *a:{'result':{'status':'COMPLETED','log_checksum':'e'*64},'workflow_completed':True})
+    log=MARKER+b'\nsynthetic-log' if json_source else b'synthetic-log'
+    monkeypatch.setattr(module,'run_managed',lambda *a,**k:{'output':log})
+    monkeypatch.setattr(module,'workflow_log_evidence',lambda *a:{'result':{'status':'COMPLETED','log_checksum':sha256(log).hexdigest()},'workflow_completed':True})
     monkeypatch.setattr(module,'execute_bound_result_query',lambda *a:None)
     monkeypatch.setattr(module,'read_result_rows',lambda *a:[])
     monkeypatch.setattr(module,'compare_oracle_document',lambda *a,**k:dict(status='MATCH',
@@ -79,11 +96,16 @@ def test_replay_binds_staged_sources_before_claim(tmp_path,monkeypatch,changed,e
     else:
         result=module.replay(queue,None,'task',run['run_id'],uuid4(),root=tmp_path)
         assert result['status'] == 'PASS' and not result['release_ready']
-        assert commands == ([{'credential_launcher':True,'source_count':1,'source_format':'XLSX'}] if excel else
+        assert commands == ([{'credential_launcher':True,'source_count':1,'source_format':'JSON'}] if json_source else
+                            [{'credential_launcher':True,'source_count':1,'source_format':'XLSX'}] if excel else
                             [{'credential_launcher':True,'source_count':2}])
         update = next(call for call in conn.execute.call_args_list if call.args[0].startswith('UPDATE'))
         proof=update.args[1][1].obj
-        if excel:
+        if json_source:
+            assert proof['version']==5 and proof['source_format']=='JSON'
+            assert proof['json_reader']==binding['json_reader']
+            assert proof['json_runtime_receipt']['log_checksum']==sha256(log).hexdigest()
+        elif excel:
             assert proof['version']==4 and proof['source_format']=='XLSX'
         else:
             assert proof['version'] == 2 and proof['source_checksums'] == binding['source_checksums']
