@@ -106,3 +106,13 @@ build PASS；隔離後端2036 PASS/139明示skip/1warning（48.50s），browser2
 實際人工結案保存 observed_row_count=1；這是使用者聲明，與前輪獨立查得5筆分別保存，不覆寫或將聲明當作再次查詢結果。本次只修改導引，沒有重查/重跑 ETL、改答案或新增核准。下一步新目標 ui_accept_join_20261010_r3 並使用原執行前固定5筆標準答案。
 
 驗證：後端 workflow19 PASS（0.72s）；既有 browser27 PASS/1skip，新增結案導引測試修正測試 selector 後單獨1 PASS（1.2s）；實際已結案 Join 顯示第5階段與結案紀錄，點明確修正版入口沿用原目標與需求、零寫入/零pageerror。部署 web/api build PASS。證據 ui-accept-closed-run-guidance-2026-10-10.json。原Run尚無新版，QA/Release仍未通過。
+
+## 2026-10-10：交付文件自動讀取與缺漏原因
+
+實際 GET 核查此 Join Run 的 sdm-candidates.items=[]；release_ready=false，正式候選包、可攜驗證、交付核准及 Release 均不存在。人工結案僅保留執行結果，不代表 QA 核准，因此本版沒有 SDM 或 ZIP，不能以合成文件替代。
+
+修正交付文件清單進頁自動讀取，接入共用刷新並防止切換版本後舊回應覆寫；已存在的候選文件立即顯示。已結案版本的交付頁顯示「此版尚無交付文件」、比對失敗與 QA 前置條件，以及返回結果入口。仍由既有後端判定產生文件資格。
+
+驗證：部署 web build（含 TypeScript）PASS；browser 30 PASS/1 不適用情境 skip（36.6s），包括自動顯示既有候選與結案空清單。實際 Join GET-only UI 證據 ui-accept-delivery-empty-2026-10-10.json：自動讀取清單、原因可見、結果入口可操作、SDM 建立停用、零寫入/零 pageerror。既有正式 CSV/Excel 唯讀下載回歸包含於上述測試。
+
+下一步：由原結果的明確修正版入口建立新目標 ui_accept_join_20261010_r3，保留原版與原寫入；執行前輸入已固定的 5 筆答案與正確 NULL 契約，重新走必要人工核准。QA 通過後才建立 SDM、候選包、隔離驗證及正式交付。CSV/Excel 仍待人工確認；三案例全鏈仍部分完成，5183 未升級，project source 未推送。

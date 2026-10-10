@@ -40,6 +40,7 @@ async function fixture(page:Page,options:{stage?:string;waiting?:boolean;issues?
   if(path.endsWith('/artifacts'))return route.fulfill({json:{status:'NO_AUTHORIZED_COMPILER_ARTIFACTS'}});
   if(path.endsWith('/hop-dispatch'))return route.fulfill({json:{request:null,offer:null,blocked_reason:'前置條件不足'}});
   if(path.endsWith('/release'))return route.fulfill({json:{status:'PREREQUISITES_REQUIRED',release_ready:false}});
+  if(path.endsWith('/sdm-candidates'))return route.fulfill({json:{items:[],release_ready:false}});
   if(path.endsWith('/sdm'))return route.fulfill({json:{items:[]}});
   if(path.endsWith('/naming-contract'))return route.fulfill({json:{contract:null}});
   if(path.endsWith('/workers'))return route.fulfill({json:{workers:[]}});
@@ -301,4 +302,21 @@ test('結案仍顯示原結果階段，明確建立修正版才開啟沿用表�
  await expect(page.locator('[data-field="target_table"]')).toHaveValue('original');
  await expect(page.locator('[data-field="requirement_text"]')).toHaveValue('原始需求，其他內容必須保留');
  expect(tracker.counts().posts).toBe(0);
+});
+
+for(const hasDocument of [false,true])test(`交付頁自動讀取文件：${hasDocument?'已有候選文件立即顯示':'結案無文件顯示原因與結果入口'}（合成 API）`,async({page})=>{
+ const tracker=await fixture(page,{stage:'delivery'});
+ const closed={...run(),state:'FAILED',write_started:true,failed_revision_available:true,outcome_code:'HOP_EXECUTED_QA_REQUIRED'};
+ if(!hasDocument)await page.route(`**/runs/${current}`,r=>r.fulfill({json:closed}));
+ let reads=0;
+ await page.route('**/sdm-candidates',r=>{reads++;return r.fulfill({json:{items:hasDocument?[{sdm_id:current,status:'CANDIDATE_NOT_RELEASED',release_ready:false,checksum:'a'.repeat(64),specification_checksum:'b'.repeat(64),file_size:100,created_at:'2026-10-10T00:00:00Z'}]:[],release_ready:false}})});
+ await page.goto(base+'/delivery/'+current);
+ const panel=page.getByRole('region',{name:'SDM 候選文件歷史'});
+ if(hasDocument){await expect(panel.getByRole('button',{name:'下載歷史候選 Excel（非 Release）'})).toBeVisible();}
+ else{
+  await expect(panel).toContainText('尚無已保存的 SDM 候選文件');
+  const blocked=page.getByRole('region',{name:'交付阻擋原因'});await expect(blocked).toContainText('結案不代表 QA 核准');
+  await blocked.getByRole('button',{name:'查看此版流程與執行結果'}).click();await expect(page).toHaveURL(new RegExp('/results/'+current+'$'));
+ }
+ expect(reads).toBeGreaterThan(0);expect(tracker.counts().posts).toBe(0);
 });

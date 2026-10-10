@@ -1,16 +1,21 @@
-import {useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import {request,sourcePath} from './api';
+import {useWorkflowRefresh} from './useWorkflowRefresh';
 
 export function SdmHistory({base}:{base:string}) {
   const [items,setItems]=useState<any[]|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
-  const load=async()=>{
+  const generation=useRef(0);
+  const load=useCallback(async()=>{
+    const ticket=++generation.current;
     setBusy(true);setError('');setItems(null);
     try {
       const value=await request(`${base}/sdm-candidates`);
       if(!Array.isArray(value.items)||value.release_ready!==false||value.items.some((row:any)=>row.status!=='CANDIDATE_NOT_RELEASED'||row.release_ready!==false||!/^[a-f0-9-]{36}$/.test(row.sdm_id)))throw new Error('歷史文件回應不完整，請重試。');
-      setItems(value.items);
-    }catch(e:any){setError(e.message)}finally{setBusy(false)}
-  };
+      if(ticket===generation.current)setItems(value.items);
+    }catch(e:any){if(ticket===generation.current)setError(e.message)}finally{if(ticket===generation.current)setBusy(false)}
+  },[base]);
+  useEffect(()=>{void load();return()=>{generation.current++}},[load]);
+  useWorkflowRefresh(base,load,busy);
   const download=async(row:any)=>{
     setBusy(true);setError('');
     try {
