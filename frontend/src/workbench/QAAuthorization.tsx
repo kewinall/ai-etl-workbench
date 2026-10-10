@@ -1,7 +1,9 @@
 import {useEffect,useState} from 'react';
 import {jsonBody,request} from './api';
+import {useWorkflowRefresh,useWorkflowReadOnly} from './useWorkflowRefresh';
 
 export function QAAuthorization({taskId,runId}:{taskId:string;runId:string}) {
+  const readOnly=useWorkflowReadOnly();
   const base=`/api/tasks/${encodeURIComponent(taskId)}/runs/${runId}/qa-authorization`;
   const [data,setData]=useState<any>(null),[consent,setConsent]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
   useEffect(()=>{let live=true;request(base).then(value=>{if(live)setData(value)}).catch(e=>{if(live)setError(e.message)});return()=>{live=false}},[base]);
@@ -13,6 +15,7 @@ export function QAAuthorization({taskId,runId}:{taskId:string;runId:string}) {
       setData(await request(base));setConsent(false);
     }catch(e:any){setData(null);setConsent(false);setError(e.message)}finally{setBusy(false)}
   }
+  useWorkflowRefresh(base,refresh,busy);
   return <section aria-label="QA 模型呼叫授權"><h4>QA 模型呼叫授權</h4>
     <p>模型將對照需求、執行規格、節點與已保存的 Hop／結果證據；此授權不等於 QA 通過或交付核准。</p>
     <button disabled={busy} onClick={refresh}>重新核對 QA 派發條件</button>
@@ -24,7 +27,7 @@ export function QAAuthorization({taskId,runId}:{taskId:string;runId:string}) {
         {data.reassess_invocation_id&&<p>前次 NEEDS_REVIEW 將永久保留。審查指引已更新，可另行同意一次複核；不重跑 Hop、不沿用 QA 核准、不保證 PASS。</p>}
         <p>模型：{data.model}。使用本機登入額度，1 次 CLI、不自動重試或換模型、禁止工具操作；無法保證輸出 Token 硬上限。本機 QA Worker 必須另行執行。</p>
         <label><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>我同意此版本 QA 單次模型呼叫與用量</label>
-        <button disabled={busy||!consent} onClick={authorize}>{data.reassess_invocation_id?'授權一次 QA 複核':'授權 QA 證據審查'}</button>
+        <button disabled={readOnly||busy||!consent} onClick={authorize}>{data.reassess_invocation_id?'授權一次 QA 複核':'授權 QA 證據審查'}</button>
       </>}
   </section>;
 }

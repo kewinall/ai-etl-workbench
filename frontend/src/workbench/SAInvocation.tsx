@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react';
 import {request, jsonBody} from './api';
 import {WorkerStatus} from './WorkerStatus';
 import {SAApproval} from './SAApproval';
+import {useWorkflowRefresh,useWorkflowReadOnly} from './useWorkflowRefresh';
 
 const states: Record<string, string> = {
   SA_QUEUED: '已授權並排隊，尚未由 Worker 領取',
@@ -14,6 +15,7 @@ const states: Record<string, string> = {
 };
 
 export function SAInvocation({taskId, runId}: {taskId: string; runId: string}) {
+  const readOnly=useWorkflowReadOnly();
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -31,10 +33,11 @@ export function SAInvocation({taskId, runId}: {taskId: string; runId: string}) {
     catch (error: any) {setError(error.message)} finally {setBusy(false)}
   };
   useEffect(() => {load()}, [taskId, runId]);
+  useWorkflowRefresh(`/api/tasks/${taskId}/runs/${runId}`,load,busy);
   useEffect(() => {setConsent(false)}, [taskId, runId, offer?.authorization?.context_checksum, offer?.authorization?.settings_checksum]);
   useEffect(() => {
     if (!['SA_QUEUED', 'DISPATCH_RESERVED'].includes(data?.invocation?.status)) return;
-    const timer = window.setInterval(load, 5000);
+    const timer = window.setInterval(()=>{if(!document.hidden)void load()}, 5000);
     return () => window.clearInterval(timer);
   }, [taskId, runId, data?.invocation?.status]);
   const authorize = async () => {
@@ -66,14 +69,14 @@ export function SAInvocation({taskId, runId}: {taskId: string; runId: string}) {
           ? '使用本機 Copilot 登入及額度；只啟動 1 次 CLI，不自動重試、不允許工具操作。CLI 無法保證輸出 Token 硬上限，實際用量以回報為準；Windows 本機 Worker 必須執行中。'
           : '可能依 Token 計費；包含暫時性錯誤重試與格式補正，最多 4 次供應商請求，每次最多 2,048 個輸出 Token。'}費率及最終費用尚不可用；授權不代表 Worker 已上線。</p>
         <label><input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)}/>我同意此版本的 SA 模型呼叫及上述用量限制</label>
-        <button disabled={busy || !consent} onClick={authorize}>授權並排入 SA 工作</button>
+        <button disabled={readOnly || busy || !consent} onClick={authorize}>授權並排入 SA 工作</button>
       </>}
     </div>}
     {data && !item && <p>此版本尚無 SA 派發紀錄。</p>}
     {item && <>
       {item.review && <p><strong>SA 審查結果：{item.review.status === 'NEEDS_INPUT' ? '需要補正需求' : '待人工審查'}</strong>（不代表執行核准）</p>}
       <p>{states[item.status] || '未知狀態，請人工核對'}</p>
-      {item.status === 'SA_QUEUED' && <button disabled={busy} onClick={cancelQueued}>取消尚未領取的 SA 工作</button>}
+      {item.status === 'SA_QUEUED' && <button disabled={readOnly||busy} onClick={cancelQueued}>取消尚未領取的 SA 工作</button>}
       {!data.matches_current && <p>此版本已不符合目前 Task／設定，不可沿用核准。</p>}
       <dl><dt>呼叫編號</dt><dd>{item.invocation_id}</dd><dt>Provider／模型</dt><dd>{item.provider}／{item.model}</dd><dt>Prompt 版本</dt><dd>{item.prompt_version ?? '未記錄'}</dd><dt>Context checksum</dt><dd>{item.context_checksum}</dd><dt>模型處理時間</dt><dd>{item.duration_ms == null ? '不可用' : `${item.duration_ms} ms`}</dd><dt>Token</dt><dd>{item.usage?.usage_type === 'EXACT' && item.usage.total_tokens != null ? item.usage.total_tokens : '不可用（不當作零）'}</dd></dl>
       {item.error_code && <p>處理代碼：{item.error_code}。請先核對設定與呼叫紀錄，不要直接重送。</p>}

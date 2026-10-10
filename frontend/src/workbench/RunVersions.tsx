@@ -15,10 +15,14 @@ import {TransformationEditor, TransformationSummary, intentPayload} from './Tran
 import {SourceOrderEditor, SourceOrderSummary, ordinalRef, validateOrderDraft} from './SourceOrder';
 import {ExcelInputEditor, ExcelInputSummary} from './ExcelInputContract';
 import {JsonInputEditor, JsonInputSummary} from './JsonInputContract';
+import {useDraftGuard} from './useDraftGuard';
+import {OperationLatch} from './operationLatch';
+import {useWorkflowReadOnly,useWorkflowRefresh} from './useWorkflowRefresh';
 
 const states: Record<string, string> = {QUEUED: '待處理（未啟動）', RUNNING: '處理中', NEEDS_REVIEW: '需要人工檢查', SUCCEEDED: '流程已結束', FAILED: '失敗', CANCELLED: '已取消'};
 
 export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string;requestedRunId?:string;onSelectRun?:(id:string)=>void}) {
+  const readOnly=useWorkflowReadOnly();
   const [runs, setRuns] = useState<any[]>([]);
   const [detail, setDetail] = useState<any>(null);
   const [busy, setBusy] = useState(false);
@@ -35,7 +39,17 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
   const [replacement, setReplacement] = useState<any>(null);
   const [replacementPending, setReplacementPending] = useState(false);
   const [draft, setDraft] = useState({requirement_text: '', target_schema: '', target_table: ''});
+  const [preview,setPreview]=useState<any>(null),[diffConfirmed,setDiffConfirmed]=useState(false);
+  const [uncertain,setUncertain]=useState(false);
+  const [pendingRun,setPendingRun]=useState('');
+  const latch=useRef(new OperationLatch());
+  const savedDrafts=useRef(new Map<string,any>());
+  useDraftGuard(editing,busy,setMessage);
+  useEffect(()=>{if(pendingRun&&!busy&&!editing){const id=pendingRun;setPendingRun('');onSelectRun?.(id)}},[pendingRun,busy,editing,onSelectRun]);
+  const draftSignature=JSON.stringify({draft,conditions,transformation,sourceOrder,sourceFields,csvContract,excelContract,jsonContract,replacement});
+  useEffect(()=>{setPreview(null);setDiffConfirmed(false)},[draftSignature]);
   const revisionKey = useRef(crypto.randomUUID());
+  useWorkflowRefresh(`/api/tasks/${encodeURIComponent(taskId)}/runs/${requestedRunId||''}`,async()=>{await load();if(detail)setDetail(await request(`/api/tasks/${taskId}/runs/${detail.run_id}`))},editing||busy);
   const requestKey = useRef(crypto.randomUUID());
   const load = async () => setRuns((await request(`/api/tasks/${taskId}/runs`)).runs);
   useEffect(() => {
@@ -51,8 +65,9 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
     return () => {active = false};
   }, [taskId,requestedRunId]);
   const action = async (operation: () => Promise<void>) => {
+    if(!latch.current.acquire())return;
     setBusy(true); setMessage('');
-    try {await operation()} catch (error: any) {setMessage(error.message)} finally {setBusy(false)}
+    try {await operation()} catch (error: any) {setMessage(error.message)} finally {setBusy(false);latch.current.release()}
   };
   const open = async (id: string) => {
     setDetail(null);
@@ -62,24 +77,36 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
     if (value.run_id !== id) throw new Error('版本回應不一致，請重新載入；無法確認或核准此內容。');
     setDetail(value);
   };
-  const revise = () => action(async () => {
+  const revisionPayload = () => {
     if(replacementPending) throw new Error('請先確認或取消來源換檔');
     validateOrderDraft(sourceOrder, transformation);
-    await request(`/api/tasks/${taskId}/runs/${detail.run_id}/revisions`, jsonBody('POST', {
+    return {
       ...draft, requirements_v1: {version: 1, ...conditions}, ...(transformation ? {transformation_contract_v1: intentPayload(transformation)} : {}), ...(replacement ? {csv_replacement_v1:replacement} : sourceFields ? {source_fields_v1: {fields: sourceFields}} : {}), ...(csvContract ? {csv_input_contract_v1: {...csvContract, header: csvContract.header === 'true'}} : {}), request_key: revisionKey.current, input_checksum: detail.input_checksum,
       ...(detail.qa_revision ? {qa_revision_checksum: detail.qa_revision.checksum} : {}),
       ...(sourceOrder ? {source_order_v1: sourceOrder} : {}),
       ...(excelContract ? {excel_input_contract_v1: excelContract} : {}),
       ...(jsonContract ? {json_input_contract_v1: jsonContract} : {}),
-    }));
-    // Reload the entire Task so legacy input/history panels cannot show stale data.
-    window.location.reload();
+    };
+  };
+  const revise = () => action(async () => {
+    if(!preview||!diffConfirmed||uncertain)throw Error('請先預覽差異並確認；結果不明時須先重新讀取伺服器狀態。');
+    try {
+      const child=await request(`/api/tasks/${taskId}/runs/${detail.run_id}/revisions`,jsonBody('POST',preview));
+      setEditing(false);setPreview(null);setDiffConfirmed(false);savedDrafts.current.delete(detail.run_id);
+      revisionKey.current=crypto.randomUUID();
+      await load();await open(child.run_id);
+      setMessage('已建立新版，下一步是需求確認；舊版与核准紀錄保留，不自動執行。');
+      if(onSelectRun)setPendingRun(child.run_id);else window.location.reload();
+    } catch(e:any) {
+      setUncertain(true);
+      throw Error(`新版建立結果需要核對：${e.message}。輸入與 request key 保留，先重新讀取伺服器，不自動重送。`);
+    }
   });
   const prepare = () => action(async () => {
     const run = await request(`/api/tasks/${taskId}/runs`, jsonBody('POST', {mode: 'PREPARE', request_key: requestKey.current}));
     requestKey.current = crypto.randomUUID();
     await load(); await open(run.run_id);
-    onSelectRun?.(run.run_id);
+    setPendingRun(run.run_id);
     setMessage('已保存本次輸入與設定快照；沒有啟動 ETL。');
   });
   const review = (decision: 'APPROVE' | 'REJECT') => action(async () => {
@@ -97,7 +124,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
     <h3>執行準備版本</h3>
     <p>先保存需求與設定快照，再確認此版輸入。啟用控制 Worker 後，只進行初步需求檢查；不會啟動 Hop 或產生 Release。</p>
     <div className="run-actions">
-      <button disabled={busy || active} onClick={prepare}>建立準備版本</button>
+      <button disabled={readOnly || busy || active} onClick={prepare}>建立準備版本</button>
       <button disabled={busy} onClick={() => action(async () => {await load(); if (detail) await open(detail.run_id)})}>重新載入版本</button>
     </div>
     {message && <p role="status">{message}</p>}
@@ -140,7 +167,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
       {((detail.state === 'NEEDS_REVIEW' && detail.gate_result && !detail.write_started) || detail.failed_revision_available || detail.qa_revision) && detail.matches_current && <>
         {detail.qa_revision && <p>QA 尚未通過。保存補正會結束此版本的待審流程，保留原始執行與 QA 意見；必須指定 ai_sample 中不同的新目標，新版重新確認需求與核准，不會自動重跑 Hop。</p>}
         {detail.failed_revision_available && <p>此失敗版本已核對結案。修正後必須指定 ai_sample 中不同的新目標，重新通過需求與執行核准；不沿用舊核准、不重跑舊寫入，舊失敗與證據完整保留。</p>}
-        {!editing && <button disabled={busy} onClick={() => {
+        {!editing && <button data-revision-start disabled={readOnly||busy} onClick={() => {
           setDraft({requirement_text: detail.input_summary.requirement_text || '', target_schema: detail.input_summary.target_schema || '', target_table: detail.input_summary.target_table || ''});
           setConditions(detail.input_summary.requirements_v1 || {version: 1, write_mode: null, date_scope: null, date_column: '', start_date: '', end_date_exclusive: '', key_columns: []});
           setSourceFields(null);
@@ -150,9 +177,12 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
           setCsvContract(null);
           setExcelContract(null);
           setJsonContract(null);
-          revisionKey.current = crypto.randomUUID(); setEditing(true);
+          const saved=savedDrafts.current.get(detail.run_id);
+          if(saved){setDraft(saved.draft);setConditions(saved.conditions);setTransformation(saved.transformation);setSourceOrder(saved.sourceOrder);setSourceFields(saved.sourceFields);setCsvContract(saved.csvContract);setExcelContract(saved.excelContract);setJsonContract(saved.jsonContract);setReplacement(saved.replacement);revisionKey.current=saved.requestKey}
+          else revisionKey.current = crypto.randomUUID();
+          setUncertain(false);setEditing(true);
         }}>補正需求並建立新版</button>}
-        {editing && <form aria-label="需求補正" onSubmit={event => {event.preventDefault(); revise()}}>
+        {editing && <form aria-label="需求補正" onSubmit={event => {event.preventDefault();if(!preview){try{setPreview(revisionPayload());setDiffConfirmed(false)}catch(e:any){setMessage(e.message)}}else void revise()}}>
           <ExcelInputEditor selection={detail.input_summary.excel_selection} evidence={detail.input_summary.excel_input_contract_v1}
             value={excelContract} disabled={busy} onChange={setExcelContract}/>
           <JsonInputEditor profile={detail.input_summary.json_profile} value={jsonContract} disabled={busy} onChange={setJsonContract}/>
@@ -190,9 +220,10 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
               {!sourceFields.length && <p role="alert">至少保留一個來源欄位。</p>}
             </>}
           </fieldset> : <p>此來源不符合欄位編輯條件，原始來源與檔案保持不變。</p>}
-          <label>補正後需求<textarea required maxLength={20000} rows={5} value={draft.requirement_text} onChange={event => setDraft({...draft, requirement_text: event.target.value})}/></label>
-          <label>目標 Schema<input required pattern="[a-z_][a-z0-9_]{0,62}" value={draft.target_schema} onChange={event => setDraft({...draft, target_schema: event.target.value})}/></label>
-          <label>目標 Table<input required pattern="[a-z_][a-z0-9_]{0,62}" value={draft.target_table} onChange={event => setDraft({...draft, target_table: event.target.value})}/></label>
+          <label>補正後需求<textarea data-field="requirement_text" required maxLength={20000} rows={5} value={draft.requirement_text} onChange={event => setDraft({...draft, requirement_text: event.target.value})}/></label>
+          <h4>目標與預期結果</h4>
+          <label>目標 Schema<input data-field="target_schema" required pattern="[a-z_][a-z0-9_]{0,62}" value={draft.target_schema} onChange={event => setDraft({...draft, target_schema: event.target.value})}/></label>
+          <label>目標 Table<input data-field="target_table" required pattern="[a-z_][a-z0-9_]{0,62}" value={draft.target_table} onChange={event => setDraft({...draft, target_table: event.target.value})}/></label>
           <p>目標名稱限英文小寫、數字與底線，不能以數字開頭；這裡只保存規格，不建立或刪除資料表。</p>
           <label>寫入模式<select value={conditions.write_mode || ''} onChange={event => setConditions({...conditions, write_mode: event.target.value || null})}>
             <option value="">尚未確認</option><option value="APPEND">新增資料（APPEND）</option><option value="REPLACE">覆寫目標（REPLACE，僅記錄意圖）</option><option value="UPSERT">依鍵值合併（UPSERT）</option>
@@ -207,17 +238,19 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
           </>}
           <label>鍵欄位（逗號分隔）<input maxLength={2048} value={(conditions.key_columns || []).join(',')} onChange={event => setConditions({...conditions, key_columns: event.target.value.split(',')})}/></label>
           <p>UPSERT 必須提供來源中存在的鍵欄位；日期採起日包含、迄日不包含。不確定可保持「尚未確認」，重新檢查仍會暫停。覆寫意圖不等於核准刪表。</p>
-          <div className="run-actions"><button type="submit" disabled={busy || replacementPending || !draft.requirement_text.trim()}>保存補正並建立新版</button><button type="button" disabled={busy || replacementPending} onClick={() => setEditing(false)}>放棄補正</button></div>
+          {preview&&<section aria-label="修訂差異預覽"><h4>建立新版前確認差異</h4><p>下游 SA、命名／設計、規格、執行與 QA 核准依後端規則重新核對；原版結果保留。</p><table><thead><tr><th>欄位</th><th>原值</th><th>新值</th></tr></thead><tbody>{Object.entries(preview).filter(([key,value])=>!['request_key','input_checksum','qa_revision_checksum'].includes(key)&&JSON.stringify(value)!==JSON.stringify(detail.input_summary[key])).map(([key,value])=><tr key={key}><td>{({requirement_text:'需求',target_schema:'目標 Schema',target_table:'目標資料表',requirements_v1:'寫入與資料期間',transformation_contract_v1:'轉換規則',source_fields_v1:'來源欄位'} as any)[key]||key}</td><td><pre>{JSON.stringify(detail.input_summary[key]??'原版未提供',null,2)}</pre></td><td><pre>{JSON.stringify(value,null,2)}</pre></td></tr>)}</tbody></table><label><input type="checkbox" checked={diffConfirmed} onChange={e=>setDiffConfirmed(e.target.checked)}/>已核對差異，同意建立待需求確認的新版</label></section>}
+          {uncertain&&<section role="alert"><p>送出結果待核對，不能再次提交。</p><button type="button" disabled={busy} onClick={()=>action(async()=>{const list=await request(`/api/tasks/${taskId}/runs`);setRuns(list.runs);const child=list.runs.find((r:any)=>r.parent_run_id===detail.run_id);if(child){setEditing(false);await open(child.run_id);setPendingRun(child.run_id)}else{setUncertain(false);setMessage('已重新核對：尚未找到子版本，保留同一 request key；仍需人工確認差異才可再次送出。')}})}>重新讀取新版建立結果</button></section>}
+          <div className="run-actions"><button type="submit" disabled={busy || replacementPending || uncertain || !draft.requirement_text.trim() || !!preview&&!diffConfirmed}>{preview?'保存補正並建立新版':'預覽修訂差異'}</button><button type="button" disabled={busy||replacementPending||uncertain} onClick={()=>{savedDrafts.current.set(detail.run_id,{draft,conditions,transformation,sourceOrder,sourceFields,csvContract,excelContract,jsonContract,replacement,requestKey:revisionKey.current});setEditing(false);setMessage('草稿已暫存於本頁；尚未建立新版或核准，重新整理會清除本頁草稿。')}}>儲存草稿</button><button type="button" disabled={busy || replacementPending||uncertain} onClick={() => setEditing(false)}>放棄補正</button></div>
         </form>}
       </>}
       <dl><dt>AI Profile</dt><dd>{detail.settings_summary.ai_profile_id}</dd><dt>資料連線</dt><dd>{detail.settings_summary.connection_id}</dd><dt>輸入 checksum</dt><dd>{detail.input_checksum}</dd><dt>設定 checksum</dt><dd>{detail.settings_checksum}</dd></dl>
       <p>{detail.matches_current ? '與目前 Task／設定一致。' : '內容已變更，舊版確認不可沿用；請取消未執行版本後建立新版本。'}</p>
       {detail.approval && <p>已記錄輸入決定：{detail.approval.decision === 'APPROVE' ? '確認' : '拒絕'}（不等於執行／交付核准）</p>}
-      {detail.state === 'QUEUED' && !detail.approval && detail.matches_current && <>
+      {detail.state === 'QUEUED' && !detail.approval && detail.matches_current && !readOnly && <>
         <label><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)}/>我已核對本次需求及設定版本</label>
         <div className="run-actions"><button disabled={busy || !confirmed} onClick={() => review('APPROVE')}>確認此版輸入</button><button disabled={busy} onClick={() => review('REJECT')}>拒絕此版輸入</button></div>
       </>}
-      {['QUEUED','NEEDS_REVIEW'].includes(detail.state) && !detail.write_started && <button disabled={busy} onClick={cancel}>取消未執行版本</button>}
+      {['QUEUED','NEEDS_REVIEW'].includes(detail.state) && !detail.write_started && <button disabled={readOnly||busy} onClick={cancel}>取消未執行版本</button>}
       {!!detail.events?.length && <><h4>控制流程紀錄</h4><ol>{detail.events.map((event: any) => <li key={event.event_id}>{new Date(event.created_at).toLocaleString()} · {event.event_type} · {event.phase}</li>)}</ol></>}
     </article>}
   </section>;

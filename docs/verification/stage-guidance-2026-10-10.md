@@ -18,6 +18,18 @@
 - 獨立 ai-etl-stage-guide-tests Compose／PostgreSQL／volume 回歸：2013 passed、139 skipped、1 warning，45.72 秒。跳過包括 Native Hop、既有真實執行、Git／PowerShell 與另行部署測試；不等於全鏈驗收。
 - 新 API 真實資料庫與瀏覽器驗證仍在進行；未宣稱全鏈通過。
 
+## 里程碑 2：接通操作與退回
+
+- SA、命名、Developer、規格、標準答案、Hop、QA 及交付操作分別接入對應階段；沿用既有 API，不呼叫模型驗收。
+- 問題導向需求欄位、修正輸入保留、差異預覽與勾選確認後建立子版。草稿只暫存本頁，重載會清除，文案明示。
+- 修訂結果不明須先讀取子版；保留 request key，不自動重送。成功導向須在忙碌保護解除後進行；此問題由瀏覽器測試找出並修正。
+- 歷史命名讀取規格保存當時的 contract_id；沒有綁定時不混入目前 Task 契約。
+- 操作結果或等待狀態只讀更新相關元件，開啟編輯時不重置草稿；隱藏頁面暫停輪詢。
+- 真實隔離 API／瀏覽器版本建立與輸入確認 + 合成歷史、缺失版本、舊 URL、修訂差異、雙擊、回應遺失、狀態過期、輪詢、390／768／1440px 鍵盤：9 tests PASS，19.3 秒。
+- 隔離 PostgreSQL workflow／規格／命名回歸：21 passed，1 warning，7.40 秒。
+- 隔離 UI：compose.stage-guidance.yml，5197；模型、Developer、QA、ETL 派發均關閉，無執行 Worker。初次缺 migration 導致 readiness 503，已補上有序 migration 後通過。
+- 規格退回、QA 補證與真實完整執行的新增 UI 情境仍需擴充，不能用上述合成畫面取代 Native 全鏈。
+
 ## 下一步
 
-完成唯讀 API 整合測試，再驗證問題定位、差異預覽、修正版建立、斷線與重送保護；最後整理交付、專案接續與窄版／鍵盤。真實模型、Hop、Vertica、QA 與 ZIP 完整執行仍須原有核准與獨立合成案例。
+完成第三里程碑的專案接續入口、舊版下載與結果／歷史整理，擴充規格退回、QA 補證、執行異常 UI 回歸。真實模型、Hop、Vertica、QA 與 ZIP 完整執行仍須原有核准與獨立合成案例。

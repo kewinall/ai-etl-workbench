@@ -5,8 +5,10 @@ import {OracleReview} from './OracleReview';
 import {ComparisonHistory} from './ComparisonHistory';
 import {QAReviewHistory} from './QAReviewHistory';
 import {ExecutionDiagnosis} from './ExecutionDiagnosis';
+import {useWorkflowReadOnly,useWorkflowRefresh} from './useWorkflowRefresh';
 
 export function OracleHistory({taskId,requestedRunId,onSelectRun,stage}:{taskId:string;requestedRunId?:string;onSelectRun?:(runId:string)=>void;stage?:string}) {
+  const readOnly=useWorkflowReadOnly();
   const canLeave=()=>window.dispatchEvent(new Event('workbench:before-navigate',{cancelable:true}));
   const [runs,setRuns]=useState<any[]>([]),[run,setRun]=useState('');
   const [specs,setSpecs]=useState<any[]>([]),[spec,setSpec]=useState('');

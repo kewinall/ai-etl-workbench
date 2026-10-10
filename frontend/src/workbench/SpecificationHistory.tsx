@@ -1,4 +1,5 @@
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
+import {useWorkflowReadOnly,useWorkflowRefresh} from './useWorkflowRefresh';
 import {request, jsonBody} from './api';
 import {SpecificationEditor} from './SpecificationEditor';
 import {SdmPreview} from './SdmPreview';
@@ -11,6 +12,7 @@ const operators: Record<string, string> = {EQ: '等於', NE: '不等於', GT: '�
 const functions: Record<string, string> = {SUM: '加總', COUNT_ROWS: '筆數', COUNT_NON_NULL: '非空值筆數', MIN: '最小值', MAX: '最大值'};
 
 export function SpecificationHistory({taskId, runId}: {taskId: string; runId: string}) {
+  const readOnly=useWorkflowReadOnly();
   const [items, setItems] = useState<any[] | null>(null);
   const [selected, setSelected] = useState('');
   const [confirmed, setConfirmed] = useState(false);
@@ -31,13 +33,15 @@ export function SpecificationHistory({taskId, runId}: {taskId: string; runId: st
     setBusy(true); setError(''); setMessage('');
     try {await operation()} catch (error: any) {setError(error.message); setConfirmed(false)} finally {setBusy(false)}
   };
+  useEffect(()=>{void action(load)},[base]);
+  useWorkflowRefresh(base,()=>action(load),editing||busy);
   const current = items?.find(item => item.specification_id === selected);
   const spec = current?.spec_json;
   return <section className="specification-history" aria-label="ETL 規格版本">
     <h4>ETL 規格版本</h4>
     <p>查看已保存的規格與核准。規格核准不代表 Hop 已執行、QA 通過或可交付。</p>
     <button disabled={busy} onClick={() => action(load)}>{items === null ? '載入規格版本' : '重新整理規格版本'}</button>
-    <button disabled={busy || editing} onClick={() => {setEditSource(undefined); setEditing(true)}}>建立規格</button>
+    <button disabled={readOnly || busy || editing} onClick={() => {setEditSource(undefined); setEditing(true)}}>建立規格</button>
     {editing && <SpecificationEditor base={base} initial={editSource} onCancel={() => setEditing(false)} onSaved={async () => {await load(); setEditing(false); setMessage('已保存待核准規格，沒有執行 ETL。')}}/>}
     {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}
     {items?.length === 0 && <p>此準備版本尚無已保存規格。請先確認命名契約，再建立規格；不會自行產生或假設需求。</p>}
@@ -45,7 +49,7 @@ export function SpecificationHistory({taskId, runId}: {taskId: string; runId: st
       {items.map(item => <option key={item.specification_id} value={item.specification_id}>第 {item.version} 版 · {item.approval_effective ? '規格核准有效' : item.approval_id ? '歷史核准已失效' : '尚未核准'}</option>)}
     </select></label>}
     {spec && <>
-      <button disabled={busy || editing || !current.reviewable} onClick={() => {setEditSource(spec); setEditing(true)}}>以此規格編輯新版</button>
+      <button disabled={readOnly || busy || editing || !current.reviewable} onClick={() => {setEditSource(spec); setEditing(true)}}>以此規格編輯新版</button>
       <dl>
         <div><dt>目標資料表</dt><dd>{spec.target_schema}.{spec.target_table}</dd></div>
         <div><dt>寫入方式</dt><dd>{spec.write_mode === 'APPEND' ? '附加資料（APPEND）' : spec.write_mode}</dd></div>
@@ -65,7 +69,7 @@ export function SpecificationHistory({taskId, runId}: {taskId: string; runId: st
       {current.approval_effective && spec.version === 5 && <p>JSON SDM 可產生候選文件；可攜交付仍待驗收，不代表 Release 已通過。</p>}
       {current.approval_effective&&<SdmPreview key={current.specification_id} url={`${base}/specifications/${current.specification_id}/sdm-preview`} specificationChecksum={current.content_checksum}/>}
       <p>{current.approval_effective ? '此規格核准目前有效；尚未授權執行或 Release。' : current.approval_id ? '歷史核准已失效，紀錄仍保留。請檢查最新規格及上游內容。' : current.reviewable ? '可檢閱後核准此規格。' : '此版本目前不可核准，請檢查需求、設定與命名版本。'}</p>
-      {current.reviewable && !current.approval_effective && <>
+      {!readOnly && current.reviewable && !current.approval_effective && <>
         <label><input type="checkbox" checked={confirmed} disabled={busy} onChange={event => setConfirmed(event.target.checked)}/>我已檢查來源、{spec.version === 2 ? 'Join 規則、' : ''}目標、篩選、分組與輸出，確認此規格；這不是執行授權。</label>
         <button disabled={busy || !confirmed} onClick={() => action(async () => {
           await request(`${base}/specifications/${current.specification_id}/approve`, jsonBody('POST', {content_checksum: current.content_checksum}));

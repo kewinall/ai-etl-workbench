@@ -3,6 +3,7 @@ import {JoinSummary} from './JoinSummary';
 import {SourceOrderSummary} from './SourceOrder';
 import {JsonSpecificationBinding} from './JsonSpecificationBinding';
 import {request, jsonBody} from './api';
+import {useDraftGuard} from './useDraftGuard';
 
 export function SpecificationEditor({base, initial, onSaved, onCancel}: {base: string; initial?: any; onSaved: () => Promise<void>; onCancel: () => void}) {
   const [context, setContext] = useState<any>(null);
@@ -15,6 +16,7 @@ export function SpecificationEditor({base, initial, onSaved, onCancel}: {base: s
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [issues, setIssues] = useState<any[]>([]);
+  useDraftGuard(true,busy,setError);
   const action = async (work: () => Promise<void>) => {setBusy(true); setError(''); setIssues([]); try {await work()} catch (e: any) {setError(e.message)} finally {setBusy(false)}};
   const options = context?.source_columns || [];
   const hasMetrics = !!context?.metric_columns?.length;

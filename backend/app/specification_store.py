@@ -45,6 +45,8 @@ def history(queue, conn, task_id, run_id):
     rows = conn.execute('SELECT s.specification_id,s.version,s.spec_json,s.content_checksum,s.is_current,s.created_at,a.approval_id,a.created_at AS approved_at FROM platform.specification s LEFT JOIN platform.specification_approval a USING(specification_id) WHERE s.task_id=%s AND s.run_id=%s ORDER BY s.version DESC', (task_id, run_id)).fetchall()
     latest = conn.execute('SELECT specification_id FROM platform.specification WHERE task_id=%s ORDER BY version DESC LIMIT 1', (task_id,)).fetchone()
     for row in rows:
+        bound_id = (row['spec_json'].get('naming') or {}).get('contract_id')
+        row['bound_naming'] = conn.execute('SELECT version,contract_json FROM platform.naming_contract WHERE task_id=%s AND contract_id=%s', (task_id, bound_id)).fetchone() if bound_id else None
         valid = validate_specification(row['spec_json'], run, naming) if naming else {'status': 'INVALID'}
         row['reviewable'] = bool(row['is_current'] and latest and latest['specification_id'] == row['specification_id'] and valid['status'] == 'VALIDATED_NOT_APPROVED' and valid['specification_checksum'] == row['content_checksum'])
         row['approval_effective'] = bool(row['approval_id'] and row['reviewable'])

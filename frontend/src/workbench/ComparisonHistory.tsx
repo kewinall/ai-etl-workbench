@@ -1,5 +1,6 @@
 import {useEffect,useState} from 'react';
 import {request} from './api';
+import {useWorkflowRefresh} from './useWorkflowRefresh';
 
 export function ComparisonHistory({taskId,runId}:{taskId:string;runId:string}) {
   const [items,setItems]=useState<any[]>([]),[busy,setBusy]=useState(true),[error,setError]=useState(''),[attempt,setAttempt]=useState(0);
@@ -9,6 +10,7 @@ export function ComparisonHistory({taskId,runId}:{taskId:string;runId:string}) {
       .catch(e=>live&&setError(e.message)).finally(()=>live&&setBusy(false));
     return()=>{live=false};
   },[taskId,runId,attempt]);
+  useWorkflowRefresh(`/api/tasks/${encodeURIComponent(taskId)}/runs/${runId}`,()=>setAttempt(n=>n+1),busy);
   return <section aria-label="結果比對證據" style={{overflowWrap:'anywhere'}}><h3>結果比對證據</h3>
     <p>對應上方選擇的準備版本。請分別檢視結果差異與來源核對狀態；比對一致不等於 QA 通過，也不能據此交付。</p>
     <button disabled={busy} onClick={()=>setAttempt(n=>n+1)}>重新讀取比對證據</button>

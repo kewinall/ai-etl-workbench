@@ -6,7 +6,7 @@ from .run_queue import RunConflict
 
 LABELS = ['需求與資料規格', '需求審查', '流程設計審查', '執行確認', '執行與結果', '品質審查', '成果交付']
 KEYS = ['requirements', 'review', 'design', 'confirm', 'results', 'quality', 'delivery']
-WAITING = {'QUEUED', 'RUNNING', 'DISPATCH_RESERVED', 'CLAIMED'}
+WAITING = {'QUEUED', 'RUNNING', 'DISPATCH_RESERVED', 'CLAIMED', 'SA_QUEUED', 'QA_RESERVED'}
 
 
 def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
@@ -27,6 +27,8 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
     completed = [approved_input, sa_ok, spec_ok, bool(job),
                  run.get('outcome_code') == 'HOP_EXECUTED_QA_REQUIRED', qa_ok,
                  release.get('release_ready') is True]
+    if release.get('release_ready') is True:
+        completed = [True] * 7  # The existing release reader already verifies the full lineage.
     issues = list(gate.get('issues') or [])
     review = sa_record.get('review') or {}
     issues += list(review.get('issues') or [])

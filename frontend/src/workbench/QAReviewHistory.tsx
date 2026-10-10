@@ -3,6 +3,7 @@ import {request} from './api';
 import {QAApproval} from './QAApproval';
 import {QAAuthorization} from './QAAuthorization';
 import {QASourceEvidence} from './QASourceEvidence';
+import {useWorkflowRefresh} from './useWorkflowRefresh';
 
 const labels:Record<string,string>={QA_RESERVED:'已保存審查意圖（不代表模型已完成）',QA_OUTCOME_UNKNOWN:'結果不確定，需人工核對',VALIDATED_NOT_APPROVED:'建議已通過格式驗證，尚未核准',STALE_RESULT_NEEDS_REVIEW:'歷史版本建議，需重新核對'};
 const checks:Record<string,string>={specification:'規格與命名',static_validation:'流程靜態檢查',hop_execution:'Hop 執行',result_comparison:'標準答案比對',result_source:'結果來源'};
@@ -15,6 +16,7 @@ export function QAReviewHistory({taskId,runId}:{taskId:string;runId:string}) {
       .finally(()=>{if(live)setBusy(false)});
     return()=>{live=false};
   },[taskId,runId,attempt]);
+  useWorkflowRefresh(`/api/tasks/${encodeURIComponent(taskId)}/runs/${runId}`,()=>setAttempt(n=>n+1),busy);
   const item=data?.invocation;
   const history=data?.history??(item?[item]:[]);
   return <section aria-label="QA 審查紀錄" style={{overflowWrap:'anywhere'}}><h3>QA 審查紀錄</h3>
