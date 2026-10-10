@@ -1,5 +1,9 @@
 import {createContext,useContext,useEffect,useRef} from 'react';
 export const WorkflowReadOnly=createContext(false);
+export const WorkflowCanCancel=createContext(true);
+export const useWorkflowCanCancel=()=>useContext(WorkflowCanCancel);
+export const WorkflowCanPrepare=createContext(true);
+export const useWorkflowCanPrepare=()=>useContext(WorkflowCanPrepare);
 export const WorkflowQualifications=createContext<Record<string,any>>({});
 export const useServiceBlocker=(operation:string)=>useContext(WorkflowQualifications)[operation]?.blocked_reason||'';
 export const useWorkflowReadOnly=()=>useContext(WorkflowReadOnly);

@@ -54,3 +54,11 @@
 使用者在網站核准 TASK-20261010-0019 第①版輸入後，控制檢查實際退回 requirements_v1.write_mode／date_scope 缺漏。已由正常網站補正 APPEND／ALL、四欄輸出投影，預覽差異並建立第②版 714fad5b-b564-40bd-a60d-cb61134656a0；保留第①版核准、Join及來源契約，第②版沒有核准或執行。下一步是核對新版差異並重新確認輸入，不沿用原核准。CSV／Excel仍停在原第①版未核准。
 
 問題定位已補上寫入模式、資料期間及鍵欄位的精確焦點，避免把所有缺漏帶到需求文字。真實修訂證據：ui-accept-join-revision-2026-10-10.json；全鏈尚未通過。
+
+## 接續：真實 SA 與失效版本恢復
+
+Join 第②版由使用者確認輸入並保存 SA 授權後，發現專案Task清單不含 latest_run，驗收消費者因此跳過工作。已改為明確 GET Task runs 並選最新Run，限定原有 SA_QUEUED 意圖；防重送標記完整保留。真實 LOCAL_COPILOT copilot/gpt-5.4 執行19,344ms，1次session／premium request、4.26465 AI credits、0自動重試／工具執行；token統計僅PARTIAL，不填假數字。SA READY_FOR_REVIEW、無問題，但 VALIDATED_NOT_APPROVED；下一步是人工確認需求審查結果，未授權 Developer／Hop。證據 ui-accept-native-sa-2026-10-10.json。
+
+CSV／Excel的原準備版本 input相同，但 credential_versions 已變更而失效，沒有核准／写入。修正唯讀保護中取消與建立新快照的資格判定，經正常網站保留並取消舊版、建立新版本：CSV 71c7b365-7770-4de4-b2f0-70c0ad28adf6；Excel 7bf591fd-7409-4d1a-89ba-f852c0555c3d。新版本matches_current=true、等待輸入確認；不沿用舊核准，也未呼叫這兩案例模型。歷史／原始證據來源／過期狀態仍不得取消或建立新版本。證據 ui-accept-fresh-inputs-2026-10-10.json。
+
+Worker真實Task清單形狀回歸3 passed（0.14s）；前端build PASS。全鏈仍未通過，仍需后續命名／設計、固定答案、原寫入、QA、隔離候選包及交付核准。

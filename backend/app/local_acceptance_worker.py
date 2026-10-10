@@ -30,7 +30,8 @@ def presence(project,kind,instance,activity):
 def pending(tasks):
     """Only existing authorized queue states. Never infer authority from offers."""
     for task in tasks:
-        run=task.get('latest_run')
+        runs=get(f"/tasks/{task['id']}/runs")['runs']
+        run=runs[0] if runs else None
         if not run:continue
         task_id,run_id=task['id'],str(UUID(run['run_id']))
         base=f'/tasks/{task_id}/runs/{run_id}'

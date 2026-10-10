@@ -7,8 +7,10 @@ const labels=['需求與資料規格','需求審查','流程設計審查','執�
 const base=`/#/projects/${project}/tasks/${taskId}`;
 function run(id=current){return {run_id:id,task_id:taskId,created_at:'2026-10-10T00:00:00Z',state:'NEEDS_REVIEW',phase:'REQUIREMENT_GATE',matches_current:true,write_started:false,input_checksum:'a'.repeat(64),settings_checksum:'b'.repeat(64),events:[],gate_result:{status:'NEEDS_INPUT',issues:[{message:'請補正目標',field_path:'target.table'}]},settings_summary:{},input_summary:{requirement_text:'原始需求，其他內容必須保留',target_schema:'ai_sample',target_table:'original',source_fields:[],source_fields_editable:false,requirements_v1:{version:1,write_mode:'APPEND',date_scope:'ALL'},transformation_source_refs:[]}}}
 function status(id=current,stage='requirements'){const i=keys.indexOf(stage);return {task_id:taskId,run_id:id,current_stage:stage,updated_at:'2026-10-10T00:00:00Z',historical:id===old,matches_current:true,category:'待你確認',owner:'你',completed:[],waiting:false,issues:[],stages:keys.map((key,n)=>({key,number:n+1,label:labels[n],status:n===i?'current':'blocked',can_operate:id!==old&&n<=i,blocked_reason:n>i?'先完成前一階段的必要核准與證據。':null})),next_action:{label:'確認需求版本',stage,enabled:id!==old},source_scope_note:'完整執行尚未驗收'};}
-async function fixture(page:Page,options:{stage?:string;waiting?:boolean;issues?:any[];unknown?:boolean;actionLabel?:string;qaRevision?:boolean;join?:boolean}={}) {
+async function fixture(page:Page,options:{stage?:string;waiting?:boolean;issues?:any[];unknown?:boolean;actionLabel?:string;qaRevision?:boolean;join?:boolean;mismatch?:boolean;readOnlySource?:boolean;cancelled?:boolean}={}) {
  let stale=false,reads=0,posts=0;const records=[run(),run(old)];
+ if(options.mismatch)records[0].matches_current=false;
+ if(options.cancelled)records.forEach(r=>r.state='CANCELLED');
  if(options.join)Object.assign(records[0].input_summary,{sources:[{label:'左表',fields:[{name:'id',type:'BIGINT'}]},{label:'右表',fields:[{name:'id',type:'BIGINT'}]}]});
  if(options.qaRevision)Object.assign(records[0],{write_started:true,qa_revision:{checksum:'c'.repeat(64)}});
  await page.route('**/api/**',async route=>{
@@ -16,9 +18,10 @@ async function fixture(page:Page,options:{stage?:string;waiting?:boolean;issues?
   if(route.request().method()!=='GET'){
    posts++;
    if(path.endsWith('/revisions')){const child={...run('33333333-3333-4333-8333-333333333333'),state:'QUEUED',approval:null,parent_run_id:current,input_summary:{...run().input_summary,...route.request().postDataJSON()}};records.unshift(child);if(options.unknown)return route.abort();return route.fulfill({json:child,status:201})}
+   if(path.endsWith('/cancel'))records.find(r=>r.run_id===path.split('/').at(-2))!.state='CANCELLED';
    return route.fulfill({json:{}});
   }
-  if(path.endsWith('/workflow-status')){reads++;if(stale)return route.abort();const id=path.split('/').at(-2)!;const s=status(id,options.stage);return route.fulfill({json:{...s,next_action:{...s.next_action,label:options.actionLabel||s.next_action.label},waiting:!!options.waiting,issues:options.issues||[]}})}
+  if(path.endsWith('/workflow-status')){reads++;if(stale)return route.abort();const id=path.split('/').at(-2)!;const s=status(id,options.stage);return route.fulfill({json:{...s,matches_current:!options.mismatch,read_only_source:!!options.readOnlySource,next_action:{...s.next_action,label:options.actionLabel||s.next_action.label},waiting:!!options.waiting,issues:options.issues||[]}})}
   if(path==='/api/projects')return route.fulfill({json:[{project_id:project,project_name:'階段導引專案',description:'',naming_rules:{},default_ai_profile:'test',default_connection:'test'}]});
   if(path===`/api/projects/${project}/tasks`)return route.fulfill({json:[{id:taskId,name:'階段導引合成測試',project_id:project,source:'CSV',target:'VERTICA',latest_run:records[0]}]});
   if(path===`/api/projects/${project}/evaluation`)return route.fulfill({json:{project_id:project,basis:'ALL_PERSISTED_RUNS',cases:[{task_id:taskId,run_id:current,state:'NEEDS_REVIEW'}]}});
@@ -187,4 +190,25 @@ for (const [path,field] of [['requirements_v1.write_mode','write_mode'],['requir
  await expect(page.locator(`[data-field="${field}"]`)).toBeFocused();
  await expect(page.getByLabel('補正後需求')).toHaveValue('原始需求，其他內容必須保留');
  expect(f.counts().posts).toBe(0);
+});
+
+ test('失效最新輸入可取消，其他操作停用；歷史與來源只讀不能取消',async({page})=>{
+ const f=await fixture(page,{mismatch:true});await page.goto(base+'/requirements/'+current);
+ const cancel=page.getByRole('button',{name:'取消未執行版本',exact:true});
+ await expect(cancel).toBeEnabled();
+ await expect(page.getByRole('button',{name:'補正需求並建立新版',exact:true})).toHaveCount(0);
+ await cancel.click();expect(f.counts().posts).toBe(1);
+ await expect(page.getByText('已取消未執行的版本，歷史紀錄仍保留。',{exact:true})).toBeVisible();
+ await page.getByLabel('共用 Run 版本').selectOption(old);await expect(page.getByLabel('共用 Run 版本')).toHaveValue(old);await expect(cancel).toBeDisabled();
+ f.stale();await page.getByRole('button',{name:'重新核對狀態',exact:true}).click();await expect(page.getByRole('alert')).toBeVisible();await expect(cancel).toBeDisabled();
+});
+ test('原始證據來源即使是最新未執行版，也不得取消',async({page})=>{
+ const f=await fixture(page,{mismatch:true,readOnlySource:true});await page.goto(base+'/requirements/'+current);
+ await expect(page.getByRole('button',{name:'取消未執行版本',exact:true})).toBeDisabled();expect(f.counts().posts).toBe(0);
+});
+
+ test('失效版本全部取消後可建立新快照；歷史與來源只讀不能建立',async({page})=>{
+ await fixture(page,{mismatch:true,cancelled:true});await page.goto(base+'/requirements/'+current);
+ await expect(page.getByRole('button',{name:'建立準備版本',exact:true})).toBeEnabled();
+ await page.goto(base+'/requirements/'+old);await expect(page.getByRole('button',{name:'建立準備版本',exact:true})).toBeDisabled();
 });

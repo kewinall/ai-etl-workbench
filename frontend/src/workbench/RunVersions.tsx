@@ -17,13 +17,15 @@ import {ExcelInputEditor, ExcelInputSummary} from './ExcelInputContract';
 import {JsonInputEditor, JsonInputSummary} from './JsonInputContract';
 import {useDraftGuard} from './useDraftGuard';
 import {OperationLatch} from './operationLatch';
-import {useWorkflowReadOnly,useWorkflowRefresh} from './useWorkflowRefresh';
+import {useWorkflowReadOnly,useWorkflowRefresh,useWorkflowCanCancel,useWorkflowCanPrepare} from './useWorkflowRefresh';
 import {JoinInputEditor} from './JoinInputEditor';
 
 const states: Record<string, string> = {QUEUED: '待處理（未啟動）', RUNNING: '處理中', NEEDS_REVIEW: '需要人工檢查', SUCCEEDED: '流程已結束', FAILED: '失敗', CANCELLED: '已取消'};
 
 export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string;requestedRunId?:string;onSelectRun?:(id:string)=>void}) {
   const readOnly=useWorkflowReadOnly();
+  const canCancel=useWorkflowCanCancel();
+  const canPrepare=useWorkflowCanPrepare();
   const [runs, setRuns] = useState<any[]>([]);
   const [detail, setDetail] = useState<any>(null);
   const [busy, setBusy] = useState(false);
@@ -128,7 +130,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
     <h3>執行準備版本</h3>
     <p>先保存需求與設定快照，再確認此版輸入。啟用控制 Worker 後，只進行初步需求檢查；不會啟動 Hop 或產生 Release。</p>
     <div className="run-actions">
-      <button disabled={readOnly || busy || active} onClick={prepare}>建立準備版本</button>
+      <button disabled={!canPrepare || busy || active} onClick={prepare}>建立準備版本</button>
       <button disabled={busy} onClick={() => action(async () => {await load(); if (detail) await open(detail.run_id)})}>重新載入版本</button>
     </div>
     {message && <p role="status">{message}</p>}
@@ -257,7 +259,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
         <label><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)}/>我已核對本次需求及設定版本</label>
         <div className="run-actions"><button disabled={busy || !confirmed} onClick={() => review('APPROVE')}>確認此版輸入</button><button disabled={busy} onClick={() => review('REJECT')}>拒絕此版輸入</button></div>
       </>}
-      {['QUEUED','NEEDS_REVIEW'].includes(detail.state) && !detail.write_started && <button disabled={readOnly||busy} onClick={cancel}>取消未執行版本</button>}
+      {['QUEUED','NEEDS_REVIEW'].includes(detail.state) && !detail.write_started && <button disabled={!canCancel||busy} onClick={cancel}>取消未執行版本</button>}
       {!!detail.events?.length && <><h4>控制流程紀錄</h4><ol>{detail.events.map((event: any) => <li key={event.event_id}>{new Date(event.created_at).toLocaleString()} · {event.event_type} · {event.phase}</li>)}</ol></>}
     </article>}
   </section>;

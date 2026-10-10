@@ -1,0 +1,93 @@
+{
+  "scope": "REAL_WEBSITE_AUTHORIZED_SA_ONLY_NOT_FULL_CHAIN",
+  "task_id": "TASK-20261010-0019",
+  "run_id": "714fad5b-b564-40bd-a60d-cb61134656a0",
+  "input_approval": {
+    "approval_id": "21ab753c-7601-45f2-89bd-a839192af0ee",
+    "run_id": "714fad5b-b564-40bd-a60d-cb61134656a0",
+    "operator_id": "00000000-0000-0000-0000-000000000001",
+    "kind": "INPUT_REVIEW",
+    "decision": "APPROVE",
+    "input_checksum": "0f1f9e3f0dcb6e635e46506cf8f9a29c26e4e813e99556361e580febe3e91046",
+    "settings_checksum": "cc2eb13305038c1d9ff5a71edcdc5c299fcf29a8fe869af7e443fad633ad34dc",
+    "created_at": "2026-10-10T12:12:05.271334+00:00"
+  },
+  "sa": {
+    "run_id": "714fad5b-b564-40bd-a60d-cb61134656a0",
+    "matches_current": true,
+    "dispatch_available": false,
+    "execution_authorized": false,
+    "invocation": {
+      "invocation_id": "f1e65f6d-a92c-41b7-bbb7-d9baa3002971",
+      "status": "VALIDATED_NOT_APPROVED",
+      "provider": "LOCAL_COPILOT",
+      "model": "copilot/gpt-5.4",
+      "prompt_version": 6,
+      "context_checksum": "5fe3ef689a41fa51dcb1c7d141e6f13989ebcfa288cec92b9c1ab32a582deaf5",
+      "created_at": "2026-10-10T12:12:16.395445+00:00",
+      "usage": {
+        "input_tokens": null,
+        "output_tokens": null,
+        "total_tokens": null,
+        "usage_type": "PARTIAL",
+        "ai_credits": 4.26465,
+        "premium_requests": 1,
+        "cli_sessions": 1,
+        "automatic_retries": 0,
+        "tool_execution_count": 0
+      },
+      "duration_ms": 19344,
+      "review": {
+        "issues": [],
+        "run_id": "714fad5b-b564-40bd-a60d-cb61134656a0",
+        "status": "READY_FOR_REVIEW",
+        "summary": "需求、輸入契約、Join 語意、輸出欄位與目標寫入模式已明確，可進入後續設計審查。已明示 LEFT 等值 Join、NULL 鍵 NEVER_MATCH、重複鍵 EXPAND、CASE_SENSITIVE_NO_TRIM，且輸出限定為完整投影 source.0.id、source.0.left_value、source.1.id、source.1.right_value；CSV 輸入的 encoding、delimiter、header 與 extra_columns policy 亦已指定。conditions 已明示 APPEND 目標寫入模式；deterministic gate 狀態為 CHECKED。",
+        "version": 1,
+        "evidence_ids": [
+          "requirement",
+          "target",
+          "conditions",
+          "transformation.conditions",
+          "join.conditions",
+          "sources.csv_inputs",
+          "source.0.field.0",
+          "source.0.field.1",
+          "source.1.field.0",
+          "source.1.field.1"
+        ],
+        "input_checksum": "0f1f9e3f0dcb6e635e46506cf8f9a29c26e4e813e99556361e580febe3e91046",
+        "context_checksum": "5fe3ef689a41fa51dcb1c7d141e6f13989ebcfa288cec92b9c1ab32a582deaf5"
+      },
+      "error_code": null,
+      "failure_stage": null
+    }
+  },
+  "sa_approval": {
+    "status": "AWAITING_CONFIRMATION",
+    "binding": {
+      "version": 1,
+      "run_id": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "task_id": "TASK-20261010-0019",
+      "project_id": "346e9419-4b0e-4ba7-ad29-1756ca7da833",
+      "invocation_id": "f1e65f6d-a92c-41b7-bbb7-d9baa3002971",
+      "input_checksum": "0f1f9e3f0dcb6e635e46506cf8f9a29c26e4e813e99556361e580febe3e91046",
+      "settings_checksum": "cc2eb13305038c1d9ff5a71edcdc5c299fcf29a8fe869af7e443fad633ad34dc",
+      "context_checksum": "5fe3ef689a41fa51dcb1c7d141e6f13989ebcfa288cec92b9c1ab32a582deaf5",
+      "review_checksum": "21dab40a3b3a06e3423d16f57feb92a281fc8a010141bdc42a9df04f47a25575",
+      "checksum": "760fd43dbdb0a665f7479cc436c816baafad8549507f1ed1ac9bb20181597f2c"
+    },
+    "approval_id": null,
+    "developer_authorized": false,
+    "execution_authorized": false,
+    "release_ready": false
+  },
+  "next_action": {
+    "label": "確認需求審查結果",
+    "stage": "review",
+    "enabled": true,
+    "type": "NAVIGATE",
+    "operation_enabled": true,
+    "blocked_reason": null
+  },
+  "write_started": false
+}
