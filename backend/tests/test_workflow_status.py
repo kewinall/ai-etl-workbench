@@ -128,8 +128,9 @@ def test_missing_cross_task_run_returns_404_without_reading_other_stores():
 def test_reconciled_failed_run_offers_revision_after_closure():
     status = case(run={'failed_revision_available': True, 'write_started': True,
                       'state': 'FAILED', 'outcome_code': 'HOP_EXECUTION_FAILED'})
-    assert status['current_stage'] == 'requirements'
-    assert status['next_action']['label'] == '建立修正版並重新確認需求'
+    assert status['current_stage'] == 'results'
+    assert status['next_action']['stage'] == 'requirements'
+    assert status['next_action']['label'] == '此版已結案；可建立修正版'
 
 
 def test_qa_issues_point_to_evidence_stage_not_requirement_revision():

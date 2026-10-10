@@ -284,3 +284,21 @@ for(const preparation of [false,true]) test(`人工結案簡化：${preparation?
  await page.reload();await expect(panel.getByRole('status')).toContainText('已人工結案');
  expect(posts).toBe(1);
 });
+
+test('結案仍顯示原結果階段，明確建立修正版才開啟沿用表單（合成 API）',async({page})=>{
+ const tracker=await fixture(page,{stage:'results'});
+ const closed={...run(),state:'FAILED',write_started:true,failed_revision_available:true,outcome_code:'HOP_EXECUTED_QA_REQUIRED'};
+ await page.route(`**/runs/${current}`,r=>r.fulfill({json:closed}));
+ await page.route('**/workflow-status',r=>r.fulfill({json:{...status(current,'results'),next_action:{stage:'requirements',label:'此版已結案；可建立修正版',enabled:true}}}));
+ await page.goto(base+'/results/'+current);
+ const next=page.getByRole('region',{name:'目前狀態與下一步'});
+ await expect(next).toContainText('第 5 階段');
+ await expect(next).toContainText('此次結案已保存');
+ await expect(page.getByRole('form',{name:'需求補正'})).toHaveCount(0);
+ await next.getByRole('button',{name:'建立修正版（保留此版結果）'}).click();
+ await expect(page).toHaveURL(new RegExp('/requirements/'+current+'$'));
+ await expect(page.getByRole('form',{name:'需求補正'})).toBeVisible();
+ await expect(page.locator('[data-field="target_table"]')).toHaveValue('original');
+ await expect(page.locator('[data-field="requirement_text"]')).toHaveValue('原始需求，其他內容必須保留');
+ expect(tracker.counts().posts).toBe(0);
+});

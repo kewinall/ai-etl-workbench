@@ -189,7 +189,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
           if(saved){setDraft(saved.draft);setConditions(saved.conditions);setTransformation(saved.transformation);setSourceOrder(saved.sourceOrder);setSourceFields(saved.sourceFields);setCsvContract(saved.csvContract);setExcelContract(saved.excelContract);setJsonContract(saved.jsonContract);setJoinContract(saved.joinContract||null);setReplacement(saved.replacement);revisionKey.current=saved.requestKey}
           else revisionKey.current = crypto.randomUUID();
           setUncertain(false);setEditing(true);
-        }}>補正需求並建立新版</button>}
+        }}>{detail.failed_revision_available?'編輯修正版（沿用原需求）':'補正需求並建立新版'}</button>}
         {editing && <form aria-label="需求補正" onSubmit={event => {event.preventDefault();if(!preview){try{setPreview(revisionPayload());setDiffConfirmed(false)}catch(e:any){setMessage(e.message)}}else void revise()}}>
           <JoinInputEditor sources={detail.input_summary.sources||[]} value={joinContract} onChange={setJoinContract} disabled={busy}/>
           <div data-field="source" tabIndex={-1}><ExcelInputEditor selection={detail.input_summary.excel_selection} evidence={detail.input_summary.excel_input_contract_v1}

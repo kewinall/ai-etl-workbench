@@ -20,7 +20,7 @@ export function ExecutionReconciliation({base,onSaved,preparation=false}:{base:s
     {data?.status==='CLOSED_WITHOUT_RETRY'?<>
       <p role="status">已人工結案，未重跑、未核准 QA 或交付。</p>
       <p>{preparation&&data.target_exists===false?'核對時目標不存在（不是零筆）':`核對時目標筆數：${data.observed_row_count}`}</p>
-      <p>原結果已保留。下一步：前往需求階段，使用新目標建立修正版，重新確認需求與標準答案。</p>
+      <p>此版已結案，原結果已保留。需要修正時，按上方「建立修正版」；新版將沿用原需求，再使用新目標與正確標準答案重新確認。</p>
     </>:data?.status==='AWAITING_RECONCILIATION'&&<>
       <p>先確認本次執行{preparation?'與 Worker':''}已停止，再填入目標筆數並確認結案。結案後可建立修正版，原結果會保留。</p>
       {preparation&&<label>目標表是否存在<select value={targetExists} disabled={busy||readOnly} onChange={e=>{setTargetExists(e.target.value);setRows('');setConfirmed(false)}}><option value="">請選擇</option><option value="no">不存在</option><option value="yes">存在</option></select></label>}

@@ -101,7 +101,7 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
     if run['state'] == 'CANCELLED':
         action, enabled, waiting = '已取消；查看原始輸入及歷史', False, False
     if run.get('failed_revision_available'):
-        index, owner, action, enabled, waiting = 0, '你', '建立修正版並重新確認需求', current, False
+        index, owner, action, enabled, waiting = 4, '你', '此版已結案；可建立修正版', current, False
     if not current:
         enabled, waiting = release.get('release_ready') is True, False
         action = '下載正式交付' if enabled else '檢視歷史與失效核准原因'
@@ -145,7 +145,7 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
             'historical': historical, 'matches_current': run.get('matches_current') is True,
             'stages': stages, 'current_stage': KEYS[index], 'owner': owner,
             'completed': [LABELS[i] for i, done in enumerate(completed) if done],
-            'next_action': {'label': action, 'stage': KEYS[index], 'enabled': enabled,
+            'next_action': {'label': action, 'stage': 'requirements' if run.get('failed_revision_available') and current else KEYS[index], 'enabled': enabled,
                             'type': 'NAVIGATE', 'operation_enabled': enabled,
                             'blocked_reason': service_blocker},
             'services': services, 'service_blocked_reason': service_blocker,

@@ -129,7 +129,8 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
     {error&&<p role="alert">資訊過期／無法確認：{error} 依賴新狀態的操作已停用；不會自動重送請求。</p>}
     {valid&&<section className="panel workflow-next" aria-label="目前狀態與下一步"><h3>第 {keys.indexOf(workflow.current_stage)+1} 階段：{labels[keys.indexOf(workflow.current_stage)]}</h3>
       <dl><dt>已完成</dt><dd>{workflow.completed.join('、')||'尚無有效核准'}</dd><dt>現在需要誰</dt><dd>{workflow.owner}</dd><dt>下一步</dt><dd>{workflow.next_action.label}</dd></dl>
-      <button className="primary" disabled={loading||!!error} onClick={()=>{select(workflow.next_action.stage);requestAnimationFrame(()=>document.getElementById(`stage-panel-${workflow.next_action.stage}`)?.scrollIntoView({block:'start'}))}}>前往{labels[keys.indexOf(workflow.next_action.stage)]}</button>
+      {detail.failed_revision_available&&<p>此次結案已保存，原執行結果仍保留。這不是 QA 核准；只有建立修正版後，新版才重新進入需求確認。</p>}
+      <button className="primary" disabled={loading||!!error} onClick={()=>{if(detail.failed_revision_available)setPendingField('target_table');select(workflow.next_action.stage);requestAnimationFrame(()=>document.getElementById(`stage-panel-${workflow.next_action.stage}`)?.scrollIntoView({block:'start'}))}}>{detail.failed_revision_available?'建立修正版（保留此版結果）':'前往'+labels[keys.indexOf(workflow.next_action.stage)]}</button>
       {workflow.service_blocked_reason&&<p role="status">{workflow.service_blocked_reason}</p>}
       {workflow.execution_blocked_reason&&workflow.current_stage==='confirm'&&<p>{workflow.execution_blocked_reason}</p>}
       <details><summary>來源支援與驗收範圍</summary><p>{workflow.source_scope_note}</p></details>

@@ -97,3 +97,12 @@ Join 本次操作：重新整理結果頁，在「結束此次執行，保留結
 API evidence_sha256 改為可省略；migration059 僅移除兩種結案紀錄的檔案指紋 NOT NULL，保留原不可變紀錄及既有指紋，不產生假檔案或假指紋。仍驗證版本、資格、筆數與明確確認，並保存操作人與時間。輸入變更取消确认、雙擊只送一次、回應不明須先讀回。
 
 build PASS；隔離後端2036 PASS/139明示skip/1warning（48.50s），browser27 PASS/1skip（35.5s），包含無檔案結案、準備結案、雙擊與重載；實際5197 Join表單390/768/1440驗證一個checkbox、零file input，填5與確認後可提交，零寫入/零pageerror。證據 ui-accept-simple-reconciliation-2026-10-10.json。驗證沒有替使用者送出此Join人工結案；原Hop寫入1次，QA/Release仍未通過。
+
+
+## 2026-10-10：結案不再視為退回第一階段
+
+使用者已人工結案此 Join Run，原版本 state=FAILED、outcome=HOP_EXECUTED_QA_REQUIRED、write_started=true，並非 QA 核准或交付。原 UI 把 failed_revision_available 直接投影為 requirements，造成看似重新開始。改為 current_stage=results，顯示「此版已結案；可建立修正版」。明確按「建立修正版（保留此版結果）」才導航開啟沿用原需求的補正表單並定位目標欄位，不呼叫 POST；新版建立後才走需求確認。專案繼續處理使用 current_stage，會先回原結果。
+
+實際人工結案保存 observed_row_count=1；這是使用者聲明，與前輪獨立查得5筆分別保存，不覆寫或將聲明當作再次查詢結果。本次只修改導引，沒有重查/重跑 ETL、改答案或新增核准。下一步新目標 ui_accept_join_20261010_r3 並使用原執行前固定5筆標準答案。
+
+驗證：後端 workflow19 PASS（0.72s）；既有 browser27 PASS/1skip，新增結案導引測試修正測試 selector 後單獨1 PASS（1.2s）；實際已結案 Join 顯示第5階段與結案紀錄，點明確修正版入口沿用原目標與需求、零寫入/零pageerror。部署 web/api build PASS。證據 ui-accept-closed-run-guidance-2026-10-10.json。原Run尚無新版，QA/Release仍未通過。
