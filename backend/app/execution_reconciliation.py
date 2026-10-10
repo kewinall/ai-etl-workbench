@@ -37,6 +37,7 @@ def _public(saved):
     return {'status':'CLOSED_WITHOUT_RETRY','reconciliation_id':str(saved['reconciliation_id']),
         'operator_id':str(saved['operator_id']),'created_at':saved['created_at'],
         'binding_checksum':saved['binding_checksum'],'evidence_sha256':saved['evidence_sha256'],
+        'evidence_source':'FILE_SHA256' if saved['evidence_sha256'] else 'OPERATOR_ATTESTATION',
         'observed_row_count':saved['observed_row_count'],'original_outcome':saved['binding']['outcome_code'],
         'automatic_retry_allowed':False,'qa_approved':False,'release_ready':False}
 
@@ -53,7 +54,7 @@ def read(queue,task_id,run_id):
 def close(queue,task_id,run_id,expected_checksum,evidence_sha256,observed_row_count,*,engine_stopped=False,target_checked=False,confirmed=False):
     if engine_stopped is not True or target_checked is not True or confirmed is not True:
         raise ValueError('RECONCILIATION_CONFIRMATION_REQUIRED')
-    if (not isinstance(evidence_sha256,str) or not re.fullmatch('[a-f0-9]{64}',evidence_sha256)
+    if ((evidence_sha256 is not None and (not isinstance(evidence_sha256,str) or not re.fullmatch('[a-f0-9]{64}',evidence_sha256)))
             or type(observed_row_count) is not int or not 0<=observed_row_count<=9223372036854775807):
         raise ValueError('RECONCILIATION_EVIDENCE_REQUIRED')
     with queue.conn() as conn:

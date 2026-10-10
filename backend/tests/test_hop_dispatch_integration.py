@@ -80,7 +80,7 @@ def test_website_hop_request_requires_lineage_and_is_single_consumption(context,
             else:
                 reconcile=f'/api/tasks/{task}/runs/{run["run_id"]}/hop-preparation-reconciliation'
                 offered=api.get(reconcile);assert offered.status_code==200
-                close_body=dict(binding_checksum=offered.json()['binding']['checksum'],evidence_sha256='d'*64,
+                close_body=dict(binding_checksum=offered.json()['binding']['checksum'],
                     target_exists=reconcile_target,observed_row_count=3 if reconcile_target else None,
                     engine_stopped=True,target_checked=True,confirmed=True)
                 assert api.post(reconcile,json={**close_body,'engine_stopped':False}).status_code==409
@@ -88,6 +88,7 @@ def test_website_hop_request_requires_lineage_and_is_single_consumption(context,
                 closed=api.post(reconcile,json=close_body);assert closed.status_code==200,closed.text
                 assert closed.json()['status']=='CLOSED_WITHOUT_RETRY'
                 assert closed.json()['automatic_retry_allowed'] is False
+                assert closed.json()['evidence_sha256'] is None
                 assert api.post(reconcile,json=close_body).json()==closed.json()
                 assert api.post(reconcile,json={**close_body,'evidence_sha256':'a'*64}).status_code==409
                 assert api.get(reconcile).json()==closed.json()

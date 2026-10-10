@@ -1,6 +1,5 @@
 import {test,expect} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
-import {createHash} from 'node:crypto';
 
 test('真實中斷 Run：網站核對結案、API 保存重載及重複提交',async({page,request})=>{
  test.skip(process.env.WORKBENCH_REAL_RECONCILIATION!=='1','Explicit approval for the dedicated crashed test run required');
@@ -18,18 +17,15 @@ test('真實中斷 Run：網站核對結案、API 保存重載及重複提交',a
  expect((await (await request.get('/api/ready')).json()).execution_enabled).toBe(false);
  await page.goto(`/#/projects/${project}/tasks/${task}/requirements`);
  const panel=page.getByRole('region',{name:'執行結果人工核對',exact:true});
- const save=panel.getByRole('button',{name:'保存人工核對並結案（不重跑）'});
+ const save=panel.getByRole('button',{name:'確認結案，保留結果'});
  await expect(save).toBeDisabled();
- await panel.getByLabel('我已確認本次 Hop 程序停止').check();
- await panel.getByLabel('我已核對本次目標與寫入範圍，並保留查詢證據').check();
  await panel.getByLabel('核對時目標筆數').fill('1');
- await panel.getByLabel('選擇核對證據檔案').setInputFiles({name:'inspection.json',mimeType:'application/json',buffer:bytes});
- await panel.getByLabel('我確認只結束此次失敗／未知版本，不重跑，也不宣告成功').check();
+ await panel.getByLabel('我已確認本次執行停止，目標核對結果正確，同意結案並保留原結果').check();
  await expect(save).toBeEnabled();
  const posted=page.waitForResponse(r=>r.url().endsWith(base+'/reconciliation')&&r.request().method()==='POST');
  await save.click();const response=await posted;expect(response.status()).toBe(200);
  const payload=response.request().postDataJSON(),receipt=await response.json();
- expect(payload.evidence_sha256).toBe(createHash('sha256').update(bytes).digest('hex'));
+ expect(payload.evidence_sha256).toBeUndefined();
  expect(receipt.status).toBe('CLOSED_WITHOUT_RETRY');expect(receipt.release_ready).toBe(false);
  await expect(panel.getByRole('status')).toContainText('已人工結案，未重跑');
  await page.reload();await expect(panel.getByRole('status')).toContainText('已人工結案');

@@ -1,0 +1,22 @@
+{
+  "scope": "Actual5197 Join form readiness; no closure POST, model or ETL",
+  "one_checkbox": true,
+  "file_input_count": 0,
+  "with_five_rows_and_confirmation_button_enabled": true,
+  "widths": [
+    {
+      "width": 390,
+      "fits": true
+    },
+    {
+      "width": 768,
+      "fits": true
+    },
+    {
+      "width": 1440,
+      "fits": true
+    }
+  ],
+  "writes": [],
+  "errors": []
+}

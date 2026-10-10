@@ -256,3 +256,31 @@ test('空白標準答案必須明確確認零筆，新增資料列立即取消�
  await expect(panel.getByRole('button',{name:'保存答案版本'})).toBeDisabled();
  expect(tracker.counts().posts).toBe(0);
 });
+
+for(const preparation of [false,true]) test(`人工結案簡化：${preparation?'準備':'已執行'}只需筆數與一次確認，不需檔案（合成 API）`,async({page})=>{
+ await fixture(page,{stage:'results'});
+ let closed=false,posts=0;
+ const endpoint=preparation?'hop-preparation-reconciliation':'reconciliation';
+ await page.route('**/hop-dispatch',r=>r.fulfill({json:{request:{status:preparation?'CLAIMED':'NEEDS_REVIEW',outcome_code:'HOP_PREPARATION_OR_COMPARISON_FAILED'},offer:null}}));
+ await page.route('**/comparison-recovery',r=>r.fulfill({json:{status:preparation?'NOT_ELIGIBLE':'FAILED',outcome_code:'RESULT_NULL_NOT_ALLOWED'}}));
+ await page.route('**/'+endpoint,async r=>{
+  if(r.request().method()==='POST'){
+   posts++;expect(r.request().postDataJSON()).toEqual({binding_checksum:'a'.repeat(64),observed_row_count:5,...(preparation?{target_exists:true}:{}),engine_stopped:true,target_checked:true,confirmed:true});closed=true;
+  }
+  await r.fulfill({json:closed?{status:'CLOSED_WITHOUT_RETRY',observed_row_count:5,target_exists:true,evidence_sha256:null}:{status:'AWAITING_RECONCILIATION',binding:{checksum:'a'.repeat(64)}}});
+ });
+ await page.goto(base+'/results/'+current);
+ const panel=page.getByRole('region',{name:preparation?'Hop 準備失聯人工核對':'執行結果人工核對',exact:true});
+ const save=panel.getByRole('button',{name:'確認結案，保留結果'});
+ await expect(panel.locator('input[type=file]')).toHaveCount(0);
+ await expect(panel.getByRole('checkbox')).toHaveCount(1);
+ await expect(save).toBeDisabled();
+ if(preparation)await panel.getByLabel('目標表是否存在').selectOption('yes');
+ await panel.getByLabel('核對時目標筆數').fill('5');
+ await expect(save).toBeDisabled();
+ await panel.getByRole('checkbox').check();await expect(save).toBeEnabled();
+ await save.click({clickCount:2});
+ await expect(panel.getByRole('status')).toContainText('已人工結案');
+ await page.reload();await expect(panel.getByRole('status')).toContainText('已人工結案');
+ expect(posts).toBe(1);
+});

@@ -74,7 +74,7 @@ class PrepareSDMDelivery(BaseModel):
 class ReconcileExecution(BaseModel):
     model_config=ConfigDict(extra='forbid')
     binding_checksum: str=Field(pattern=r'^[a-f0-9]{64}$')
-    evidence_sha256: str=Field(pattern=r'^[a-f0-9]{64}$')
+    evidence_sha256: str | None=Field(default=None,pattern=r'^[a-f0-9]{64}$')
     observed_row_count: int=Field(strict=True,ge=0,le=9223372036854775807)
     engine_stopped: StrictBool
     target_checked: StrictBool

@@ -47,7 +47,7 @@ def close(queue, task_id, run_id, data):
     exists, count = data.get('target_exists'), data.get('observed_row_count')
     if (type(exists) is not bool or (exists and (type(count) is not int or not 0 <= count <= 9223372036854775807))
             or (not exists and count is not None)
-            or not re.fullmatch('[a-f0-9]{64}', data.get('evidence_sha256', ''))):
+            or (data.get('evidence_sha256') is not None and (not isinstance(data['evidence_sha256'],str) or not re.fullmatch('[a-f0-9]{64}', data['evidence_sha256'])))):
         raise ValueError('PREPARATION_EVIDENCE_REQUIRED')
     with queue.conn() as conn:
         run, request, saved = load(queue, conn, task_id, run_id)
@@ -63,7 +63,7 @@ def close(queue, task_id, run_id, data):
         saved = conn.execute('''INSERT INTO platform.hop_preparation_reconciliation
             (reconciliation_id,request_id,operator_id,binding,binding_checksum,evidence_sha256,target_exists,observed_row_count)
             VALUES(%s,%s,%s,%s,%s,%s,%s,%s) RETURNING *''',
-            (uuid4(),request['request_id'],operator['operator_id'],Jsonb(current),current['checksum'],data['evidence_sha256'],exists,count)).fetchone()
+            (uuid4(),request['request_id'],operator['operator_id'],Jsonb(current),current['checksum'],data.get('evidence_sha256'),exists,count)).fetchone()
         conn.execute("UPDATE platform.hop_dispatch_request SET status='NEEDS_REVIEW',outcome_code='HOP_PREPARATION_RECONCILED',finished_at=clock_timestamp() WHERE request_id=%s", (request['request_id'],))
         conn.execute("UPDATE platform.task_run SET state='FAILED',outcome_code='HOP_PREPARATION_RECONCILED',updated_at=clock_timestamp() WHERE run_id=%s", (run_id,))
         queue.event(conn,run_id,'HOP_PREPARATION_RECONCILED_WITHOUT_RETRY','HOP_PREPARATION',public(saved))

@@ -189,7 +189,8 @@ def test_failed_read_reports_only_allowlisted_reason_and_never_replays(executed,
     assert len(calls)==1
 
 
-def test_failed_comparison_requires_human_closure_before_new_target_revision(executed,monkeypatch):
+@pytest.mark.parametrize('file_hash', [None, 'a'*64])
+def test_failed_comparison_requires_human_closure_before_new_target_revision(executed,monkeypatch,file_hash):
     q,conn,task,run,api,calls=executed
     from app import execution_reconciliation as reconciliation
     assert reconciliation.read(q,task,run)['status']=='NOT_ELIGIBLE'
@@ -201,8 +202,16 @@ def test_failed_comparison_requires_human_closure_before_new_target_revision(exe
     assert not parent['failed_revision_available']
     offer=reconciliation.read(q,task,run)
     assert offer['status']=='AWAITING_RECONCILIATION'
-    receipt=reconciliation.close(q,task,run,offer['binding']['checksum'],'a'*64,5,
-                                  engine_stopped=True,target_checked=True,confirmed=True)
+    from app.run_api import create_run_router
+    run_app=FastAPI();run_app.include_router(create_run_router(q));run_api=TestClient(run_app)
+    body=dict(binding_checksum=offer['binding']['checksum'],observed_row_count=5,
+              engine_stopped=True,target_checked=True,confirmed=True)
+    if file_hash is not None:body['evidence_sha256']=file_hash
+    url=f'/api/tasks/{task}/runs/{run}/reconciliation'
+    assert run_api.post(url,json={**body,'confirmed':False}).status_code==422
+    response=run_api.post(url,json=body);assert response.status_code==200,response.text
+    receipt=response.json()
+    assert run_api.post(url,json=body).json()==receipt
     parent=q.detail(task,run)
     assert parent['failed_revision_available']
     assert parent['outcome_code']=='HOP_EXECUTED_QA_REQUIRED'
@@ -217,3 +226,5 @@ def test_failed_comparison_requires_human_closure_before_new_target_revision(exe
     assert q.detail(task,child['run_id'])['approval'] is None
     assert len(calls)==1
     assert receipt['original_outcome']=='HOP_EXECUTED_QA_REQUIRED'
+    assert receipt['evidence_sha256']==file_hash
+    assert receipt['evidence_source']==('FILE_SHA256' if file_hash else 'OPERATOR_ATTESTATION')

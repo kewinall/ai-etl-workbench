@@ -1,50 +1,39 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useState} from 'react';
 import {request,jsonBody} from './api';
+import {useWorkflowReadOnly,useWorkflowRefresh} from './useWorkflowRefresh';
 
 export function ExecutionReconciliation({base,onSaved,preparation=false}:{base:string;onSaved:()=>Promise<void>;preparation?:boolean}) {
   const endpoint=base+(preparation?'/hop-preparation-reconciliation':'/reconciliation');
+  const readOnly=useWorkflowReadOnly();
   const [data,setData]=useState<any>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
-  const [engine,setEngine]=useState(false),[target,setTarget]=useState(false),[confirmed,setConfirmed]=useState(false);
-  const [rows,setRows]=useState(''),[hash,setHash]=useState(''),[reading,setReading]=useState(false);
-  const [targetExists,setTargetExists]=useState('');
-  const sequence=useRef(0);
-  useEffect(()=>{let live=true;request(endpoint).then(v=>live&&setData(v)).catch(()=>live&&setError('無法讀取人工核對狀態，請重新載入版本。'));return()=>{live=false;sequence.current++}},[endpoint]);
+  const [confirmed,setConfirmed]=useState(false),[rows,setRows]=useState(''),[targetExists,setTargetExists]=useState('');
+  const [attempt,setAttempt]=useState(0);
+  useWorkflowRefresh(base,()=>setAttempt(n=>n+1),busy||confirmed||rows!==''||targetExists!=='');
+  useEffect(()=>{let live=true;request(endpoint).then(v=>{if(live){setData(v);setError('')}}).catch(()=>live&&setError('目前無法核對結案狀態，請重新讀取後再操作。'));return()=>{live=false}},[endpoint,attempt]);
   if(data?.status==='NOT_ELIGIBLE')return null;
-  const rowCount=Number(rows);
-  const rowsRequired=!preparation||targetExists==='yes';
+  const rowCount=Number(rows),rowsRequired=!preparation||targetExists==='yes';
+  const invalidRows=rowsRequired&&(rows===''||!Number.isSafeInteger(rowCount)||rowCount<0);
   return <section aria-label={preparation?'Hop 準備失聯人工核對':'執行結果人工核對'}>
-    <h4>{preparation?'準備階段失聯核對與結案':'人工核對與結案'}</h4>
-    {error&&<p role="alert">{error}</p>}
-    {!data&&!error&&<p>正在讀取核對狀態…</p>}
+    <h4>{preparation?'結束失聯的準備工作':'結束此次執行，保留結果'}</h4>
+    {error&&<><p role="alert">{error} 不會自動重送。</p><button disabled={busy} onClick={()=>{setConfirmed(false);setAttempt(n=>n+1)}}>重新讀取結案狀態</button></>}
+    {!data&&!error&&<p role="status">正在讀取結案狀態…</p>}
     {data?.status==='CLOSED_WITHOUT_RETRY'?<>
       <p role="status">已人工結案，未重跑、未核准 QA 或交付。</p>
-      <p>{preparation&&data.target_exists===false?'核對時目標不存在（不是零筆）':`核對時目標筆數：${data.observed_row_count}`}{!preparation&&`；原執行結果：${data.original_outcome}`}</p>
-      <details><summary>核對證據指紋</summary><p style={{overflowWrap:'anywhere'}}>{data.evidence_sha256}</p>{data.created_at&&<p>核對時間：{new Date(data.created_at).toLocaleString()}</p>}</details>
+      <p>{preparation&&data.target_exists===false?'核對時目標不存在（不是零筆）':`核對時目標筆數：${data.observed_row_count}`}</p>
+      <p>原結果已保留。下一步：前往需求階段，使用新目標建立修正版，重新確認需求與標準答案。</p>
     </>:data?.status==='AWAITING_RECONCILIATION'&&<>
-      <p>先確認 Hop 已停止，再核對此版本的目標資料。平台不會代替你停止引擎、刪除資料或重跑；結案不代表寫入已回復。</p>
-      {preparation&&<p>請同時確認領取本次請求的 Worker 已停止。即使尚未開始資料寫入，建表也可能已發生；以下是你的查核聲明，不是平台自動查詢結果。</p>}
-      <label><input type="checkbox" checked={engine} disabled={busy} onChange={e=>setEngine(e.target.checked)}/>我已確認本次 Hop 程序停止</label>
-      <label><input type="checkbox" checked={target} disabled={busy} onChange={e=>setTarget(e.target.checked)}/>我已核對本次目標與寫入範圍，並保留查詢證據</label>
-      {preparation&&<label>查核時目標表是否存在<select value={targetExists} disabled={busy} onChange={e=>{setTargetExists(e.target.value);setRows('');setConfirmed(false)}}><option value="">請選擇查核結果</option><option value="no">不存在（不是零筆）</option><option value="yes">存在，需提供實際筆數</option></select></label>}
-      {rowsRequired&&<label>核對時目標筆數<input type="number" min="0" step="1" value={rows} disabled={busy} onChange={e=>setRows(e.target.value)}/></label>}
-      <label>選擇核對證據檔案<input type="file" disabled={busy} onChange={async e=>{
-        const file=e.target.files?.[0],id=++sequence.current;setHash('');setError('');setReading(false);
-        if(!file)return;
-        if(!file.size||file.size>5*1024*1024){setError('請選擇 1 byte 至 5 MB 的核對證據檔案。');return}
-        setReading(true);
-        try {const bytes=await crypto.subtle.digest('SHA-256',await file.arrayBuffer());if(sequence.current===id)setHash(Array.from(new Uint8Array(bytes)).map(v=>v.toString(16).padStart(2,'0')).join(''))}
-        catch {if(sequence.current===id)setError('無法計算證據指紋，請重新選擇檔案。')}
-        finally {if(sequence.current===id)setReading(false)}
-      }}/></label>
-      <p>檔案留在本機，不會上傳；平台只保存 SHA-256 指紋與筆數。請自行保留原始證據，供日後核對。</p>
-      {hash&&<details><summary>已計算證據指紋</summary><p style={{overflowWrap:'anywhere'}}>{hash}</p></details>}
-      <label><input type="checkbox" checked={confirmed} disabled={busy} onChange={e=>setConfirmed(e.target.checked)}/>我確認只結束此次失敗／未知版本，不重跑，也不宣告成功</label>
-      <button disabled={busy||reading||!engine||!target||!confirmed||!hash||(preparation&&!targetExists)||(rowsRequired&&(rows===''||!Number.isSafeInteger(rowCount)||rowCount<0))} onClick={async()=>{
+      <p>先確認本次執行{preparation?'與 Worker':''}已停止，再填入目標筆數並確認結案。結案後可建立修正版，原結果會保留。</p>
+      {preparation&&<label>目標表是否存在<select value={targetExists} disabled={busy||readOnly} onChange={e=>{setTargetExists(e.target.value);setRows('');setConfirmed(false)}}><option value="">請選擇</option><option value="no">不存在</option><option value="yes">存在</option></select></label>}
+      {rowsRequired&&<label>核對時目標筆數<input type="number" min="0" step="1" value={rows} disabled={busy||readOnly} onChange={e=>{setRows(e.target.value);setConfirmed(false)}}/></label>}
+      <label><input type="checkbox" checked={confirmed} disabled={busy||readOnly||invalidRows||(preparation&&!targetExists)} onChange={e=>setConfirmed(e.target.checked)}/>我已確認本次執行{preparation?'與 Worker':''}停止，目標核對結果正確，同意結案並保留原結果</label>
+      <p>這次操作只結案，不會重跑、刪除資料或核准交付。無需準備證據檔案。</p>
+      <button disabled={busy||readOnly||!!error||!confirmed||invalidRows||(preparation&&!targetExists)} onClick={async()=>{
+        if(busy||readOnly||!confirmed||error)return;
         setBusy(true);setError('');
-        try {await request(endpoint,jsonBody('POST',{binding_checksum:data.binding.checksum,evidence_sha256:hash,observed_row_count:rowsRequired?rowCount:null,...(preparation?{target_exists:targetExists==='yes'}:{}),engine_stopped:engine,target_checked:target,confirmed}));setData(await request(endpoint));await onSaved()}
-        catch {setData(null);setConfirmed(false);setError('核對未完成或版本已變更，請重新載入版本確認保存狀態；不要直接重跑。')}
+        try {await request(endpoint,jsonBody('POST',{binding_checksum:data.binding.checksum,observed_row_count:rowsRequired?rowCount:null,...(preparation?{target_exists:targetExists==='yes'}:{}),engine_stopped:confirmed,target_checked:confirmed,confirmed}));setData(await request(endpoint));setConfirmed(false);await onSaved()}
+        catch {setConfirmed(false);setError('結案結果尚未確認；輸入已保留，請先重新讀取伺服器狀態。')}
         finally {setBusy(false)}
-      }}>{busy?'保存中…':'保存人工核對並結案（不重跑）'}</button>
+      }}>{busy?'結案中…':'確認結案，保留結果'}</button>
     </>}
   </section>;
 }

@@ -1,6 +1,5 @@
 import {test,expect} from '@playwright/test';
 import {readFileSync} from 'node:fs';
-import {createHash} from 'node:crypto';
 
 test('真實部分提交失聯 Run：網站人工結案、重載及證據一致，不重跑',async({page,request,baseURL})=>{
  test.skip(process.env.WORKBENCH_PARTIAL_REVIEW_TEST!=='retained-real-partial-write','Explicit retained isolated case required');
@@ -27,25 +26,22 @@ test('真實部分提交失聯 Run：網站人工結案、重載及證據一致�
  page.on('pageerror',e=>errors.push(e.message));
  await page.goto(`/#/projects/${task.project_id}/tasks/${task.id}/requirements`);
  const panel=page.getByRole('region',{name:'執行結果人工核對',exact:true});
- const save=panel.getByRole('button',{name:'保存人工核對並結案（不重跑）'});
+ const save=panel.getByRole('button',{name:'確認結案，保留結果'});
  await expect(save).toBeDisabled();
- await expect(panel).toContainText('結案不代表寫入已回復');
+ await expect(panel).toContainText('原結果會保留');
  await page.setViewportSize({width:390,height:844});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
- await panel.getByLabel('我已確認本次 Hop 程序停止').check();
- await panel.getByLabel('我已核對本次目標與寫入範圍，並保留查詢證據').check();
  await panel.getByLabel('核對時目標筆數',{exact:true}).fill('1000');
- await panel.getByLabel('選擇核對證據檔案').setInputFiles({name:'verified-partial-write.json',mimeType:'application/json',buffer:proof});
- await panel.getByLabel('我確認只結束此次失敗／未知版本，不重跑，也不宣告成功').check();
+ await panel.getByLabel('我已確認本次執行停止，目標核對結果正確，同意結案並保留原結果').check();
  await expect(save).toBeEnabled();await save.click();
  await expect(panel.getByRole('status')).toContainText('已人工結案');
  await page.waitForLoadState('networkidle');await page.reload();
  await expect(panel.getByRole('status')).toContainText('已人工結案');
  await expect(panel).toContainText('目標筆數：1000');
- await expect(panel).toContainText('HOP_RESULT_UNKNOWN');
+
  const saved=await (await request.get(base+'/reconciliation')).json();
  expect(saved.status).toBe('CLOSED_WITHOUT_RETRY');
- expect(saved.evidence_sha256).toBe(createHash('sha256').update(proof).digest('hex'));
+ expect(saved.evidence_sha256).toBeNull();
  expect(saved.observed_row_count).toBe(1000);
  expect(saved.automatic_retry_allowed).toBe(false);expect(saved.qa_approved).toBe(false);expect(saved.release_ready).toBe(false);
  const after=await (await request.get(base)).json();
