@@ -1,4 +1,5 @@
 """Single-run Windows worker. Docker-exec bridge avoids exposing PostgreSQL or copying credentials."""
+import os
 import argparse
 import json
 import subprocess
@@ -11,7 +12,9 @@ from .worker_presence import PresenceReporter
 from .sa_failure import safe_code, FAILURE_CODES
 
 
-def bridge(data, *, distribution='RockyLinux9', container='ai-etl-workbench-api-1'):
+def bridge(data, *, distribution=None, container=None):
+    distribution = distribution or os.environ.get('WORKBENCH_LOCAL_WSL_DISTRO', 'RockyLinux9')
+    container = container or os.environ.get('WORKBENCH_LOCAL_API_CONTAINER', 'ai-etl-workbench-api-1')
     command = ['wsl.exe', '-d', distribution, '-u', 'root', '--', 'docker', 'exec', '-i', container,
                'python', '-m', 'app.bootstrap', 'python', '-m', 'app.local_sa_bridge']
     result = subprocess.run(command, input=json.dumps(data), capture_output=True, text=True,

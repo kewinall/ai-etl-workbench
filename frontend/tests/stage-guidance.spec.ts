@@ -46,7 +46,7 @@ async function fixture(page:Page,options:{stage?:string;waiting?:boolean;issues?
 }
 
 test('真實隔離 API：新 Task 建立版本、確認輸入与唯讀狀態，未呼叫模型',async({page,request})=>{
- expect((await (await request.get('/api/ready')).json()).execution_enabled).toBe(false);
+ test.skip((await (await request.get('/api/ready')).json()).execution_enabled,'真實執行環境不安裝 synthetic Profile 或改寫資料連線');
  const suffix=Date.now(),profile='stage-ui-'+suffix,connection='stage-conn-'+suffix;
  const settings=(await (await request.get('/api/settings/groups')).json()).values.data_connections_targets;
  expect((await request.put('/api/settings/ai-profiles/'+profile,{data:{display_name:'isolated stage UI',provider_type:'LITELLM_BEDROCK',region:'us-east-1',model_routes:{requirement_gate:'bedrock/synthetic',etl_specification:'bedrock/synthetic',qa_review:'bedrock/synthetic'},enabled:true}})).ok()).toBeTruthy();

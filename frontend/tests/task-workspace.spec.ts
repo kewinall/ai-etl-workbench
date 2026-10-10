@@ -2,7 +2,7 @@ import {test,expect} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
 
 test('七階段保留舊產物下載與 Release 閘門（隔離 UI，非 Hop E2E）',async({page,request})=>{
- expect((await(await request.get('/api/ready')).json()).execution_enabled).toBe(false);
+ test.skip((await(await request.get('/api/ready')).json()).execution_enabled,'真實驗收環境不建立合成歷史資料');
  const project=await(await request.post('/api/projects',{data:{project_name:'歷史下載回歸-'+Date.now()}})).json();
  const response=await request.post(`/api/projects/${project.project_id}/tasks`,{data:{name:'歷史下載合成案例',requirement:'只測試 UI，不執行 ETL',source_config:{sources:[{type:'CSV',alias:'synthetic',has_actual_data:false,fields:[{name:'customer_id',type:'BIGINT'}]}]},target_schema:'ai_sample',target_table:'ui_only'}});
  expect(response.status()).toBe(201);const task=await response.json(),xml='<pipeline><name>synthetic_ui_only</name></pipeline>';

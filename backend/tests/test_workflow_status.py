@@ -36,6 +36,15 @@ def test_queued_without_control_worker_is_not_processing():
     assert online['category'] == '系統處理中'
 
 
+def test_missing_design_service_and_pending_design_are_not_fake_processing():
+    status=case(sa_approval={'status':'APPROVED_CURRENT'},
+                developer={'invocation':{'status':'DEVELOPER_RESERVED'}},services={'workers':[]})
+    assert status['category']=='執行服務未就緒'
+    assert not status['waiting']
+    assert status['operation_qualifications']['developer']['type']=='AUTHORIZE_MODEL'
+    assert not status['operation_qualifications']['hop']['service_ready']
+
+
 def test_missing_requirements_returns_to_original_input():
     status = case(run={'state': 'NEEDS_REVIEW', 'approval': {'decision': 'APPROVE'},
                       'gate_result': {'status': 'NEEDS_INPUT', 'issues': [{'message': '缺目標', 'field_path': 'target.table'}]}})

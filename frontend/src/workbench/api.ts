@@ -1,4 +1,10 @@
 const pending = new Set<string>();
+export const evidenceMode=()=>new URLSearchParams(window.location.search).get('evidence')==='pilot';
+export function sourcePath(path:string,method='GET') {
+  if(!evidenceMode()||!path.startsWith('/api/'))return path;
+  if(!['GET','HEAD'].includes(method.toUpperCase()))throw Error('既有真實案例為唯讀來源；不能核准、呼叫模型或執行。');
+  return path.startsWith('/api/evidence/')?path:'/api/evidence/pilot'+path.slice(4);
+}
 export async function request<T = any>(path: string, options?: RequestInit): Promise<T> {
   const mutation = !!options?.method && !['GET','HEAD'].includes(options.method.toUpperCase());
   if (mutation) {
@@ -8,7 +14,7 @@ export async function request<T = any>(path: string, options?: RequestInit): Pro
     pending.add(path);
   }
   try {
-  const response = await fetch(path, {...options, cache:'no-store'});
+  const response = await fetch(sourcePath(path,options?.method), {...options, cache:'no-store'});
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
     const detail = body.detail;

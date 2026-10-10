@@ -361,6 +361,8 @@ app.include_router(create_project_router(repo))
 app.include_router(create_run_router(RunQueue(DB)))
 from .workflow_status import create_workflow_router
 app.include_router(create_workflow_router(RunQueue(DB), repo))
+from .evidence_proxy import create_evidence_router
+app.include_router(create_evidence_router())
 from .developer_api import create_developer_router
 app.include_router(create_developer_router(RunQueue(DB)))
 from .qa_authorization_api import create_qa_authorization_router

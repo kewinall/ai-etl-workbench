@@ -1,4 +1,5 @@
 """One explicitly authorized QA request, no polling, fallback, or retry."""
+import os
 import argparse
 import json
 import subprocess
@@ -8,8 +9,8 @@ from .local_qa_bridge import PUBLIC_ERRORS
 
 
 def bridge(data):
-    command=['wsl.exe','-d','RockyLinux9','-u','root','--','docker','exec','-i',
-        'ai-etl-workbench-api-1','python','-m','app.bootstrap','python','-m','app.local_qa_bridge']
+    command=['wsl.exe','-d',os.environ.get('WORKBENCH_LOCAL_WSL_DISTRO','RockyLinux9'),'-u','root','--','docker','exec','-i',
+        os.environ.get('WORKBENCH_LOCAL_API_CONTAINER','ai-etl-workbench-api-1'),'python','-m','app.bootstrap','python','-m','app.local_qa_bridge']
     result=subprocess.run(command,input=json.dumps(data),capture_output=True,text=True,
         encoding='utf-8',timeout=25,creationflags=subprocess.CREATE_NO_WINDOW)
     try:value=json.loads(result.stdout)

@@ -237,12 +237,12 @@ class RunQueue:
     def event(conn, run_id, event, phase, context=None):
         conn.execute('INSERT INTO platform.task_run_event(run_id,event_type,phase,event_context) VALUES(%s,%s,%s,%s)', (run_id, event, phase, Jsonb(context or {})))
 
-    def claim(self, lease_seconds=60):
+    def claim(self, lease_seconds=60, project_id=None):
         if type(lease_seconds) is not int or not 10 <= lease_seconds <= 300:
             raise ValueError('INVALID_LEASE')
         with self.conn() as conn:
             # Lock order is Task -> Run -> settings for enqueue, review and claim.
-            row = conn.execute("SELECT r.run_id,r.task_id FROM platform.task_run r JOIN platform.task t ON t.task_id=r.task_id WHERE r.state='QUEUED' AND EXISTS (SELECT 1 FROM platform.task_run_approval a WHERE a.run_id=r.run_id AND a.decision='APPROVE' AND a.input_checksum=r.input_checksum AND a.settings_checksum=r.settings_snapshot->>'checksum') ORDER BY r.created_at,r.run_id FOR UPDATE OF t SKIP LOCKED LIMIT 1").fetchone()
+            row = conn.execute("SELECT r.run_id,r.task_id FROM platform.task_run r JOIN platform.task t ON t.task_id=r.task_id WHERE r.state='QUEUED' AND (%s::uuid IS NULL OR t.project_id=%s::uuid) AND EXISTS (SELECT 1 FROM platform.task_run_approval a WHERE a.run_id=r.run_id AND a.decision='APPROVE' AND a.input_checksum=r.input_checksum AND a.settings_checksum=r.settings_snapshot->>'checksum') ORDER BY r.created_at,r.run_id FOR UPDATE OF t SKIP LOCKED LIMIT 1", (project_id, project_id)).fetchone()
             if not row:
                 return None
             task = self.locked_task(conn, row['task_id'])

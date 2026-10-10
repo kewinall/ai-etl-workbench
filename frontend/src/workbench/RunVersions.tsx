@@ -190,9 +190,9 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
         }}>補正需求並建立新版</button>}
         {editing && <form aria-label="需求補正" onSubmit={event => {event.preventDefault();if(!preview){try{setPreview(revisionPayload());setDiffConfirmed(false)}catch(e:any){setMessage(e.message)}}else void revise()}}>
           <JoinInputEditor sources={detail.input_summary.sources||[]} value={joinContract} onChange={setJoinContract} disabled={busy}/>
-          <ExcelInputEditor selection={detail.input_summary.excel_selection} evidence={detail.input_summary.excel_input_contract_v1}
+          <div data-field="source" tabIndex={-1}><ExcelInputEditor selection={detail.input_summary.excel_selection} evidence={detail.input_summary.excel_input_contract_v1}
             value={excelContract} disabled={busy} onChange={setExcelContract}/>
-          <JsonInputEditor profile={detail.input_summary.json_profile} value={jsonContract} disabled={busy} onChange={setJsonContract}/>
+          <JsonInputEditor profile={detail.input_summary.json_profile} value={jsonContract} disabled={busy} onChange={setJsonContract}/></div>
           <SourceOrderEditor value={sourceOrder} eligible={!!detail.input_summary.csv_contract_editable} disabled={busy} onChange={value => {
             setSourceOrder(value);
             const current = transformation && !transformation.invalid ? transformation : {version: 1, filters: [], filter_logic: 'ALL', filter_null_policy: 'EXCLUDE_UNKNOWN', aggregation: null, output_columns: []};

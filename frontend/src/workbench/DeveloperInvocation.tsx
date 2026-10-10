@@ -1,9 +1,10 @@
 import {useEffect, useState} from 'react';
 import {jsonBody, request} from './api';
-import {useWorkflowRefresh,useWorkflowReadOnly} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useWorkflowReadOnly,useServiceBlocker} from './useWorkflowRefresh';
 
 export function DeveloperInvocation({taskId, runId}: {taskId: string; runId: string}) {
   const readOnly=useWorkflowReadOnly();
+  const serviceBlocker=useServiceBlocker('developer');
   const base = `/api/tasks/${encodeURIComponent(taskId)}/runs/${runId}/developer`;
   const [data, setData] = useState<any>(null);
   const [confirmed, setConfirmed] = useState(false);
@@ -34,13 +35,14 @@ export function DeveloperInvocation({taskId, runId}: {taskId: string; runId: str
     <h4>Developer 設計協作</h4>
     <p>根據已人工確認的 SA 建議與命名契約提出規格。程式驗證及保存後，仍需另行核准規格；不會自動執行 ETL。</p>
     <button disabled={busy} onClick={load}>重新載入 Developer 狀態</button>
+    {serviceBlocker&&<p role="status">{serviceBlocker}</p>}
     {error && <p role="alert">{error}。未重新送出模型請求，請重新核對。</p>}
     {data && !item && <>
       {!data.eligible ? <p>尚不符合派發條件：請先確認 SA 建議與命名契約，並使用已設定的本機 Copilot 路由。</p>
         : !data.dispatch_enabled ? <p>部署尚未啟用 Developer 派發，不會呼叫模型。</p> : <>
           <p>模型：{data.model}。一次 Copilot CLI，不自動重試、換模型或使用工具；無輸出 Token 硬上限，使用已登入帳號額度。本機 Developer Worker 必須另行執行，授權不代表已上線。</p>
           <label><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)}/>我同意此版本的 Developer 單次模型呼叫與用量</label>
-          <button disabled={readOnly || busy || !confirmed} onClick={authorize}>授權 Developer 設計</button>
+          <button disabled={readOnly || !!serviceBlocker || busy || !confirmed} onClick={authorize}>授權 Developer 設計</button>
         </>}
     </>}
     {item && <>

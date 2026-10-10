@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react';
-import {request,jsonBody} from './api';
+import {request,jsonBody,sourcePath} from './api';
 import {useWorkflowReadOnly,useWorkflowRefresh} from './useWorkflowRefresh';
 
 const labels:Record<string,string>={PREREQUISITES_REQUIRED:'需完成真實角色協作、Hop 執行及人工 QA 核准',
@@ -30,6 +30,6 @@ export function FormalRelease({base}:{base:string}){
    <label><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)} disabled={busy}/>確認此版本的 QA、SDM、候選包與可攜驗證證據，同意正式交付</label>
    <button disabled={readOnly||busy||!confirmed} onClick={()=>act('approve')}>核准並保存正式 Release</button></div>}
   {data?.release_ready===true&&data.release&&<div><p>正式 ZIP SHA-256：<code>{data.release.checksum}</code></p>
-   <a href={`${base}/release/${data.release.release_id}/download`}>下載正式 Release ZIP</a></div>}
+   <a href={sourcePath(`${base}/release/${data.release.release_id}/download`)}>下載正式 Release ZIP</a></div>}
  </section>;
 }

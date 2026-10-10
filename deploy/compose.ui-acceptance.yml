@@ -1,0 +1,124 @@
+# Opt-in 5197 acceptance overlay; always combine with compose.stage-guidance.yml.
+# The control Worker requires a new acceptance Project ID. Models/Hop consume
+# website-authorized intents only; scoped one-shot runners never retry writes.
+x-accept-env: &accept-env
+  DATABASE_URL: postgresql://workbench@postgres:5432/workbench
+  PLATFORM_SETTINGS_ENCRYPTION_KEY_FILE: /run/workbench-secrets/settings_key
+  WORKBENCH_ARTIFACT_ROOT: /app/outputs
+  WORKBENCH_EXECUTION_ENABLED: 'true'
+  WORKBENCH_SA_DISPATCH_ENABLED: 'true'
+  WORKBENCH_DEVELOPER_DISPATCH_ENABLED: 'true'
+  WORKBENCH_QA_DISPATCH_ENABLED: 'true'
+  WORKBENCH_EVIDENCE_ORIGIN: http://evidence-bridge:8080
+x-accept-volumes: &accept-volumes
+  - stage-secrets:/run/workbench-secrets:ro
+  - stage-uploads:/app/runtime-temp
+  - stage-compiled:/app/hop-project
+  - stage-artifacts:/app/outputs
+services:
+  evidence-bridge:
+    image: nginx:1.28-alpine
+    volumes: ['./evidence-bridge.conf:/etc/nginx/nginx.conf:ro']
+    networks: [test-only, original-evidence]
+  acceptance-init:
+    image: ai-etl-workbench-api:stage-guidance
+    user: '0:0'
+    command: [init-secrets]
+    environment: {}
+    volumes:
+      - stage-secrets:/run/workbench-secrets
+      - stage-uploads:/app/runtime-temp
+      - stage-compiled:/app/hop-project
+      - stage-artifacts:/app/outputs
+    network_mode: none
+  api:
+    environment: *accept-env
+    volumes: *accept-volumes
+    networks: [test-only, browser-only]
+    extra_hosts: ['host.docker.internal:host-gateway']
+    depends_on:
+      acceptance-init: {condition: service_completed_successfully}
+  acceptance-control:
+    image: ai-etl-workbench-api:stage-guidance
+    environment:
+      <<: *accept-env
+      WORKBENCH_CONTROL_WORKER_ENABLED: 'true'
+      WORKBENCH_EXECUTION_ENABLED: 'false'
+    command: [python, -m, app.control_worker, --project-id, '${UI_ACCEPT_PROJECT_ID:?Set the new acceptance Project ID}']
+    volumes: *accept-volumes
+    networks: [test-only]
+    depends_on:
+      api: {condition: service_healthy}
+  acceptance-hop:
+    image: ai-etl-workbench-worker:ui-acceptance
+    profiles: [acceptance-execution]
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+      target: worker
+      additional_contexts:
+        vertica-jdbc: ../runtime-temp/jdbc
+    environment: *accept-env
+    volumes: *accept-volumes
+    extra_hosts: ['host.docker.internal:host-gateway']
+    networks: [test-only, browser-only]
+    # The launcher must supply --once --task-id --run-id. No global queue consumer.
+    command: [python, -m, app.pilot_hop_worker, --help]
+    depends_on:
+      api: {condition: service_healthy}
+  acceptance-portability-init:
+    image: ai-etl-workbench-api:stage-guidance
+    user: '0:0'
+    entrypoint: [python, /init-portability.py]
+    volumes:
+      - ./init-portability.py:/init-portability.py:ro
+      - stage-portability-secrets:/run/portability-secrets
+    network_mode: none
+  acceptance-portability-db:
+    image: local/vertica:25.3.0-rpm
+    hostname: acceptance-portability-db
+    ulimits:
+      nofile: {soft: 65536, hard: 65536}
+    entrypoint: [/bin/bash, -c]
+    command: ['export VERTICA_DB_PASSWORD="$$(cat /run/portability-secrets/password)"; exec /usr/local/bin/docker-entrypoint.sh']
+    environment: {VERTICA_DB_NAME: UiAcceptPortable}
+    volumes:
+      - stage-portability-secrets:/run/portability-secrets:ro
+      - stage-portability-data:/data
+      - stage-portability-home:/home/dbadmin
+      - stage-portability-config:/opt/vertica/config
+    networks: [test-only]
+    depends_on:
+      acceptance-portability-init: {condition: service_completed_successfully}
+  acceptance-replay:
+    image: ai-etl-workbench-worker:ui-acceptance
+    profiles: [acceptance-execution]
+    environment:
+      <<: *accept-env
+      WORKBENCH_PORTABILITY_ENABLED: 'true'
+      WORKBENCH_PORTABILITY_HOST: acceptance-portability-db
+      WORKBENCH_PORTABILITY_PORT: '5433'
+      WORKBENCH_PORTABILITY_DATABASE: UiAcceptPortable
+      WORKBENCH_PORTABILITY_USER: dbadmin
+      WORKBENCH_PORTABILITY_TLSMODE: disable
+      WORKBENCH_PORTABILITY_PASSWORD_FILE: /run/portability-secrets/password
+    volumes:
+      - stage-secrets:/run/workbench-secrets:ro
+      - stage-uploads:/app/runtime-temp
+      - stage-compiled:/app/hop-project
+      - stage-artifacts:/app/outputs
+      - stage-portability-secrets:/run/portability-secrets:ro
+    networks: [test-only]
+    command: [python, -m, app.release_replay_worker, --help]
+volumes:
+  stage-secrets:
+  stage-uploads:
+  stage-compiled:
+  stage-portability-secrets:
+  stage-portability-data:
+  stage-portability-home:
+  stage-portability-config:
+networks:
+  original-evidence:
+    external: true
+    name: ai-etl-workbench_default

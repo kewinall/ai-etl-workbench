@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {request} from './api';
+import {request,sourcePath} from './api';
 
 export function SdmHistory({base}:{base:string}) {
   const [items,setItems]=useState<any[]|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -14,7 +14,7 @@ export function SdmHistory({base}:{base:string}) {
   const download=async(row:any)=>{
     setBusy(true);setError('');
     try {
-      const response=await fetch(`${base}/sdm-candidates/${encodeURIComponent(row.sdm_id)}/download`);
+      const response=await fetch(sourcePath(`${base}/sdm-candidates/${encodeURIComponent(row.sdm_id)}/download`));
       if(!response.ok||response.headers.get('X-Content-SHA256')!==row.checksum||response.headers.get('X-SDM-Status')!=='CANDIDATE_NOT_RELEASED')throw new Error('歷史候選文件無法下載或完整性檢查未通過；紀錄仍保留。');
       const url=URL.createObjectURL(await response.blob());
       const link=document.createElement('a');link.href=url;link.download=`SDM-candidate-${row.sdm_id}.xlsx`;link.click();

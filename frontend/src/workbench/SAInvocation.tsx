@@ -2,7 +2,7 @@ import {useEffect, useState} from 'react';
 import {request, jsonBody} from './api';
 import {WorkerStatus} from './WorkerStatus';
 import {SAApproval} from './SAApproval';
-import {useWorkflowRefresh,useWorkflowReadOnly} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useWorkflowReadOnly,useServiceBlocker} from './useWorkflowRefresh';
 
 const states: Record<string, string> = {
   SA_QUEUED: '已授權並排隊，尚未由 Worker 領取',
@@ -16,6 +16,7 @@ const states: Record<string, string> = {
 
 export function SAInvocation({taskId, runId}: {taskId: string; runId: string}) {
   const readOnly=useWorkflowReadOnly();
+  const serviceBlocker=useServiceBlocker('sa');
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -62,6 +63,7 @@ export function SAInvocation({taskId, runId}: {taskId: string; runId: string}) {
     <p>查閱不會呼叫模型。只有明確授權後才會排隊；SA 建議不等於 ETL 執行或 Release 核准。</p>
     {offer && <WorkerStatus kind={offer.authorization.policy_version === 'copilot-cli-once-v1' ? 'SA_COPILOT' : 'SA_LITELLM'}/>}
     <button disabled={busy} onClick={load}>重新載入 SA 狀態</button>
+    {serviceBlocker&&<p role="status">{serviceBlocker}</p>}
     {error && <p role="alert">{error}</p>}
     {offer && !item && <div>
       {!offer.dispatch_enabled ? <p>部署尚未啟用 SA 派發；目前不會呼叫模型。</p> : !offer.eligible ? <p>請先確認目前輸入並通過需求檢查，才可授權 SA。</p> : <>
@@ -69,7 +71,7 @@ export function SAInvocation({taskId, runId}: {taskId: string; runId: string}) {
           ? '使用本機 Copilot 登入及額度；只啟動 1 次 CLI，不自動重試、不允許工具操作。CLI 無法保證輸出 Token 硬上限，實際用量以回報為準；Windows 本機 Worker 必須執行中。'
           : '可能依 Token 計費；包含暫時性錯誤重試與格式補正，最多 4 次供應商請求，每次最多 2,048 個輸出 Token。'}費率及最終費用尚不可用；授權不代表 Worker 已上線。</p>
         <label><input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)}/>我同意此版本的 SA 模型呼叫及上述用量限制</label>
-        <button disabled={readOnly || busy || !consent} onClick={authorize}>授權並排入 SA 工作</button>
+        <button disabled={readOnly || !!serviceBlocker || busy || !consent} onClick={authorize}>授權並排入 SA 工作</button>
       </>}
     </div>}
     {data && !item && <p>此版本尚無 SA 派發紀錄。</p>}

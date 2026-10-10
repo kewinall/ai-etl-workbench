@@ -15,7 +15,7 @@ import {ExecutionDiagnosis} from './ExecutionDiagnosis';
 import {ExecutionReconciliation} from './ExecutionReconciliation';
 import {ComparisonHistory} from './ComparisonHistory';
 import './workflow.css';
-import {WorkflowReadOnly} from './useWorkflowRefresh';
+import {WorkflowReadOnly,WorkflowQualifications} from './useWorkflowRefresh';
 import {LegacyTaskRecords} from './LegacyTaskRecords';
 
 const keys=['requirements','review','design','confirm','results','quality','delivery'];
@@ -100,7 +100,7 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
     const button=document.querySelector<HTMLButtonElement>('[data-revision-start]');
     button?.click();
     let frame=0,tries=0;
-    const focus=()=>{const field=document.querySelector<HTMLElement>(`[data-field="${pendingField}"]`);if(field&&!field.matches(':disabled')){(field.matches('input,select,textarea,button')?field:field.querySelector<HTMLElement>('input,select,textarea,button'))?.focus();field.scrollIntoView({block:'center'});setPendingField('')}else if(tries++<60)frame=requestAnimationFrame(focus);else setPendingField('')};
+    const focus=()=>{const field=document.querySelector<HTMLElement>(`[data-field="${pendingField}"]`);if(field&&!field.matches(':disabled')){(field.matches('input,select,textarea,button')?field:field.querySelector<HTMLElement>('input:not(:disabled),select:not(:disabled),textarea:not(:disabled),button:not(:disabled)')||field)?.focus();field.scrollIntoView({block:'center'});setPendingField('')}else if(tries++<60)frame=requestAnimationFrame(focus);else setPendingField('')};
     frame=requestAnimationFrame(focus);
     return()=>cancelAnimationFrame(frame);
   },[pendingField,stage,loading,error]);
@@ -115,7 +115,7 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
         {!runs.some(r=>r.run_id===selected)&&<option value={selected}>{selected?'指定版本不可用':'尚無版本'}</option>}
         {runs.map((r,i)=><option key={r.run_id} value={r.run_id}>第 {runs.length-i} 版 · {r.run_id}{i?'（歷史）':'（最新）'}</option>)}
       </select></label>
-      <p>{workflow?.category||'狀態待核對'} · 最後更新：{time(workflow?.updated_at)}{workflow?.historical?' · 歷史版本，只讀檢視':''}</p>
+      <p>{workflow?.category||'狀態待核對'} · 最後更新：{time(workflow?.updated_at)}{workflow?.historical?' · 歷史版本，只讀檢視':''}{workflow?.read_only_source?' · 既有真實案例，來源只讀':''}</p>
       <button disabled={loading} onClick={()=>setEpoch(n=>n+1)}>{loading?'讀取中…':'重新核對狀態'}</button>
     </div>
     <div role="tablist" aria-label="ETL 七個階段" className="workflow-stages">{keys.map((key,i)=><button key={key} ref={el=>{refs.current[i]=el}} id={`stage-${key}`} role="tab" aria-selected={stage===key} aria-controls={`stage-panel-${key}`} tabIndex={stage===key?0:-1} onClick={()=>select(key)} onKeyDown={e=>{
@@ -131,8 +131,8 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
       <details><summary>來源支援與驗收範圍</summary><p>{workflow.source_scope_note}</p></details>
     </section>}
     {stageInfo?.blocked_reason&&<p role="status">{stageInfo.blocked_reason} 此階段可檢視，操作須等前置條件成立。</p>}
-    {valid&&!!workflow.issues.length&&<section className="panel workflow-issues" aria-label="問題處理區"><h3>待處理問題</h3><ul>{workflow.issues.map((issue:any,i:number)=><li key={i}><b>{issue.message}</b><p>原因：{issue.issue_type||issue.code||'審查缺口'} · 對應欄位：{issue.field_path||issue.evidence_ids?.join('、')||'需求說明'}</p><button disabled={loading||!!error||workflow.historical} onClick={()=>{if(issue.stage){select(issue.stage);return}const path=issue.field_path||issue.evidence_ids?.[0]||'';setPendingField(/join/.test(path)?'join':/transformation|filter|aggregation/.test(path)?'transformation':/schema/.test(path)?'target_schema':/table/.test(path)?'target_table':'requirement_text');select('requirements')}}>{issue.stage==='quality'?'檢視 QA 意見與補證':issue.stage==='design'?'檢視並修正规格':'前往修正'}</button></li>)}</ul></section>}
-    <WorkflowReadOnly.Provider value={!!readonly}>
+    {valid&&!!workflow.issues.length&&<section className="panel workflow-issues" aria-label="問題處理區"><h3>待處理問題</h3><ul>{workflow.issues.map((issue:any,i:number)=><li key={i}><b>{issue.message}</b><p>原因：{issue.issue_type||issue.code||'審查缺口'} · 對應欄位：{issue.field_path||issue.evidence_ids?.join('、')||'需求說明'}</p><button disabled={loading||!!error||workflow.historical} onClick={()=>{if(issue.stage){select(issue.stage);return}const path=issue.field_path||issue.evidence_ids?.[0]||'';setPendingField(/join/.test(path)?'join':/transformation|filter|aggregation/.test(path)?'transformation':/source|csv|excel|json/.test(path)?'source':/schema/.test(path)?'target_schema':/table/.test(path)?'target_table':'requirement_text');select('requirements')}}>{issue.stage==='quality'?'檢視 QA 意見與補證':issue.stage==='design'?'檢視並修正规格':'前往修正'}</button></li>)}</ul></section>}
+    <WorkflowQualifications.Provider value={workflow?.operation_qualifications||{}}><WorkflowReadOnly.Provider value={!!readonly}>
     <section className="panel" hidden={stage!=='requirements'} role="tabpanel" id="stage-panel-requirements" aria-labelledby="stage-requirements">
       {(!runId||valid)&&<fieldset className="workflow-controls" disabled={loading||!!error}><RunVersions taskId={task.id} requestedRunId={selected||undefined} onSelectRun={id=>select('requirements',id)}/></fieldset>}
       <details><summary>Task 保存設定（目前內容；版本輸入以上方不可變快照為準）</summary>{renderSetup(task)}</details>
@@ -147,7 +147,7 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
       </fieldset>
       {stage==='delivery'&&<SdmDelivery key={selected} base={runBase}/>}
     </section>}
-    </WorkflowReadOnly.Provider>
+    </WorkflowReadOnly.Provider></WorkflowQualifications.Provider>
     <details className="panel"><summary>審查／修訂時間軸與技術詳情</summary><button onClick={inspectHistory}>讀取此版本完整紀錄</button>{historyError&&<p role="alert">{historyError}</p>}{history&&<><ol>{history.run.events?.map((event:any)=><li key={event.event_id}>{time(event.created_at)} · {event.event_type}{renderValue(event.event_context)}</li>)}</ol><details><summary>SA／Developer／QA 模型紀錄與用量</summary>{renderValue({sa:history.sa,developer:history.dev,qa:history.qa})}</details></>}</details>
     <LegacyTaskRecords task={task} renderValue={renderValue}/>
   </div>;

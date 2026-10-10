@@ -15,6 +15,7 @@ import {TwoCsvTaskForm} from './workbench/TwoCsvTaskForm';
 import {ExcelSourceSelection,ExcelSelectionSummary} from './workbench/ExcelSourceSelection';
 import {JsonSourceConfirmation,JsonProfileSummary} from './workbench/JsonSourceConfirmation';
 import {readRoute} from './workbench/routes';
+import {sourcePath} from './workbench/api';
 import {createRoot} from 'react-dom/client';
 import {Activity,BarChart3,BookOpen,Boxes,ChevronRight,CircleGauge,Database,FilePlus2,History,LayoutDashboard,Play,RefreshCw,Settings,ShieldCheck,SlidersHorizontal,Workflow,Zap,CheckCircle2,Clock3,AlertTriangle,TerminalSquare,FileSearch2,GitBranch,Search,Code2} from 'lucide-react';
 import './styles.css';import './theme-light.css';import './node-details.css';import './history-summary.css';
@@ -31,7 +32,7 @@ const errorScenarios=[
  {node:'semantic',scenario:'TC06_SEMANTIC_VALIDATION_FAILED',label:'TC6 · 欄位或規格不一致',code:'SEMANTIC_VALIDATION_FAILED'},
  {node:'executor',scenario:'TC07_HOP_EXECUTION_FAILED',label:'TC7 · Apache Hop 執行失敗',code:'HOP_EXECUTION_FAILED'},
  {node:'postwrite',scenario:'TC08_POST_WRITE_COUNT_MISMATCH',label:'TC8 · 寫入筆數不一致',code:'POST_WRITE_COUNT_MISMATCH'}];
-async function api(path:string,options?:RequestInit){const r=await fetch(path,options);const body=await r.json().catch(()=>({detail:r.statusText}));if(!r.ok)throw new Error(body.detail||'Request failed');return body}
+async function api(path:string,options?:RequestInit){const r=await fetch(sourcePath(path,options?.method),options);const body=await r.json().catch(()=>({detail:r.statusText}));if(!r.ok)throw new Error(body.detail||'Request failed');return body}
 function App(){
  const [route,setRoute]=useState(readRoute),[tasks,setTasks]=useState<Task[]>([]),[selected,setSelected]=useState<Task|null>(null),[mode,setMode]=useState('LOADING'),[notice,setNotice]=useState(''),[executionEnabled,setExecutionEnabled]=useState<boolean|null>(null);
  const page=route.page as Page;

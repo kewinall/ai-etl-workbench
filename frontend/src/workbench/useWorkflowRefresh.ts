@@ -1,5 +1,7 @@
 import {createContext,useContext,useEffect,useRef} from 'react';
 export const WorkflowReadOnly=createContext(false);
+export const WorkflowQualifications=createContext<Record<string,any>>({});
+export const useServiceBlocker=(operation:string)=>useContext(WorkflowQualifications)[operation]?.blocked_reason||'';
 export const useWorkflowReadOnly=()=>useContext(WorkflowReadOnly);
 
 // Only re-read server state. Never invoke a write or reset an open editor.

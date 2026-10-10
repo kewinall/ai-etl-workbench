@@ -6,7 +6,7 @@ from .run_queue import RunConflict
 
 LABELS = ['需求與資料規格', '需求審查', '流程設計審查', '執行確認', '執行與結果', '品質審查', '成果交付']
 KEYS = ['requirements', 'review', 'design', 'confirm', 'results', 'quality', 'delivery']
-WAITING = {'QUEUED', 'RUNNING', 'DISPATCH_RESERVED', 'CLAIMED', 'SA_QUEUED', 'QA_RESERVED'}
+WAITING = {'QUEUED', 'RUNNING', 'DISPATCH_RESERVED', 'CLAIMED', 'SA_QUEUED', 'QA_RESERVED', 'DEVELOPER_RESERVED'}
 
 
 def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
@@ -98,6 +98,26 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
         enabled, waiting = release.get('release_ready') is True, False
         action = '下載正式交付' if enabled else '檢視歷史與失效核准原因'
     service_blocker = None
+    qualifications = {}
+    if services is not None:
+        online = {w['kind']: w.get('can_dispatch') is True for w in services.get('workers', [])}
+        native = ((run.get('settings_snapshot') or {}).get('ai') or {}).get('provider_type') == 'LOCAL_COPILOT'
+        for operation, kind, action_type in [('sa', 'SA_COPILOT' if native else 'SA_LITELLM', 'AUTHORIZE_MODEL'),
+                                            ('developer', 'DEVELOPER_COPILOT', 'AUTHORIZE_MODEL'),
+                                            ('qa', 'QA_COPILOT', 'AUTHORIZE_MODEL'),
+                                            ('hop', 'HOP', 'EXECUTE_WRITE'),
+                                            ('portability', 'PORTABILITY', 'VERIFY_ISOLATED')]:
+            ready = online.get(kind, False)
+            qualifications[operation] = {'type': action_type, 'service_ready': ready,
+                'blocked_reason': None if ready else f'{kind} 執行服務未就緒；請由環境管理者啟動此專案的服務，再重新核對。'}
+        pending_role = ('sa' if index == 1 and sa_record.get('status') in WAITING else
+                        'developer' if index == 2 and dev_record.get('status') in WAITING else
+                        'hop' if index == 4 and job.get('status') in WAITING else
+                        'qa' if index == 5 and qa_record.get('status') in WAITING else
+                        'portability' if index == 6 and portable.get('status') == 'RUNNING' else None)
+        if pending_role and not qualifications[pending_role]['service_ready']:
+            service_blocker = qualifications[pending_role]['blocked_reason']
+            owner, action, enabled, waiting = '環境管理者', '查看服務就緒條件', False, False
     if services is not None and current and index == 1 and approved_input and run['state'] in ('QUEUED', 'RUNNING'):
         control = next((w for w in services.get('workers', []) if w['kind'] == 'CONTROL'), {})
         if not control.get('can_dispatch'):
@@ -121,6 +141,7 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
                             'type': 'NAVIGATE', 'operation_enabled': enabled,
                             'blocked_reason': service_blocker},
             'services': services, 'service_blocked_reason': service_blocker,
+            'operation_qualifications': qualifications,
             'waiting': waiting, 'category': category, 'issues': issues,
             'execution_blocked_reason': hop.get('blocked_reason'),
             'source_scope_note': 'JSON／資料表來源的完整執行驗收尚未完成；可檢視規格與候選證據，勿視為全鏈通過。',
@@ -152,7 +173,7 @@ def read(queue, repo, task_id, run_id):
         developer=developer_read(queue, task_id, run_id), specifications=specifications,
         hop=hop_read(queue, task_id, run_id), qa=qa,
         qa_approval=read_approval(queue, task_id, run_id), release=release_status(queue, repo, task_id, run_id),
-        services=WorkerRegistry(queue).snapshot())
+        services=WorkerRegistry(queue).snapshot(before['project_id']))
     after = queue.detail(task_id, run_id)
     if public_run(before) != public_run(after) or str(queue.list_runs(task_id)[0]['run_id']) != str(runs[0]['run_id']):
         raise RunConflict('WORKFLOW_READ_CHANGED')

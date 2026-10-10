@@ -23,11 +23,11 @@ def check_requirements(snapshot):
             'status': 'NEEDS_INPUT' if issues else 'CHECKED', 'issues': issues}
 
 
-def run_once(queue, heartbeat_seconds=10):
+def run_once(queue, heartbeat_seconds=10, project_id=None):
     if not 1 <= heartbeat_seconds <= 20:
         raise ValueError('INVALID_HEARTBEAT_INTERVAL')
     queue.reap_expired()
-    run = queue.claim(lease_seconds=60)
+    run = queue.claim(lease_seconds=60, project_id=project_id) if project_id else queue.claim(lease_seconds=60)
     if not run:
         return {'status': 'IDLE'}
     run_id, token = run['run_id'], run['lease_token']
@@ -68,6 +68,7 @@ def run_once(queue, heartbeat_seconds=10):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--once', action='store_true')
+    parser.add_argument('--project-id')
     args = parser.parse_args()
     if os.getenv('WORKBENCH_CONTROL_WORKER_ENABLED') != 'true':
         print('Control worker disabled', flush=True)
@@ -77,12 +78,12 @@ def main():
     for name in (signal.SIGTERM, signal.SIGINT):
         signal.signal(name, lambda *_: pause.set())
     registry, instance = WorkerRegistry(queue), uuid4()
-    with PresenceReporter(lambda state: registry.touch(instance, 'CONTROL', 'EXECUTE', state)) as presence:
+    with PresenceReporter(lambda state: registry.touch(instance, 'CONTROL', 'EXECUTE', state, args.project_id)) as presence:
         while not pause.is_set():
             try:
                 presence.activity = 'BUSY'
                 reap_expired_qa(queue)
-                result = run_once(queue)
+                result = run_once(queue, project_id=args.project_id)
                 if result['status'] != 'IDLE' or args.once:
                     print(result, flush=True)
             except Exception:
