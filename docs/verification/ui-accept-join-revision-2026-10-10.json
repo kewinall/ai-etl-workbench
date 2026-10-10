@@ -1,0 +1,53 @@
+{
+  "task_id": "TASK-20261010-0019",
+  "parent_run_id": "5dc43645-41ae-4d1f-a025-dbb73418e631",
+  "run_id": "714fad5b-b564-40bd-a60d-cb61134656a0",
+  "created_through": "WEBSITE_DIFF_PREVIEW_AND_REVISION",
+  "requirements": {
+    "version": 1,
+    "date_scope": "ALL",
+    "start_date": "",
+    "write_mode": "APPEND",
+    "date_column": "",
+    "key_columns": [],
+    "end_date_exclusive": ""
+  },
+  "transformation": {
+    "version": 1,
+    "filters": [],
+    "filter_logic": "ALL",
+    "filter_null_policy": "EXCLUDE_UNKNOWN",
+    "aggregation": null,
+    "output_columns": [
+      "source.0.id",
+      "source.0.left_value",
+      "source.1.id",
+      "source.1.right_value"
+    ]
+  },
+  "join": {
+    "version": 1,
+    "joins": [
+      {
+        "id": "join_sources",
+        "left_source": "source.0",
+        "right_source": "source.1",
+        "join_type": "LEFT",
+        "keys": [
+          {
+            "left_column": "id",
+            "right_column": "id"
+          }
+        ],
+        "null_key_policy": "NEVER_MATCH",
+        "duplicate_key_policy": "EXPAND",
+        "string_comparison": "CASE_SENSITIVE_NO_TRIM"
+      }
+    ],
+    "contract_status": "INPUT_ONLY_NOT_EXECUTION"
+  },
+  "parent_approval_preserved": true,
+  "new_approval": null,
+  "write_started": false,
+  "next_step": "HUMAN_INPUT_REVIEW"
+}

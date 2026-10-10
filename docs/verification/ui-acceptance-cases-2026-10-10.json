@@ -20,10 +20,12 @@
     {
       "key": "join",
       "task_id": "TASK-20261010-0019",
-      "run_id": "5dc43645-41ae-4d1f-a025-dbb73418e631",
+      "run_id": "714fad5b-b564-40bd-a60d-cb61134656a0",
       "target": "ai_sample.ui_accept_join_20261010",
-      "url": "http://127.0.0.1:5197/#/projects/346e9419-4b0e-4ba7-ad29-1756ca7da833/tasks/TASK-20261010-0019/requirements/5dc43645-41ae-4d1f-a025-dbb73418e631",
-      "status": "AWAITING_HUMAN_INPUT_APPROVAL"
+      "url": "http://127.0.0.1:5197/#/projects/346e9419-4b0e-4ba7-ad29-1756ca7da833/tasks/TASK-20261010-0019/requirements/714fad5b-b564-40bd-a60d-cb61134656a0",
+      "status": "AWAITING_HUMAN_INPUT_APPROVAL",
+      "parent_run_id": "5dc43645-41ae-4d1f-a025-dbb73418e631",
+      "revision_reason": "Confirmed original input; control found missing write_mode/date_scope. Website revision explicitly adds APPEND/ALL and four-column projection. New input approval required."
     }
   ],
   "full_chain_accepted": false

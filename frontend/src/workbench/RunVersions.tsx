@@ -232,10 +232,10 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
           <label>目標 Schema<input data-field="target_schema" required pattern="[a-z_][a-z0-9_]{0,62}" value={draft.target_schema} onChange={event => setDraft({...draft, target_schema: event.target.value})}/></label>
           <label>目標 Table<input data-field="target_table" required pattern="[a-z_][a-z0-9_]{0,62}" value={draft.target_table} onChange={event => setDraft({...draft, target_table: event.target.value})}/></label>
           <p>目標名稱限英文小寫、數字與底線，不能以數字開頭；這裡只保存規格，不建立或刪除資料表。</p>
-          <label>寫入模式<select value={conditions.write_mode || ''} onChange={event => setConditions({...conditions, write_mode: event.target.value || null})}>
+          <label>寫入模式<select data-field="write_mode" value={conditions.write_mode || ''} onChange={event => setConditions({...conditions, write_mode: event.target.value || null})}>
             <option value="">尚未確認</option><option value="APPEND">新增資料（APPEND）</option><option value="REPLACE">覆寫目標（REPLACE，僅記錄意圖）</option><option value="UPSERT">依鍵值合併（UPSERT）</option>
           </select></label>
-          <label>資料期間<select value={conditions.date_scope || ''} onChange={event => setConditions({...conditions, date_scope: event.target.value || null, date_column: '', start_date: '', end_date_exclusive: ''})}>
+          <label>資料期間<select data-field="date_scope" value={conditions.date_scope || ''} onChange={event => setConditions({...conditions, date_scope: event.target.value || null, date_column: '', start_date: '', end_date_exclusive: ''})}>
             <option value="">尚未確認</option><option value="ALL">全部資料</option><option value="RANGE">指定日期範圍</option>
           </select></label>
           {conditions.date_scope === 'RANGE' && <>
@@ -243,7 +243,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
             <label>起日（包含）<input type="date" value={conditions.start_date || ''} onChange={event => setConditions({...conditions, start_date: event.target.value})}/></label>
             <label>迄日（不包含）<input type="date" value={conditions.end_date_exclusive || ''} onChange={event => setConditions({...conditions, end_date_exclusive: event.target.value})}/></label>
           </>}
-          <label>鍵欄位（逗號分隔）<input maxLength={2048} value={(conditions.key_columns || []).join(',')} onChange={event => setConditions({...conditions, key_columns: event.target.value.split(',')})}/></label>
+          <label>鍵欄位（逗號分隔）<input data-field="key_columns" maxLength={2048} value={(conditions.key_columns || []).join(',')} onChange={event => setConditions({...conditions, key_columns: event.target.value.split(',')})}/></label>
           <p>UPSERT 必須提供來源中存在的鍵欄位；日期採起日包含、迄日不包含。不確定可保持「尚未確認」，重新檢查仍會暫停。覆寫意圖不等於核准刪表。</p>
           {preview&&<section aria-label="修訂差異預覽"><h4>建立新版前確認差異</h4><p>下游 SA、命名／設計、規格、執行與 QA 核准依後端規則重新核對；原版結果保留。</p><table><thead><tr><th>欄位</th><th>原值</th><th>新值</th></tr></thead><tbody>{Object.entries(preview).filter(([key,value])=>!['request_key','input_checksum','qa_revision_checksum'].includes(key)&&JSON.stringify(value)!==JSON.stringify(detail.input_summary[key])).map(([key,value])=><tr key={key}><td>{({requirement_text:'需求',target_schema:'目標 Schema',target_table:'目標資料表',requirements_v1:'寫入與資料期間',transformation_contract_v1:'轉換規則',source_fields_v1:'來源欄位'} as any)[key]||key}</td><td><pre>{JSON.stringify(detail.input_summary[key]??'原版未提供',null,2)}</pre></td><td><pre>{JSON.stringify(value,null,2)}</pre></td></tr>)}</tbody></table><label><input type="checkbox" checked={diffConfirmed} onChange={e=>setDiffConfirmed(e.target.checked)}/>已核對差異，同意建立待需求確認的新版</label></section>}
           {uncertain&&<section role="alert"><p>送出結果待核對，不能再次提交。</p><button type="button" disabled={busy} onClick={()=>action(async()=>{const list=await request(`/api/tasks/${taskId}/runs`);setRuns(list.runs);const child=list.runs.find((r:any)=>r.parent_run_id===detail.run_id);if(child){setEditing(false);await open(child.run_id);setPendingRun(child.run_id)}else{setUncertain(false);setMessage('已重新核對：尚未找到子版本，保留同一 request key；仍需人工確認差異才可再次送出。')}})}>重新讀取新版建立結果</button></section>}

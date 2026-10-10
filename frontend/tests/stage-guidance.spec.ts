@@ -179,3 +179,12 @@ test('QA 退回修正版保留已執行結果並要求新目標；不自動送�
  await page.getByRole('button',{name:'預覽修訂差異'}).click();
  await expect(page.getByText('join_contract_v1',{exact:false})).toBeVisible();expect(f.counts().posts).toBe(0);
  });
+
+for (const [path,field] of [['requirements_v1.write_mode','write_mode'],['requirements_v1.date_scope','date_scope'],['requirements_v1.key_columns','key_columns']]) test(`缺漏問題定位實際欄位 ${field}`,async({page})=>{
+ const f=await fixture(page,{issues:[{message:'必要欄位缺漏',field_path:path}]});
+ await page.goto(base+'/review/'+current);
+ await page.getByRole('button',{name:'前往修正',exact:true}).click();
+ await expect(page.locator(`[data-field="${field}"]`)).toBeFocused();
+ await expect(page.getByLabel('補正後需求')).toHaveValue('原始需求，其他內容必須保留');
+ expect(f.counts().posts).toBe(0);
+});
