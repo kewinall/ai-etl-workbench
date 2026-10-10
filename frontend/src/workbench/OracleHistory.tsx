@@ -6,7 +6,7 @@ import {ComparisonHistory} from './ComparisonHistory';
 import {QAReviewHistory} from './QAReviewHistory';
 import {ExecutionDiagnosis} from './ExecutionDiagnosis';
 
-export function OracleHistory({taskId,requestedRunId,onSelectRun}:{taskId:string;requestedRunId?:string;onSelectRun?:(runId:string)=>void}) {
+export function OracleHistory({taskId,requestedRunId,onSelectRun,stage}:{taskId:string;requestedRunId?:string;onSelectRun?:(runId:string)=>void;stage?:string}) {
   const canLeave=()=>window.dispatchEvent(new Event('workbench:before-navigate',{cancelable:true}));
   const [runs,setRuns]=useState<any[]>([]),[run,setRun]=useState('');
   const [specs,setSpecs]=useState<any[]>([]),[spec,setSpec]=useState('');
@@ -52,7 +52,7 @@ export function OracleHistory({taskId,requestedRunId,onSelectRun}:{taskId:string
     {items.map(item=><article className="wb-record" key={item.oracle_id}><h4>答案第 {item.version} 版</h4><p>{item.approval_recorded?'曾人工核准；目前資格尚未評估':'尚無人工核准紀錄'}</p><p>保存時間：{new Date(item.created_at).toLocaleString()}</p>{item.approved_at&&<p>核准時間：{new Date(item.approved_at).toLocaleString()}</p>}<details><summary>版本指紋</summary><p>{item.document_checksum}</p></details><p>尚不能據此判定 QA 通過或可交付。</p><OracleReview url={`/api/tasks/${encodeURIComponent(taskId)}/runs/${run}/specifications/${spec}/oracles/${item.oracle_id}/review`} checksum={item.document_checksum}/></article>)}
     {specs.find(s=>s.specification_id===spec)?.approval_effective&&<OracleEditor key={run+'/'+spec} base={`/api/tasks/${encodeURIComponent(taskId)}/runs/${run}/specifications/${spec}`} onHistory={setItems}/>}
     {spec&&!specs.find(s=>s.specification_id===spec)?.approval_effective&&<p>請先至需求與規格核准有效規格，才能輸入答案。</p>}
-    {run&&<ComparisonHistory key={run} taskId={taskId} runId={run}/>}
-    {run&&<QAReviewHistory key={'qa-'+run} taskId={taskId} runId={run}/>}
+    {run&&!stage&&<ComparisonHistory key={run} taskId={taskId} runId={run}/>}
+    {run&&!stage&&<QAReviewHistory key={'qa-'+run} taskId={taskId} runId={run}/>}
   </section>;
 }

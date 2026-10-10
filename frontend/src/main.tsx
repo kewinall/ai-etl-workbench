@@ -2,7 +2,7 @@ import React,{useCallback,useEffect,useState,useRef} from 'react';
 import {TaskDraftBoundary,useTaskDraft,useTaskOperation} from './workbench/TaskDraftBoundary';
 import {CreationRequest} from './workbench/creationRequest';
 import {ProjectWorkspace as WorkbenchProjects} from './workbench/ProjectWorkspace';
-import {TaskWorkspace} from './workbench/TaskWorkspace';
+import {TaskWorkspace} from './workbench/StageWorkspace';
 import {AIProfiles} from './workbench/AIProfiles';
 import {OperatorGuide} from './workbench/OperatorGuide';
 import {useSettingsDraft} from './workbench/useSettingsDraft';

@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react';
 import {request,jsonBody} from './api';
 
-export function NamingConfirmation({taskId,editable,sourceOrder}:{taskId:string;editable:boolean;sourceOrder?:any}){
+export function NamingConfirmation({taskId,runId,editable,sourceOrder}:{taskId:string;runId?:string;editable:boolean;sourceOrder?:any}){
  const base=`/api/tasks/${encodeURIComponent(taskId)}/naming-contract`;
  const [columns,setColumns]=useState<any[]>([]),[saved,setSaved]=useState<any>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[confirmed,setConfirmed]=useState(false),[editing,setEditing]=useState(false);
  useEffect(()=>{let live=true;request(base).then(v=>{if(live){setSaved(v.contract);setColumns(v.contract?.contract_json?.columns||[])}}).catch(e=>{if(live)setError(e.message)});return()=>{live=false}},[base]);

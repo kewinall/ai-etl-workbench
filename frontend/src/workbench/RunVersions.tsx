@@ -18,7 +18,7 @@ import {JsonInputEditor, JsonInputSummary} from './JsonInputContract';
 
 const states: Record<string, string> = {QUEUED: '待處理（未啟動）', RUNNING: '處理中', NEEDS_REVIEW: '需要人工檢查', SUCCEEDED: '流程已結束', FAILED: '失敗', CANCELLED: '已取消'};
 
-export function RunVersions({taskId}: {taskId: string}) {
+export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string;requestedRunId?:string;onSelectRun?:(id:string)=>void}) {
   const [runs, setRuns] = useState<any[]>([]);
   const [detail, setDetail] = useState<any>(null);
   const [busy, setBusy] = useState(false);
@@ -44,11 +44,12 @@ export function RunVersions({taskId}: {taskId: string}) {
     request(`/api/tasks/${taskId}/runs`).then(async value => {
       if (!active) return;
       setRuns(value.runs);
-      if (value.runs[0]) await open(value.runs[0].run_id);
+      if(requestedRunId&&!value.runs.some((r:any)=>r.run_id===requestedRunId))throw Error('指定版本不存在；未改用最新版本。');
+      if (requestedRunId||value.runs[0]) await open(requestedRunId||value.runs[0].run_id);
     }).catch(error => {if (active) setMessage(error.message)})
       .finally(() => {if (active) setBusy(false)});
     return () => {active = false};
-  }, [taskId]);
+  }, [taskId,requestedRunId]);
   const action = async (operation: () => Promise<void>) => {
     setBusy(true); setMessage('');
     try {await operation()} catch (error: any) {setMessage(error.message)} finally {setBusy(false)}
@@ -78,6 +79,7 @@ export function RunVersions({taskId}: {taskId: string}) {
     const run = await request(`/api/tasks/${taskId}/runs`, jsonBody('POST', {mode: 'PREPARE', request_key: requestKey.current}));
     requestKey.current = crypto.randomUUID();
     await load(); await open(run.run_id);
+    onSelectRun?.(run.run_id);
     setMessage('已保存本次輸入與設定快照；沒有啟動 ETL。');
   });
   const review = (decision: 'APPROVE' | 'REJECT') => action(async () => {
@@ -100,21 +102,21 @@ export function RunVersions({taskId}: {taskId: string}) {
     </div>
     {message && <p role="status">{message}</p>}
     {!runs.length && <p>尚無準備版本；既有紀錄可在「產物與流程」與「執行與 QA」查看。</p>}
-    <div className="run-version-list">{runs.map(run => <button disabled={busy} key={run.run_id} onClick={() => action(() => open(run.run_id))} aria-pressed={detail?.run_id === run.run_id}>
+    {!onSelectRun&&<div className="run-version-list">{runs.map(run => <button disabled={busy} key={run.run_id} onClick={() => action(() => open(run.run_id))} aria-pressed={detail?.run_id === run.run_id}>
       <b>{states[run.state] || run.state}</b><span>{new Date(run.created_at).toLocaleString()}</span><small>{run.run_id}</small>
-    </button>)}</div>
+    </button>)}</div>}
     {detail && <article aria-label="版本內容" className="run-version-detail">
       <h4>本次輸入與設定</h4>
       <HopOutcome code={detail.outcome_code}/>
       {['HOP_EXECUTION_FAILED','HOP_RESULT_UNKNOWN'].includes(detail.outcome_code)&&<ExecutionDiagnosis key={'diagnosis-'+detail.run_id} base={`/api/tasks/${encodeURIComponent(taskId)}/runs/${detail.run_id}`}/>}
       {['HOP_EXECUTION_FAILED','HOP_RESULT_UNKNOWN'].includes(detail.outcome_code)&&<ExecutionReconciliation key={'reconcile-'+detail.run_id} base={`/api/tasks/${encodeURIComponent(taskId)}/runs/${detail.run_id}`} onSaved={async()=>{await load();await open(detail.run_id)}}/>}
-      <SAEvidence key={detail.run_id} taskId={taskId} runId={detail.run_id}/>
+      {!onSelectRun&&<><SAEvidence key={detail.run_id} taskId={taskId} runId={detail.run_id}/>
       <SAInvocation key={'invocation-' + detail.run_id} taskId={taskId} runId={detail.run_id}/>
       <NamingConfirmation key={'naming-'+detail.run_id} taskId={taskId} editable={detail.matches_current&&!detail.write_started} sourceOrder={detail.input_summary.source_order_v1}/>
       <DeveloperInvocation key={'developer-' + detail.run_id} taskId={taskId} runId={detail.run_id}/>
       <SpecificationHistory key={'spec-' + detail.run_id} taskId={taskId} runId={detail.run_id}/>
-      <HopDispatch key={'hop-'+detail.run_id} taskId={taskId} runId={detail.run_id} onReconciled={async()=>{await load();await open(detail.run_id)}}/>
-      {detail.parent_run_id && <p>補正自版本：<button disabled={busy} onClick={() => action(() => open(detail.parent_run_id))}>{detail.parent_run_id}</button>。新版須重新確認，不沿用舊核准。</p>}
+      <HopDispatch key={'hop-'+detail.run_id} taskId={taskId} runId={detail.run_id} onReconciled={async()=>{await load();await open(detail.run_id)}}/></>}
+      {detail.parent_run_id && <p>補正自版本：<button disabled={busy} onClick={() => onSelectRun?onSelectRun(detail.parent_run_id):action(() => open(detail.parent_run_id))}>{detail.parent_run_id}</button>。新版須重新確認，不沿用舊核准。</p>}
       {detail.outcome_code === 'SUPERSEDED_BY_REVISION' && <p>此版本已由補正版本取代；原始輸入、檢查及核准紀錄仍保留。</p>}
       {detail.gate_result && <section aria-label="初步需求檢查結果">
         <h4>初步需求檢查</h4>

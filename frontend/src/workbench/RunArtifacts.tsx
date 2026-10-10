@@ -2,19 +2,19 @@ import {useEffect, useState} from 'react';
 import {request} from './api';
 import {ExecutionDiagnosis} from './ExecutionDiagnosis';
 
-export function RunArtifacts({taskId}:{taskId:string}) {
+export function RunArtifacts({taskId,requestedRunId}:{taskId:string;requestedRunId?:string}) {
   const [runs,setRuns]=useState<any[]>([]),[selected,setSelected]=useState('');
   const [data,setData]=useState<any>(null),[error,setError]=useState(''),[node,setNode]=useState('');
   const [refresh,setRefresh]=useState(0),[pending,setPending]=useState(true);
   const base=`/api/tasks/${encodeURIComponent(taskId)}/runs`;
-  useEffect(()=>{let live=true;setError('');request(base).then(r=>{if(live){setRuns(r.runs);setSelected(s=>r.runs.some((x:any)=>x.run_id===s)?s:r.runs[0]?.run_id||'');if(!r.runs.length)setPending(false)}}).catch(e=>{if(live){setError(e.message);setPending(false)}});return()=>{live=false}},[base,refresh]);
+  useEffect(()=>{let live=true;setError('');request(base).then(r=>{if(live){setRuns(r.runs);if(requestedRunId&&!r.runs.some((x:any)=>x.run_id===requestedRunId)){setSelected('');setError('指定版本不存在；未改用最新版本。');setPending(false);return}setSelected(s=>requestedRunId||(r.runs.some((x:any)=>x.run_id===s)?s:r.runs[0]?.run_id||''));if(!r.runs.length)setPending(false)}}).catch(e=>{if(live){setError(e.message);setPending(false)}});return()=>{live=false}},[base,refresh,requestedRunId]);
   useEffect(()=>{let live=true;setData(null);setNode('');setError('');if(!selected)return;setPending(true);
     request(`${base}/${selected}/artifacts`).then(r=>live&&setData(r)).catch(e=>live&&setError(e.message)).finally(()=>live&&setPending(false));return()=>{live=false}},[base,selected,refresh]);
   const chosen=runs.find(r=>r.run_id===selected), detail=data?.nodes?.find((n:any)=>n.id===node);
   return <section className="panel" aria-label="版本流程與產物"><h3>版本流程與產物</h3>
     <p>以下是指定 Run 核准時的編譯內容及保存的節點計數，不是舊版 Task 節點。檢視不會重新執行；正式下載請至「交付」。</p>
     <button onClick={()=>setRefresh(n=>n+1)}>重新讀取版本產物</button>
-    {!!runs.length&&<label>流程版本<select value={selected} onChange={e=>setSelected(e.target.value)}>{runs.map(r=><option key={r.run_id} value={r.run_id}>{new Date(r.created_at).toLocaleString()} · {r.state} · {r.run_id}</option>)}</select></label>}
+    {!!runs.length&&!requestedRunId&&<label>流程版本<select value={selected} onChange={e=>setSelected(e.target.value)}>{runs.map(r=><option key={r.run_id} value={r.run_id}>{new Date(r.created_at).toLocaleString()} · {r.state} · {r.run_id}</option>)}</select></label>}
     {error&&<p role="alert">無法讀取版本產物：{error}</p>}{pending&&<p role="status">正在讀取版本產物…</p>}
     {!pending&&!error&&!runs.length&&<p>尚無 Run；下方保留舊版產物。</p>}
     {data?.status==='NO_AUTHORIZED_COMPILER_ARTIFACTS'&&<p>此版本尚未核准執行，沒有可追溯的已核准編譯產物。</p>}

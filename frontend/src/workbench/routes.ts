@@ -4,7 +4,7 @@ export function readRoute(): Route {
   try {path = decodeURIComponent(window.location.hash.slice(1))} catch {return {page: 'projects'}}
   const parts = path.split('/').filter(Boolean);
   if (parts[0] === 'projects') {
-    if (parts[2] === 'tasks' && parts[3]) return {page: parts[3] === 'new' ? 'new' : 'task', projectId: parts[1], taskId: parts[3] === 'new' ? undefined : parts[3], tab: parts[4],runId:parts[4]==='execution'?parts[5]:undefined};
+    if (parts[2] === 'tasks' && parts[3]) return {page: parts[3] === 'new' ? 'new' : 'task', projectId: parts[1], taskId: parts[3] === 'new' ? undefined : parts[3], tab: parts[4],runId:parts[5]};
     return {page: 'projects', projectId: parts[1], tab: ['history','evaluation'].includes(parts[2]) ? parts[2] : 'settings'};
   }
   if (parts[0] === 'dashboard') return {page: 'projects'};

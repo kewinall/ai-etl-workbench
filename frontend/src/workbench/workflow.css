@@ -1,0 +1,8 @@
+.workflow-heading{position:sticky;top:0;z-index:2;background:var(--panel,#fff);padding:16px;border:1px solid #dce3ed;border-radius:12px;overflow-wrap:anywhere}
+.workflow-heading h2{margin:6px 0}.workflow-heading label{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.workflow-heading select{max-width:100%}
+.workflow-stages{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin:16px 0}.workflow-stages button{white-space:normal;display:flex;flex-direction:column;gap:6px;min-height:84px;text-align:left;padding:10px}
+.workflow-stages button[aria-selected=true]{outline:2px solid #2563eb;background:#eff6ff}.workflow-stages small{font-size:12px}.workflow-next dl{display:grid;grid-template-columns:120px 1fr;gap:8px}.workflow-next dd{margin:0}
+.workflow-controls{border:0;padding:0;margin:0;min-width:0}.workflow-controls:disabled{opacity:.65}.workflow-panel{overflow-wrap:anywhere}.workflow-panel pre{max-width:100%;overflow:auto}.workflow-panel input,.workflow-panel select,.workflow-panel textarea{max-width:100%;box-sizing:border-box}
+.workflow-issues li{margin:12px 0}.workflow-issues button{margin-left:8px}button:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+@media(max-width:900px){.workflow-stages{grid-template-columns:repeat(4,minmax(0,1fr))}.workflow-heading{position:static}}
+@media(max-width:480px){.workflow-stages{grid-template-columns:repeat(2,minmax(0,1fr))}.workflow-next dl{grid-template-columns:1fr}.workflow-heading{padding:10px}.workflow-panel fieldset{min-width:0}.workflow-panel .run-actions{flex-wrap:wrap}}
