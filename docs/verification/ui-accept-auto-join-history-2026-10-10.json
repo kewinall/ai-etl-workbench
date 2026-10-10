@@ -1,0 +1,194 @@
+{
+  "scope": "Retained original closure, SA return, QA FAIL and successful new-target child; GET only",
+  "runs": [
+    {
+      "run_id": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "target": "ui_accept_join_20261010",
+      "state": "FAILED",
+      "write_started_count": 1,
+      "sa_review": {
+        "issues": [],
+        "run_id": "714fad5b-b564-40bd-a60d-cb61134656a0",
+        "status": "READY_FOR_REVIEW",
+        "summary": "\u9700\u6c42\u3001\u8f38\u5165\u5951\u7d04\u3001Join \u8a9e\u610f\u3001\u8f38\u51fa\u6b04\u4f4d\u8207\u76ee\u6a19\u5beb\u5165\u6a21\u5f0f\u5df2\u660e\u78ba\uff0c\u53ef\u9032\u5165\u5f8c\u7e8c\u8a2d\u8a08\u5be9\u67e5\u3002\u5df2\u660e\u793a LEFT \u7b49\u503c Join\u3001NULL \u9375 NEVER_MATCH\u3001\u91cd\u8907\u9375 EXPAND\u3001CASE_SENSITIVE_NO_TRIM\uff0c\u4e14\u8f38\u51fa\u9650\u5b9a\u70ba\u5b8c\u6574\u6295\u5f71 source.0.id\u3001source.0.left_value\u3001source.1.id\u3001source.1.right_value\uff1bCSV \u8f38\u5165\u7684 encoding\u3001delimiter\u3001header \u8207 extra_columns policy \u4ea6\u5df2\u6307\u5b9a\u3002conditions \u5df2\u660e\u793a APPEND \u76ee\u6a19\u5beb\u5165\u6a21\u5f0f\uff1bdeterministic gate \u72c0\u614b\u70ba CHECKED\u3002",
+        "version": 1,
+        "evidence_ids": [
+          "requirement",
+          "target",
+          "conditions",
+          "transformation.conditions",
+          "join.conditions",
+          "sources.csv_inputs",
+          "source.0.field.0",
+          "source.0.field.1",
+          "source.1.field.0",
+          "source.1.field.1"
+        ],
+        "input_checksum": "0f1f9e3f0dcb6e635e46506cf8f9a29c26e4e813e99556361e580febe3e91046",
+        "context_checksum": "5fe3ef689a41fa51dcb1c7d141e6f13989ebcfa288cec92b9c1ab32a582deaf5"
+      },
+      "qa_review": null,
+      "release_ready": false
+    },
+    {
+      "run_id": "8d93f257-d26f-4670-99b9-54777afda36b",
+      "target": "ui_accept_join_20261010_r3",
+      "state": "CANCELLED",
+      "write_started_count": 0,
+      "sa_review": {
+        "issues": [
+          {
+            "message": "APPEND to ai_sample.ui_accept_join_20261010_r3 is not review-safe yet because the destination column contract is absent. Provide the target columns/types or an explicit mapping from the projected output fields (source.0.id, source.0.left_value, source.1.id, source.1.right_value) to the destination table columns so append behavior is deterministic.",
+            "issue_type": "UNSAFE",
+            "evidence_ids": [
+              "target",
+              "conditions",
+              "transformation.conditions"
+            ]
+          },
+          {
+            "message": "The CSV input contract does not define how NULL join keys are encoded and parsed for the BIGINT id columns. This must be specified because the requirement explicitly depends on NULL keys never matching and on preserving the left row with a NULL id.",
+            "issue_type": "MISSING",
+            "evidence_ids": [
+              "requirement",
+              "sources.csv_inputs",
+              "source.0.field.0",
+              "source.1.field.0"
+            ]
+          }
+        ],
+        "run_id": "8d93f257-d26f-4670-99b9-54777afda36b",
+        "status": "NEEDS_INPUT",
+        "summary": "The requirement set is close to reviewable: join type, key comparison rules, duplicate/null-key behavior, CSV encoding/delimiter/header policy, and the four-field projection are all stated. Review is still blocked because APPEND has no explicit destination column contract or mapping for the projected fields, and the CSV contract does not define how NULL BIGINT join keys are represented/parsing from uploaded CSV, which is required to implement and assess the stated NULL-key behavior deterministically.",
+        "version": 1,
+        "evidence_ids": [
+          "requirement",
+          "target",
+          "conditions",
+          "transformation.conditions",
+          "join.conditions",
+          "sources.csv_inputs",
+          "source.0.field.0",
+          "source.1.field.0"
+        ],
+        "input_checksum": "51be0dc09bdbb75dec7e29831349c09aece581afc75fb47dd6edae2f099d2ffc",
+        "context_checksum": "f92ba08ecf1a7c93d33edae69fa686e4dbf01527ebb6b6ea476b637378f9535e"
+      },
+      "qa_review": null,
+      "release_ready": false
+    },
+    {
+      "run_id": "5bedf37f-4b60-4201-8d6e-4ea682f4e8fc",
+      "target": "ui_accept_join_20261010_r3",
+      "state": "CANCELLED",
+      "write_started_count": 1,
+      "sa_review": {
+        "issues": [],
+        "run_id": "5bedf37f-4b60-4201-8d6e-4ea682f4e8fc",
+        "status": "READY_FOR_REVIEW",
+        "summary": "Requirements are sufficiently specified for REQUIREMENT_GATE review. The business contract defines the LEFT equi-join semantics, NULL-key handling, duplicate expansion, case-sensitive/no-trim comparison, CSV input contracts, explicit output projection, target table and APPEND write mode, and target field mapping including nullability and type constraints. The stated five-row expectation is treated as an acceptance expectation rather than execution proof. Deterministic gate is CHECKED with no reported issues. Conditions evidence was reviewed and cited because it is present.",
+        "version": 1,
+        "evidence_ids": [
+          "requirement",
+          "target",
+          "conditions",
+          "transformation.conditions",
+          "join.conditions",
+          "sources.csv_inputs",
+          "source.0.field.0",
+          "source.0.field.1",
+          "source.1.field.0",
+          "source.1.field.1"
+        ],
+        "input_checksum": "23e3c38266709941f151cd0a568e2b608ea55f92c46681e7127a449bec388cff",
+        "context_checksum": "e41073ea93a73cfc7aad1ca0ee8337a40f6405dfa18243994639a25d3e969e20"
+      },
+      "qa_review": {
+        "version": 1,
+        "run_id": "5bedf37f-4b60-4201-8d6e-4ea682f4e8fc",
+        "context_checksum": "422f417bc39c0a48fa99f2718926ebd1769fc96fd80990333acd928ceffa2644",
+        "specification_checksum": "4d69e5e11606a21ce81a813db3b1c85c3c6c375603c2919d0b98fd78a4c0bb60",
+        "status": "FAIL",
+        "summary": "FAIL: the checksum-bound semantic design contradicts the approved target contract. The requirement explicitly states `source.0.left_value -> left_value VARCHAR(32) not null`, but the executed semantic target contract records `left_value` as nullable. That is a deterministic design/contract mismatch, so PASS is not allowed even though the five deterministic execution checks all passed. Limitations: `result_comparison` is only an EXACT_MULTISET check and does not by itself establish semantic correctness beyond the compared expected rows, and `result_source` explicitly does not attest the live catalog against later external changes.",
+        "evidence_ids": [
+          "specification",
+          "static_validation",
+          "hop_execution",
+          "result_comparison",
+          "result_source",
+          "semantic_design",
+          "node.target"
+        ],
+        "issues": [
+          {
+            "message": "Approved semantics require `left_value` to be `VARCHAR(32) not null`, but the checksum-bound executed target contract declares `left_value` as nullable. This violates the stated target mapping/contract and requires FAIL.",
+            "evidence_ids": [
+              "semantic_design",
+              "node.target"
+            ]
+          }
+        ],
+        "advisory_only": true,
+        "qa_approved": false,
+        "release_ready": false
+      },
+      "release_ready": false
+    },
+    {
+      "run_id": "e0b16950-27db-4847-add5-1ddbeaf78e08",
+      "target": "ui_accept_join_20261010_r5",
+      "state": "NEEDS_REVIEW",
+      "write_started_count": 1,
+      "sa_review": {
+        "issues": [],
+        "run_id": "e0b16950-27db-4847-add5-1ddbeaf78e08",
+        "status": "READY_FOR_REVIEW",
+        "summary": "Requirements are sufficiently specified for the REQUIREMENT_GATE stage. The contract explicitly defines the LEFT join keys and semantics, NULL-key behavior, duplicate expansion, case-sensitive no-trim comparison, CSV input contracts for both sources, projected output columns, target table, APPEND write mode, source-to-target mappings, nullable target types, and failure behavior for overlength/type-parse errors. The deterministic gate is CHECKED with no open issues. Execution approval and fixed five-row acceptance remain downstream acceptance criteria, not missing current inputs.",
+        "version": 1,
+        "evidence_ids": [
+          "requirement",
+          "target",
+          "conditions",
+          "transformation.conditions",
+          "join.conditions",
+          "sources.csv_inputs",
+          "source.0.field.0",
+          "source.0.field.1",
+          "source.1.field.0",
+          "source.1.field.1"
+        ],
+        "input_checksum": "6710592f793ac592cc59ca38484b5037e6c86404224edfcfd311d50c50ca2d87",
+        "context_checksum": "7585d835427c20011787d7ccbad408c60a1d16356a2585a6d1e3cdb247ac68da"
+      },
+      "qa_review": {
+        "version": 1,
+        "run_id": "e0b16950-27db-4847-add5-1ddbeaf78e08",
+        "context_checksum": "e0c350ec4c4a27cb35da6fda27f5407753e9fda65fae69faa4ad3a779918c30d",
+        "specification_checksum": "db51685b1455e8f2f2cc97c876069efe5e4b73dc7eebf4ef78e20fb7398c389b",
+        "status": "PASS",
+        "summary": "PASS on the supplied deterministic evidence set and semantic design. The packet shows specification, static validation, persisted execution evidence, exact multiset result comparison, and persisted result-source evidence all passing; the semantic design and compiler plan bind a LEFT join from source.0 to source.1 on id=id with NULL keys set to NEVER_MATCH, duplicate expansion, right-side NULL-key filtering before join, projection to id/left_value/id_2/right_value, and APPEND into a four-column nullable target consistent with the persisted target contract. Limitations: this relies on persisted evidence with SAME_EXECUTED_BYTES_RECHECKED_NO_ETL_REPLAY rather than a fresh ETL replay; result-source and target-contract claims are not live external catalog attestations and do not rule out later DBA changes; behavior_reference is separate synthetic, version-scoped probe evidence and not exhaustive parser/runtime attestation; semantic correctness is supported here by the provided design bindings and exact result comparison, not by row counts alone.",
+        "evidence_ids": [
+          "specification",
+          "static_validation",
+          "hop_execution",
+          "result_comparison",
+          "result_source",
+          "semantic_design",
+          "node.source_0",
+          "node.source_1",
+          "node.join_right_filter",
+          "node.join_left_sort",
+          "node.join_right_sort",
+          "node.join_sources",
+          "node.projection",
+          "node.target"
+        ],
+        "issues": [],
+        "advisory_only": true,
+        "qa_approved": false,
+        "release_ready": false
+      },
+      "release_ready": true
+    }
+  ]
+}

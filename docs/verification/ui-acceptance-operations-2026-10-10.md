@@ -116,3 +116,23 @@ build PASS；隔離後端2036 PASS/139明示skip/1warning（48.50s），browser2
 驗證：部署 web build（含 TypeScript）PASS；browser 30 PASS/1 不適用情境 skip（36.6s），包括自動顯示既有候選與結案空清單。實際 Join GET-only UI 證據 ui-accept-delivery-empty-2026-10-10.json：自動讀取清單、原因可見、結果入口可操作、SDM 建立停用、零寫入/零 pageerror。既有正式 CSV/Excel 唯讀下載回歸包含於上述測試。
 
 下一步：由原結果的明確修正版入口建立新目標 ui_accept_join_20261010_r3，保留原版與原寫入；執行前輸入已固定的 5 筆答案與正確 NULL 契約，重新走必要人工核准。QA 通過後才建立 SDM、候選包、隔離驗證及正式交付。CSV/Excel 仍待人工確認；三案例全鏈仍部分完成，5183 未升級，project source 未推送。
+
+## 2026-10-10：依明確授權完成三案例正式交付
+
+使用者目標「三個 task 案例自動完成測試、執行、驗證、交付」，並直接確認「授權三案例全部自動核准、執行與交付」。代行操作全數使用原網站核准控制與後端資格檢查，並未關閉驗證或寫入資料庫偽造核准。自動安全審查曾拒絕先前目標訊息作為授權，取得上述直接確認後才繼續。
+
+- CSV TASK-20261010-0017：Run5443ccf1-3386-48ba-b669-8c2dbaecd155，ai_sample.ui_accept_csv_20261010，真實 Hop 7 節點、固定答案 EXACT_MULTISET MATCH2/2、獨立 SELECT2筆、QA PASS、隔離 HWF PASS、正式 Release7186c499-7710-4911-aadf-7cf55060c30e。
+- Excel TASK-20261010-0018：Run029d55b5-d677-427d-a6c2-7a14511b4de4，ai_sample.ui_accept_excel_20261010，明細第2列標頭、全空白列SKIP、缺值NULL；7節點、MATCH2/2、獨立 SELECT2筆、QA PASS、隔離 HWF PASS、正式 Release27a59421-db00-4d5d-8a4d-d80c2488347a。
+- Join TASK-20261010-0019：Rune0b16950-27db-4847-add5-1ddbeaf78e08，ai_sample.ui_accept_join_20261010_r5，LEFT/NEVER_MATCH/EXPAND、9節點、MATCH5/5、獨立 SELECT5筆、QA PASS、隔離 HWF PASS、正式 Release0e5dae86-c2a6-449e-8062-1018ca681a8d。
+
+Join過程保留兩個新的退回：8d93f257的SA NEEDS_INPUT要求目標mapping及NULL解析；5bedf37f的QA FAIL指出本次補充文字NOT NULL與編譯器nullable DDL不一致。NOT NULL是本次補充時不當加入的額外限制，修正為原案例允許NULL的目標契約，保留固定五筆答案，其中left_value實際答案均非NULL；沒有改寫前次需求、答案、QA或已寫入目標。新版使用r5新目標，所有必要核准重新確認；原714fad5b結案版與r3執行/FAIL仍保存。
+
+三案每個最終Run的WRITE_STARTED均1次，不是整個Join Task從未有過其他版本寫入。原始目標與隔離驗證目的地分開；隔離目的地也重新唯讀查詢2/2/5筆MATCH，保存的完整HWF/node日誌與receipt指紋一致。每個最終版SA/Developer/QA均LOCAL_COPILOT、copilot/gpt-5.4、單CLI session、零自動retry、零工具執行；token缺值仍不可用，不以零代替。
+
+正式下載CSV10417bytes SHA25661eb59a6d0e58f5aa5a07b40ddd17eb697e64cdc4e064d29aa7ad1c3a0908e04；Excel11152bytes SHA256e8e38dde9f31cbe0926eeef70a1b090a9e01ff2df4dca8719a9c005e13b063aa；Join10585bytes SHA2569ba3bfdc8caebf5e589547268791e3abc5b701da4a5446a22cc376038854fd35。每包HPL/HWF/DDL/SDM/parameters五產物全數通過manifest size/SHA及ZIP CRC核對；SDM可讀。ZIP与獨立SDM保存於outputs/ui-acceptance-2026-10-10/，不納入Git。
+
+驗證：原介面／固定5183正式CSV/Excel唯讀回歸30PASS/1不適用skip（37.7s），原下載指紋及寫入事件數/更新時間不變。新增真實三案七階段×三寬度共63檢視與鍵盤ZIP下載、重載版本/SDM清單：9案例檢查加1啟用設定測試，10PASS（20.5s），零寫入/零pageerror。工程取證腳本僅GET/SELECT/讀不可變日誌，不會呼叫Hop、改答案或重新核准。
+
+證據：ui-accept-auto-preparation-2026-10-10.json（初始修正版未核准快照）、ui-accept-auto-qa-return-readback-2026-10-10.json（r3執行結果，不代表QA通過）、ui-accept-auto-native-readback-2026-10-10.json（最終原寫入）、ui-accept-auto-portability-2026-10-10.json（隔離執行與独立讀取）、ui-accept-auto-delivery-2026-10-10.json（模型、Release、ZIP/manifest）、更新的ui-acceptance-cases-2026-10-10.json（網站入口）。
+
+三個指定合成案例全鏈已通過；不能推論所有v2分支、JSON/資料表來源或整個v2專案完成。5183未升級；project source未推送。使用者下一步可直接在三案delivery頁查看SDM與下載正式ZIP，不需要手動核對證據檔案或再次執行。

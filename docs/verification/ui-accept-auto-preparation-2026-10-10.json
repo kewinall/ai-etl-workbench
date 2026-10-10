@@ -1,0 +1,45 @@
+{
+  "scope": "Prepared revisions only; approvals/model/execution are stopped after automatic approval-review rejection",
+  "expected_sha256": "c31a5140551ccdab58185fc64609fab77e677a7cae9f4ab587a688340db5b05a",
+  "cases": [
+    {
+      "key": "csv",
+      "task_id": "TASK-20261010-0017",
+      "run_id": "5443ccf1-3386-48ba-b669-8c2dbaecd155",
+      "parent_run_id": "71c7b365-7770-4de4-b2f0-70c0ad28adf6",
+      "target": "ai_sample.ui_accept_csv_20261010",
+      "input_checksum": "e95c53ae96b6ffa5aac5a7f3da7a688f70acd595323bb4526c90687867bc1bfb",
+      "state": "QUEUED",
+      "stage": "requirements",
+      "write_started": false,
+      "input_approval": null,
+      "contracts_verified": true
+    },
+    {
+      "key": "excel",
+      "task_id": "TASK-20261010-0018",
+      "run_id": "029d55b5-d677-427d-a6c2-7a14511b4de4",
+      "parent_run_id": "7bf591fd-7409-4d1a-89ba-f852c0555c3d",
+      "target": "ai_sample.ui_accept_excel_20261010",
+      "input_checksum": "49afe98c299a317353bf92d10a4273cfbccd880ac565d3cb35085b02ac73bb8c",
+      "state": "QUEUED",
+      "stage": "requirements",
+      "write_started": false,
+      "input_approval": null,
+      "contracts_verified": true
+    },
+    {
+      "key": "join",
+      "task_id": "TASK-20261010-0019",
+      "run_id": "8d93f257-d26f-4670-99b9-54777afda36b",
+      "parent_run_id": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "target": "ai_sample.ui_accept_join_20261010_r3",
+      "input_checksum": "51be0dc09bdbb75dec7e29831349c09aece581afc75fb47dd6edae2f099d2ffc",
+      "state": "QUEUED",
+      "stage": "requirements",
+      "write_started": false,
+      "input_approval": null,
+      "contracts_verified": true
+    }
+  ]
+}

@@ -4,34 +4,64 @@
     {
       "key": "csv",
       "task_id": "TASK-20261010-0017",
-      "run_id": "71c7b365-7770-4de4-b2f0-70c0ad28adf6",
+      "run_id": "5443ccf1-3386-48ba-b669-8c2dbaecd155",
       "target": "ai_sample.ui_accept_csv_20261010",
-      "url": "http://127.0.0.1:5197/#/projects/346e9419-4b0e-4ba7-ad29-1756ca7da833/tasks/TASK-20261010-0017/requirements/71c7b365-7770-4de4-b2f0-70c0ad28adf6",
-      "status": "AWAITING_HUMAN_INPUT_APPROVAL",
+      "url": "http://127.0.0.1:5197/#/projects/346e9419-4b0e-4ba7-ad29-1756ca7da833/tasks/TASK-20261010-0017/delivery/5443ccf1-3386-48ba-b669-8c2dbaecd155",
+      "status": "RELEASE_READY",
       "retained_run_id": "491aad97-c2f5-4243-b061-0dcac2e6b99d",
-      "reason": "Refreshed after credential version change; old unapproved run cancelled and retained."
+      "reason": "User explicitly authorized delegated approvals, native execution and delivery. Fresh input/contracts, fixed pre-execution answer, true models/Hop/Vertica/QA/isolated HWF and formal bundle verified. Original versions retained.",
+      "retained_previous_run_id": "71c7b365-7770-4de4-b2f0-70c0ad28adf6",
+      "parent_run_id": "71c7b365-7770-4de4-b2f0-70c0ad28adf6",
+      "specification_id": "ddde143c-9200-4434-8cdd-743c6e0d3142",
+      "release_id": "7186c499-7710-4911-aadf-7cf55060c30e",
+      "download_url": "http://127.0.0.1:5197/api/tasks/TASK-20261010-0017/runs/5443ccf1-3386-48ba-b669-8c2dbaecd155/release/7186c499-7710-4911-aadf-7cf55060c30e/download",
+      "qa": "PASS",
+      "portability": "PASS"
     },
     {
       "key": "excel",
       "task_id": "TASK-20261010-0018",
-      "run_id": "7bf591fd-7409-4d1a-89ba-f852c0555c3d",
+      "run_id": "029d55b5-d677-427d-a6c2-7a14511b4de4",
       "target": "ai_sample.ui_accept_excel_20261010",
-      "url": "http://127.0.0.1:5197/#/projects/346e9419-4b0e-4ba7-ad29-1756ca7da833/tasks/TASK-20261010-0018/requirements/7bf591fd-7409-4d1a-89ba-f852c0555c3d",
-      "status": "AWAITING_HUMAN_INPUT_APPROVAL",
+      "url": "http://127.0.0.1:5197/#/projects/346e9419-4b0e-4ba7-ad29-1756ca7da833/tasks/TASK-20261010-0018/delivery/029d55b5-d677-427d-a6c2-7a14511b4de4",
+      "status": "RELEASE_READY",
       "retained_run_id": "a97606b5-78a3-426a-b74c-e026f0614be6",
-      "reason": "Refreshed after credential version change; old unapproved run cancelled and retained."
+      "reason": "User explicitly authorized delegated approvals, native execution and delivery. Fresh input/contracts, fixed pre-execution answer, true models/Hop/Vertica/QA/isolated HWF and formal bundle verified. Original versions retained.",
+      "retained_previous_run_id": "7bf591fd-7409-4d1a-89ba-f852c0555c3d",
+      "parent_run_id": "7bf591fd-7409-4d1a-89ba-f852c0555c3d",
+      "specification_id": "ea7b3ca2-6597-47cd-aab9-cd9a64997402",
+      "release_id": "27a59421-db00-4d5d-8a4d-d80c2488347a",
+      "download_url": "http://127.0.0.1:5197/api/tasks/TASK-20261010-0018/runs/029d55b5-d677-427d-a6c2-7a14511b4de4/release/27a59421-db00-4d5d-8a4d-d80c2488347a/download",
+      "qa": "PASS",
+      "portability": "PASS"
     },
     {
       "key": "join",
       "task_id": "TASK-20261010-0019",
-      "run_id": "714fad5b-b564-40bd-a60d-cb61134656a0",
-      "target": "ai_sample.ui_accept_join_20261010",
-      "url": "http://127.0.0.1:5197/#/projects/346e9419-4b0e-4ba7-ad29-1756ca7da833/tasks/TASK-20261010-0019/results/714fad5b-b564-40bd-a60d-cb61134656a0",
-      "status": "CLOSED_AWAITING_EXPLICIT_NEW_TARGET_REVISION",
-      "parent_run_id": "5dc43645-41ae-4d1f-a025-dbb73418e631",
-      "revision_reason": "Confirmed original input; control found missing write_mode/date_scope. Website revision explicitly adds APPEND/ALL and four-column projection. New input approval required.",
-      "reason": "User closed original comparison-failed run without retry. Original execution remains at results; explicit revision button opens preserved input form. New revision and fresh approvals are still required."
+      "run_id": "e0b16950-27db-4847-add5-1ddbeaf78e08",
+      "target": "ai_sample.ui_accept_join_20261010_r5",
+      "url": "http://127.0.0.1:5197/#/projects/346e9419-4b0e-4ba7-ad29-1756ca7da833/tasks/TASK-20261010-0019/delivery/e0b16950-27db-4847-add5-1ddbeaf78e08",
+      "status": "RELEASE_READY",
+      "parent_run_id": "5bedf37f-4b60-4201-8d6e-4ea682f4e8fc",
+      "revision_reason": "Retained SA NEEDS_INPUT and QA FAIL. Removed inadvertently introduced NOT NULL requirement; explicit nullable target contract, new r5 target and fresh approvals. No replay of old targets.",
+      "reason": "User explicitly authorized delegated approvals, native execution and delivery. Fresh input/contracts, fixed pre-execution answer, true models/Hop/Vertica/QA/isolated HWF and formal bundle verified. Original versions retained.",
+      "retained_previous_run_id": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "specification_id": "e3218aa3-faf6-476f-80a8-52b2ff387d92",
+      "release_id": "0e5dae86-c2a6-449e-8062-1018ca681a8d",
+      "download_url": "http://127.0.0.1:5197/api/tasks/TASK-20261010-0019/runs/e0b16950-27db-4847-add5-1ddbeaf78e08/release/0e5dae86-c2a6-449e-8062-1018ca681a8d/download",
+      "qa": "PASS",
+      "portability": "PASS",
+      "retained_intermediate_runs": [
+        "8d93f257-d26f-4670-99b9-54777afda36b",
+        "5bedf37f-4b60-4201-8d6e-4ea682f4e8fc"
+      ]
     }
   ],
-  "full_chain_accepted": false
+  "full_chain_accepted": true,
+  "scope": "Only these three specified synthetic native cases on isolated5197, not completion of all v2 project scenarios",
+  "proofs": [
+    "ui-accept-auto-native-readback-2026-10-10.json",
+    "ui-accept-auto-portability-2026-10-10.json",
+    "ui-accept-auto-delivery-2026-10-10.json"
+  ]
 }
