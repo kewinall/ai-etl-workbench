@@ -26,6 +26,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
   const [runs, setRuns] = useState<any[]>([]);
   const [detail, setDetail] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  const [mutating,setMutating]=useState(false);
   const [message, setMessage] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -44,7 +45,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
   const [pendingRun,setPendingRun]=useState('');
   const latch=useRef(new OperationLatch());
   const savedDrafts=useRef(new Map<string,any>());
-  useDraftGuard(editing,busy,setMessage);
+  useDraftGuard(editing,mutating,setMessage);
   useEffect(()=>{if(pendingRun&&!busy&&!editing){const id=pendingRun;setPendingRun('');onSelectRun?.(id)}},[pendingRun,busy,editing,onSelectRun]);
   const draftSignature=JSON.stringify({draft,conditions,transformation,sourceOrder,sourceFields,csvContract,excelContract,jsonContract,replacement});
   useEffect(()=>{setPreview(null);setDiffConfirmed(false)},[draftSignature]);
@@ -66,8 +67,8 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
   }, [taskId,requestedRunId]);
   const action = async (operation: () => Promise<void>) => {
     if(!latch.current.acquire())return;
-    setBusy(true); setMessage('');
-    try {await operation()} catch (error: any) {setMessage(error.message)} finally {setBusy(false);latch.current.release()}
+    setBusy(true);setMutating(true); setMessage('');
+    try {await operation()} catch (error: any) {setMessage(error.message)} finally {setBusy(false);setMutating(false);latch.current.release()}
   };
   const open = async (id: string) => {
     setDetail(null);
@@ -153,12 +154,12 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
         <SourceEvidence items={detail.gate_result.source_evidence}/>
       </section>}
       <p>{detail.input_summary.requirement_text}</p>
-      <TransformationSummary value={detail.input_summary.transformation_contract_v1}/>
+      <TransformationSummary value={detail.input_summary.transformation_contract_v1} sourceLabels={detail.input_summary.source_labels}/>
       <SourceOrderSummary value={detail.input_summary.source_order_v1}/>
       <ExcelInputSummary value={detail.input_summary.excel_input_contract_v1}/>
       <JsonInputSummary value={detail.input_summary.json_input_contract_v1}/>
       <p>目標：{detail.input_summary.target_schema || '未指定'}.{detail.input_summary.target_table || '未指定'}</p>
-      {!!detail.input_summary.source_fields?.length && <p>來源欄位：{detail.input_summary.source_fields.map((field: any) => `${field.name} (${field.type || '未指定型別'})`).join('、')}</p>}
+      {detail.input_summary.sources?.length ? <section aria-label="本版來源與欄位"><h4>來源</h4>{detail.input_summary.sources.map((source:any,i:number)=><article key={i}><h5>{source.label} · {source.type}</h5><p>{source.fields.map((field:any)=>`${field.name} (${field.type||'未指定型別'})`).join('、')||'尚未提供欄位'}</p></article>)}</section> : !!detail.input_summary.source_fields?.length && <p>來源欄位：{detail.input_summary.source_fields.map((field: any) => `${field.name} (${field.type || '未指定型別'})`).join('、')}</p>}
       {detail.input_summary.csv_input_contract_v1 && <section aria-label="CSV 輸入契約摘要"><h4>CSV 輸入契約</h4>{detail.input_summary.csv_input_contract_v1.contract_status === 'CONFIRMED_INPUT_ONLY' ? <p>編碼：{detail.input_summary.csv_input_contract_v1.encoding}；分隔：{JSON.stringify(detail.input_summary.csv_input_contract_v1.delimiter)}；標題列：{detail.input_summary.csv_input_contract_v1.header ? '有' : '無'}；額外欄位：{detail.input_summary.csv_input_contract_v1.extra_columns === 'REJECT' ? '拒收' : '忽略'}。</p> : <p>尚未確認或格式不合法，請補正後建立新版。</p>}<p>綁定來源 source.0；只確認解析需求，不代表檔案已驗證或已執行匯入。</p></section>}
       <p>寫入模式：{detail.input_summary.requirements_v1?.write_mode || '尚未確認'}；資料期間：{detail.input_summary.requirements_v1?.date_scope || '尚未確認'}</p>
       {detail.input_summary.requirements_v1?.date_scope === 'RANGE' && <p>日期欄位：{detail.input_summary.requirements_v1.date_column}；{detail.input_summary.requirements_v1.start_date}（包含）至 {detail.input_summary.requirements_v1.end_date_exclusive}（不包含）</p>}
@@ -191,7 +192,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
             const current = transformation && !transformation.invalid ? transformation : {version: 1, filters: [], filter_logic: 'ALL', filter_null_policy: 'EXCLUDE_UNKNOWN', aggregation: null, output_columns: []};
             setTransformation({...current, output_columns: current.output_columns.includes(ordinalRef) ? current.output_columns : [...current.output_columns, ordinalRef]});
           }}/>
-          <TransformationEditor value={transformation} sources={(detail.input_summary.transformation_source_refs || []).filter((ref: string) => !ref.startsWith('$source_order.'))} generatedOutputs={sourceOrder ? [ordinalRef] : []} disabled={busy} onChange={setTransformation}/>
+          <TransformationEditor value={transformation} sourceLabels={detail.input_summary.source_labels} sources={(detail.input_summary.transformation_source_refs || []).filter((ref: string) => !ref.startsWith('$source_order.'))} generatedOutputs={sourceOrder ? [ordinalRef] : []} disabled={busy} onChange={setTransformation}/>
           {detail.input_summary.csv_contract_editable && <CsvReplacement disabled={busy} onChange={setReplacement} onPending={setReplacementPending}/>}
           <p>保存會保留舊版本，並建立待確認的新版本，不執行 ETL。僅單一且沒有實體／樣本資料的來源可補正欄位；Join 條件尚未接通。</p>
           {detail.input_summary.csv_contract_editable && <fieldset><legend>CSV 輸入契約補正</legend>

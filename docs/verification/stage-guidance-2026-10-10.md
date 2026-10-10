@@ -30,6 +30,30 @@
 - 隔離 UI：compose.stage-guidance.yml，5197；模型、Developer、QA、ETL 派發均關閉，無執行 Worker。初次缺 migration 導致 readiness 503，已補上有序 migration 後通過。
 - 規格退回、QA 補證與真實完整執行的新增 UI 情境仍需擴充，不能用上述合成畫面取代 Native 全鏈。
 
-## 下一步
+## 里程碑 3：結果、歷史與接續入口
 
-完成第三里程碑的專案接續入口、舊版下載與結果／歷史整理，擴充規格退回、QA 補證、執行異常 UI 回歸。真實模型、Hop、Vertica、QA 與 ZIP 完整執行仍須原有核准與獨立合成案例。
+- 專案歷史 Task 以權威狀態顯示接續分類，開啟精確 Run／階段；等待時才每 5 秒唯讀輪詢。
+- 舊版節點、Log、SQL、Hop XML／下載集中收合，時間軸依查看 Run 讀取。既有下載入口保留。
+- 標準答案不再獨立切換 Run；歷史版與過期狀態停用編輯，下載及讀取仍可用。
+- 來源欄位按來源分組，轉換選單呈現來源名稱／左右表；不可變識別與轉換契約仍在進階詳情。
+- 規格語意退回與 QA 證據問題導向各自階段；執行結案後依後端資格提供修正版，QA 修正仍要求新目標及重新核准。
+- 離線立即停用操作，恢復連線只讀回核；未派發任何模型或 ETL。
+- 最終隔離 PostgreSQL 全回歸：2017 passed、139 skipped、1 warning，45.47 秒。跳過範圍同里程碑 1；不是 Native 全鏈證據。
+- 瀏覽器階段回歸與舊產物下載：15 passed，25.2 秒。真實隔離 API 只驗證新 Task／Run／輸入核准；其他分支使用 browser-only 合成資料，不冒充已持久化模型或 Hop 結果。
+- 390／768／1440px 均無頁面水平溢出，七階段鍵盤與版本重載／返回 PASS；390px 畫面已人工檢視。
+- 最終瀏覽器回歸找到並修正兩個問題：唯讀版本載入不應觸發寫入離開保護；QA 修正版定位需等待表單及狀態更新完成才聚焦。
+- 既有 5183 Release 唯讀回歸：TASK-20260917-0007／Run d8abcc97-e5d7-4f83-9d47-b244e03730e7，Release a76bae7f-3b13-4dda-ac3f-68f8b41081de；ZIP 10452 bytes，下載 SHA-256 與伺服器一致：f32b964c8071d37dd854f653320eb4ce41041ae01e92220a026aa27d9bb8da2d。未重跑、改寫或重新核准該 ETL。
+
+## 使用、範圍與接續
+
+預覽：http://127.0.0.1:5197。只使用獨立合成 Task；此環境沒有模型／ETL Worker，模型、Developer、QA 及 ETL 派發均關閉。既有 5183 部署保持原 image。
+
+```powershell
+wsl -d RockyLinux9 -u root -- docker compose -f /mnt/d/ChatGPT/ai_agents_v2/deploy/compose.stage-guidance.yml up --build -d
+# 停止獨立預覽，保留資料與產物，不影響既有 Pilot
+wsl -d RockyLinux9 -u root -- docker compose -f /mnt/d/ChatGPT/ai_agents_v2/deploy/compose.stage-guidance.yml stop
+```
+
+本次三個 UI 工程里程碑已實作並分段驗證；整體 WS-0007 保持 active。尚未更新既有部署，也尚未推送本次專案 commits。原有未提交 test_join_replay_worker.py 保留，不納入本次提交。
+
+下一步：先審閱獨立預覽與本機提交；具備原有模型／寫入／QA／交付核准後，在新的合成案例完成真實模型→Hop→Vertica→QA→ZIP 的每個階段與退回分支，再評估套用既有部署。JSON／資料表來源完整執行仍未驗收。草稿僅暫存目前頁面，重載前需保存新版或另行保留內容。

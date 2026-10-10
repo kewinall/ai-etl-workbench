@@ -6,6 +6,7 @@
 
 ## 目前 Docker Pilot 入口
 
+- [階段導引調整與隔離驗證](docs/verification/stage-guidance-2026-10-10.md)：共用 Run、七個 UI 階段與進階詳情；5197 為獨立預覽，模型／ETL 派發關閉，並非完整執行驗收。
 - [七階段驗收進度與已測結果](docs/staged-completion.md)：尚未全部完成，不以單一成功案例代表整个平台驗收。
 - [Compose 開發基準](docs/compose-development.md)：使用獨立控制資料庫；不要覆寫 Windows 舊資料。
 - [Worker JDBC 建置](docs/worker-jdbc-build.md)：Compose Worker 自帶 Hop/Java；須另外提供指定校驗值的 JDBC 檔案，不再依賴本機 Vertica image 取得驅動。

@@ -16,6 +16,7 @@ import {ExecutionReconciliation} from './ExecutionReconciliation';
 import {ComparisonHistory} from './ComparisonHistory';
 import './workflow.css';
 import {WorkflowReadOnly} from './useWorkflowRefresh';
+import {LegacyTaskRecords} from './LegacyTaskRecords';
 
 const keys=['requirements','review','design','confirm','results','quality','delivery'];
 const labels=['需求與資料規格','需求審查','流程設計審查','執行確認','執行與結果','品質審查','成果交付'];
@@ -27,7 +28,6 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
   const api=`/api/tasks/${encodeURIComponent(task.id)}`;
   const [runs,setRuns]=useState<any[]>([]),[detail,setDetail]=useState<any>(null),[workflow,setWorkflow]=useState<any>(null);
   const [error,setError]=useState(''),[loading,setLoading]=useState(true),[epoch,setEpoch]=useState(0);
-  const [legacy,setLegacy]=useState<any>(null),[legacyError,setLegacyError]=useState('');
   const [history,setHistory]=useState<any>(null),[historyError,setHistoryError]=useState('');
   const [pendingField,setPendingField]=useState('');
   const generation=useRef(0), refreshRunning=useRef(false), refreshQueued=useRef(false);
@@ -50,7 +50,7 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
       setRuns(list.runs);
       const id=runId||list.runs[0]?.run_id;
       if(runId&&!list.runs.some((r:any)=>r.run_id===runId))throw Error('指定版本不存在或不屬於此 Task；未改用最新版本。');
-      if(!id){setDetail(null);setWorkflow(null);return}
+      if(!id){setDetail(null);setWorkflow(null);if(!keys.includes(tab||'')){window.history.replaceState(window.history.state,'',window.location.pathname+window.location.search+'#'+base+'/'+stage);window.dispatchEvent(new HashChangeEvent('hashchange'))}return}
       const [run,status]=await Promise.all([request(`${api}/runs/${id}`),request(`${api}/runs/${id}/workflow-status`)]);
       if(ticket!==generation.current)return;
       if(run.run_id!==id||status.run_id!==id||status.task_id!==task.id)throw Error('版本回應不一致，操作已暫停。');
@@ -86,16 +86,23 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
     document.addEventListener('visibilitychange',poll);
     return()=>{clearInterval(timer);document.removeEventListener('visibilitychange',poll)};
   },[workflow?.waiting]);
+  useEffect(()=>{
+    const offline=()=>setError('網路已斷線，資訊過期。請恢復連線後重新核對，不能重送寫入。');
+    const online=()=>setEpoch(n=>n+1);
+    window.addEventListener('offline',offline);window.addEventListener('online',online);
+    return()=>{window.removeEventListener('offline',offline);window.removeEventListener('online',online)};
+  },[]);
   const runBase=`${api}/runs/${selected}`;
   const readonly=loading||!!error||workflow?.historical||workflow&&!workflow.matches_current||!!workflow&&!stageInfo?.can_operate;
   const valid=!!detail&&detail.run_id===selected&&workflow?.run_id===selected;
   useEffect(()=>{
     if(!pendingField||stage!=='requirements'||loading||error)return;
     const button=document.querySelector<HTMLButtonElement>('[data-revision-start]');
-    if(!button)return;
-    button.click();
-    const timer=window.setTimeout(()=>{const field=document.querySelector<HTMLElement>(`[data-field="${pendingField}"]`);field?.focus();field?.scrollIntoView({block:'center'});setPendingField('')},0);
-    return()=>clearTimeout(timer);
+    button?.click();
+    let frame=0,tries=0;
+    const focus=()=>{const field=document.querySelector<HTMLElement>(`[data-field="${pendingField}"]`);if(field&&!field.matches(':disabled')){field.focus();field.scrollIntoView({block:'center'});setPendingField('')}else if(tries++<60)frame=requestAnimationFrame(focus);else setPendingField('')};
+    frame=requestAnimationFrame(focus);
+    return()=>cancelAnimationFrame(frame);
   },[pendingField,stage,loading,error]);
   const inspectHistory=async()=>{
     setHistoryError('');
@@ -123,7 +130,7 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
       <details><summary>來源支援與驗收範圍</summary><p>{workflow.source_scope_note}</p></details>
     </section>}
     {stageInfo?.blocked_reason&&<p role="status">{stageInfo.blocked_reason} 此階段可檢視，操作須等前置條件成立。</p>}
-    {valid&&!!workflow.issues.length&&<section className="panel workflow-issues" aria-label="問題處理區"><h3>待處理問題</h3><ul>{workflow.issues.map((issue:any,i:number)=><li key={i}><b>{issue.message}</b><p>原因：{issue.issue_type||issue.code||'需求審查缺口'} · 對應欄位：{issue.field_path||issue.evidence_ids?.join('、')||'需求說明'}</p><button disabled={loading||!!error||workflow.historical} onClick={()=>{const path=issue.field_path||issue.evidence_ids?.[0]||'';setPendingField(/schema/.test(path)?'target_schema':/table/.test(path)?'target_table':'requirement_text');select('requirements')}}>前往修正</button></li>)}</ul></section>}
+    {valid&&!!workflow.issues.length&&<section className="panel workflow-issues" aria-label="問題處理區"><h3>待處理問題</h3><ul>{workflow.issues.map((issue:any,i:number)=><li key={i}><b>{issue.message}</b><p>原因：{issue.issue_type||issue.code||'審查缺口'} · 對應欄位：{issue.field_path||issue.evidence_ids?.join('、')||'需求說明'}</p><button disabled={loading||!!error||workflow.historical} onClick={()=>{if(issue.stage){select(issue.stage);return}const path=issue.field_path||issue.evidence_ids?.[0]||'';setPendingField(/schema/.test(path)?'target_schema':/table/.test(path)?'target_table':'requirement_text');select('requirements')}}>{issue.stage==='quality'?'檢視 QA 意見與補證':issue.stage==='design'?'檢視並修正规格':'前往修正'}</button></li>)}</ul></section>}
     <WorkflowReadOnly.Provider value={!!readonly}>
     <section className="panel" hidden={stage!=='requirements'} role="tabpanel" id="stage-panel-requirements" aria-labelledby="stage-requirements">
       {(!runId||valid)&&<fieldset className="workflow-controls" disabled={loading||!!error}><RunVersions taskId={task.id} requestedRunId={selected||undefined} onSelectRun={id=>select('requirements',id)}/></fieldset>}
@@ -135,12 +142,12 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
         {stage==='design'&&<><NamingConfirmation taskId={task.id} runId={selected} historical={workflow.historical||!workflow.matches_current||detail.write_started} editable={!readonly&&!detail.write_started} sourceOrder={detail.input_summary.source_order_v1}/><DeveloperInvocation key={selected} taskId={task.id} runId={selected}/><SpecificationHistory key={selected} taskId={task.id} runId={selected}/></>}
         {stage==='confirm'&&<><p>本版目標：{detail.input_summary.target_schema}.{detail.input_summary.target_table} · 寫入方式：{detail.input_summary.requirements_v1?.write_mode||'未確認'}</p><OracleHistory taskId={task.id} requestedRunId={selected} stage="confirm"/><HopDispatch key={selected} taskId={task.id} runId={selected}/></>}
         {stage==='results'&&<><RunArtifacts taskId={task.id} requestedRunId={selected}/><ComparisonHistory taskId={task.id} runId={selected}/>{['HOP_EXECUTION_FAILED','HOP_RESULT_UNKNOWN'].includes(detail.outcome_code)&&<><ExecutionDiagnosis base={runBase}/><ExecutionReconciliation base={runBase} onSaved={async()=>setEpoch(n=>n+1)}/></>}<HopDispatch key={selected} taskId={task.id} runId={selected}/></>}
-        {stage==='quality'&&<QAReviewHistory key={selected} taskId={task.id} runId={selected}/>}
+        {stage==='quality'&&<><QAReviewHistory key={selected} taskId={task.id} runId={selected}/>{detail.qa_revision&&<button disabled={readonly} onClick={()=>{setPendingField('target_table');select('requirements')}}>建立修正版（保留原始執行，使用新目標）</button>}</>}
       </fieldset>
       {stage==='delivery'&&<SdmDelivery key={selected} base={runBase}/>}
     </section>}
     </WorkflowReadOnly.Provider>
     <details className="panel"><summary>審查／修訂時間軸與技術詳情</summary><button onClick={inspectHistory}>讀取此版本完整紀錄</button>{historyError&&<p role="alert">{historyError}</p>}{history&&<><ol>{history.run.events?.map((event:any)=><li key={event.event_id}>{time(event.created_at)} · {event.event_type}{renderValue(event.event_context)}</li>)}</ol><details><summary>SA／Developer／QA 模型紀錄與用量</summary>{renderValue({sa:history.sa,developer:history.dev,qa:history.qa})}</details></>}</details>
-    <details className="panel"><summary>舊版紀錄：Task 節點、Log、Hop 與 SQL</summary><p>此區屬於舊版 Task 紀錄，不能取代選取 Run 的執行與核准證據。</p><button onClick={async()=>{try{setLegacy(await request(api+'/history-assets'));setLegacyError('')}catch(e:any){setLegacyError(e.message)}}}>讀取舊版產物</button>{legacyError&&<p role="alert">{legacyError}</p>}{renderValue({nodes:task.nodes,logs:task.logs,last_error:task.last_error,error_test_result:task.error_test_result})}{legacy&&renderValue(legacy)}</details>
+    <LegacyTaskRecords task={task} renderValue={renderValue}/>
   </div>;
 }

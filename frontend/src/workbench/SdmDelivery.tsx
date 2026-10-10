@@ -24,7 +24,7 @@ export function SdmDelivery({base}:{base:string}){
   finally{setBusy(false)}
  }
  return <section aria-label="SDM 交付準備" style={{overflowWrap:'anywhere'}}>
-  <h4>已執行版本的 SDM</h4><p>須先在「執行與 QA」核准目前版本；此操作產生候選文件並綁定 QA，不會直接開放 Release。</p>
+  <h4>已執行版本的 SDM</h4><p>須先在「品質審查」核准目前版本；此操作產生候選文件並綁定 QA，不會直接開放 Release。</p>
   {error&&<p role="alert">{error}</p>}
   {!busy&&approval&&approval.status!=='APPROVED_CURRENT'&&<p>此版本尚無有效人工 QA 核准，不能準備交付文件。</p>}
   <button disabled={readOnly||busy||approval?.status!=='APPROVED_CURRENT'} onClick={prepare}>{busy?'處理中…':'產生／取得 QA 關聯 SDM'}</button>

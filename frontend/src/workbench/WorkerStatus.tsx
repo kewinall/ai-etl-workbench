@@ -18,7 +18,7 @@ export function WorkerStatus({kind}: {kind?: string}) {
       } catch {if (active) setError('無法確認 Worker 狀態；不要將舊心跳當成目前在線。')}
     };
     load();
-    const timer = window.setInterval(load, 10000);
+    const timer = window.setInterval(()=>{if(!document.hidden)void load()}, 10000);
     return () => {active = false; window.clearInterval(timer)};
   }, []);
   const refresh = async () => {

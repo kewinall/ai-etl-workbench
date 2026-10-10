@@ -32,6 +32,13 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
     issues = list(gate.get('issues') or [])
     review = sa_record.get('review') or {}
     issues += list(review.get('issues') or [])
+    for event in reversed(run.get('events') or []):
+        if event.get('event_type') in ('SPECIFICATION_SAVED', 'SPECIFICATION_APPROVED'):
+            break
+        if event.get('event_type') == 'SPECIFICATION_SEMANTIC_REJECTED':
+            issues += [{**issue, 'stage': 'design'} for issue in (event.get('event_context') or {}).get('issues', [])]
+            break
+    issues += [{**issue, 'stage': 'quality'} for issue in (qa_record.get('review') or {}).get('issues', [])] if not qa_ok else []
     index, owner, action, enabled, waiting = 0, '你', '確認需求版本', current, False
     code = run.get('outcome_code') or ''
     if approved_input:
@@ -85,6 +92,8 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
         owner, action, enabled, waiting = '你', '核對模型呼叫結果，勿重送', False, False
     if run['state'] == 'CANCELLED':
         action, enabled, waiting = '已取消；查看原始輸入及歷史', False, False
+    if run.get('failed_revision_available'):
+        index, owner, action, enabled, waiting = 0, '你', '建立修正版並重新確認需求', current, False
     if not current:
         enabled, waiting = release.get('release_ready') is True, False
         action = '下載正式交付' if enabled else '檢視歷史與失效核准原因'
@@ -117,6 +126,7 @@ def read(queue, repo, task_id, run_id):
     from .specification_store import history
     from .hop_dispatch_api import read as hop_read
     from .qa_authorization_api import offer as qa_offer
+    from .qa_journal import QAJournal
     from .qa_approval import read_approval
     from .release_store import status as release_status
     from .run_api import public_run
@@ -125,10 +135,12 @@ def read(queue, repo, task_id, run_id):
     runs = queue.list_runs(task_id)
     with queue.conn() as conn:
         specifications = history(queue, conn, task_id, run_id)['items']
+    qa = qa_offer(queue, task_id, run_id)
+    qa['invocation'] = QAJournal(queue).read(task_id, run_id)['invocation']
     result = summarize(before, latest_run_id=runs[0]['run_id'],
         sa=SAJournal(queue).read(task_id, run_id), sa_approval=sa_read(queue, task_id, run_id),
         developer=developer_read(queue, task_id, run_id), specifications=specifications,
-        hop=hop_read(queue, task_id, run_id), qa=qa_offer(queue, task_id, run_id),
+        hop=hop_read(queue, task_id, run_id), qa=qa,
         qa_approval=read_approval(queue, task_id, run_id), release=release_status(queue, repo, task_id, run_id))
     after = queue.detail(task_id, run_id)
     if public_run(before) != public_run(after) or str(queue.list_runs(task_id)[0]['run_id']) != str(runs[0]['run_id']):

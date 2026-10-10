@@ -18,21 +18,24 @@ export function intentPayload(value: any) {
   return result;
 }
 
-export function TransformationSummary({value}: {value: any}) {
+export function TransformationSummary({value,sourceLabels={}}: {value: any;sourceLabels?:Record<string,string>}) {
+  const label=(ref:string)=>ref.replace(/source\.\d+/g,key=>sourceLabels[key]||key);
   if (!value) return <p>此版本沒有結構化轉換意圖；一般數值門檻及聚合語意仍需人工核對，不能視為已由程式逐項驗證。</p>;
   if (value.invalid) return <p role="alert">轉換意圖不合法；請補正並建立新版本。</p>;
   return <section aria-label="已保存轉換意圖"><h4>已保存轉換意圖</h4>
     <p>綁定本次輸入版本；保存不等於核准或執行。來源使用原始欄位識別，編譯時才套用已確認英文命名。</p>
     <p>篩選：全部條件均成立，排除未知值（NULL 比較）；{value.filters.length ? '' : '無篩選。'}</p>
-    {!!value.filters.length && <ul>{value.filters.map((f: any, i: number) => <li key={i}>{f.column} {f.operator} {f.constant ? `${f.constant.type} ${String(f.constant.value)}` : ''}</li>)}</ul>}
+    {!!value.filters.length && <ul>{value.filters.map((f: any, i: number) => <li key={i}>{label(f.column)} {f.operator} {f.constant ? `${f.constant.type} ${String(f.constant.value)}` : ''}</li>)}</ul>}
     {value.aggregation ? <><p>分組：{value.aggregation.group_by.join('、')}；NULL 視為同組。</p><ul>{value.aggregation.metrics.map((m: any) => <li key={m.id}>{m.id}：{m.function} {m.column || '所有列，包含 NULL 列'}</li>)}</ul></> : <p>無聚合，保留符合條件的重複列。</p>}
-    <p>輸出順序：{value.output_columns.join(' → ')}</p>
+    <p>輸出順序：{value.output_columns.map(label).join(' → ')}</p>
+    <details><summary>精確來源識別與轉換契約</summary><pre>{JSON.stringify(value,null,2)}</pre></details>
   </section>;
 }
 
-export function TransformationEditor({value, sources, disabled, onChange, generatedOutputs = []}: {value: any; sources: string[]; disabled: boolean; onChange: (value: any) => void; generatedOutputs?: string[]}) {
+export function TransformationEditor({value, sources, disabled, onChange, generatedOutputs = [],sourceLabels={}}: {value: any; sources: string[]; disabled: boolean; onChange: (value: any) => void; generatedOutputs?: string[];sourceLabels?:Record<string,string>}) {
+  const label=(ref:string)=>ref.replace(/source\.\d+/g,key=>sourceLabels[key]||key);
   const patch = (changes: any) => onChange({...value, ...changes});
-  const select = (label: string, current: string, choices: string[], change: (v: string) => void) => <label>{label}<select aria-label={label} required value={current} onChange={e => change(e.target.value)}><option value="">請選擇</option>{choices.map(v => <option key={v} value={v}>{v}</option>)}</select></label>;
+  const select = (title: string, current: string, choices: string[], change: (v: string) => void) => <label>{title}<select aria-label={title} required value={current} onChange={e => change(e.target.value)}><option value="">請選擇</option>{choices.map(v => <option key={v} value={v}>{label(v)}</option>)}</select></label>;
   if (!value || value.invalid) return <fieldset disabled={disabled}><legend>結構化轉換意圖</legend>
     <p>明確指定篩選、分組、計數方式與輸出順序；不從模型設計或標準答案自動填入。</p>
     <button type="button" disabled={!sources.length} onClick={() => onChange({version: 1, filters: [], filter_logic: 'ALL', filter_null_policy: 'EXCLUDE_UNKNOWN', aggregation: null, output_columns: []})}>新增轉換意圖</button>

@@ -124,6 +124,15 @@ def public_run(row):
     if join_input is not None:
         result['input_summary']['join_contract_v1'] = join_input
     source = row['input_snapshot'].get('source_config') or {}
+    sources = source.get('sources') or []
+    result['input_summary']['source_labels'] = {
+        f'source.{index}': f"{('左表' if index == 0 else '右表') if len(sources) == 2 else '來源 ' + str(index + 1)}（{item.get('alias') or item.get('name') or item.get('type') or '未命名'}）"
+        for index, item in enumerate(sources)}
+    result['input_summary']['sources'] = [
+        {'label': result['input_summary']['source_labels'][f'source.{index}'],
+         'type': item.get('type'),
+         'fields': [{key: field.get(key) for key in ('name', 'type')} for field in item.get('fields', [])]}
+        for index, item in enumerate(sources)]
     json_input = json_evidence(source)
     if json_input is not None:
         result['input_summary']['json_input_contract_v1'] = json_input

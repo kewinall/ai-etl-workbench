@@ -91,3 +91,25 @@ def test_missing_cross_task_run_returns_404_without_reading_other_stores():
     app.include_router(create_workflow_router(Queue(), None))
     response = TestClient(app).get(f'/api/tasks/task/runs/{uuid4()}/workflow-status')
     assert response.status_code == 404
+
+
+def test_reconciled_failed_run_offers_revision_after_closure():
+    status = case(run={'failed_revision_available': True, 'write_started': True,
+                      'state': 'FAILED', 'outcome_code': 'HOP_EXECUTION_FAILED'})
+    assert status['current_stage'] == 'requirements'
+    assert status['next_action']['label'] == '建立修正版並重新確認需求'
+
+
+def test_qa_issues_point_to_evidence_stage_not_requirement_revision():
+    status = case(run={'outcome_code': 'HOP_EXECUTED_QA_REQUIRED'},
+                  qa={'invocation': {'status': 'VALIDATED_NOT_APPROVED',
+                                     'review': {'issues': [{'message': '補同次執行證據'}]}}})
+    assert status['issues'][0]['stage'] == 'quality'
+    assert status['category'] == '需修正'
+
+
+def test_spec_rejection_is_cleared_by_later_saved_spec():
+    rejected = {'event_type': 'SPECIFICATION_SEMANTIC_REJECTED',
+                'event_context': {'issues': [{'message': '規格語意不符'}]}}
+    assert case(run={'events': [rejected]})['issues'][0]['stage'] == 'design'
+    assert not case(run={'events': [rejected, {'event_type': 'SPECIFICATION_SAVED'}]})['issues']

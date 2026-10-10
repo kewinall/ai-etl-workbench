@@ -7,8 +7,9 @@ const labels=['需求與資料規格','需求審查','流程設計審查','執�
 const base=`/#/projects/${project}/tasks/${taskId}`;
 function run(id=current){return {run_id:id,task_id:taskId,created_at:'2026-10-10T00:00:00Z',state:'NEEDS_REVIEW',phase:'REQUIREMENT_GATE',matches_current:true,write_started:false,input_checksum:'a'.repeat(64),settings_checksum:'b'.repeat(64),events:[],gate_result:{status:'NEEDS_INPUT',issues:[{message:'請補正目標',field_path:'target.table'}]},settings_summary:{},input_summary:{requirement_text:'原始需求，其他內容必須保留',target_schema:'ai_sample',target_table:'original',source_fields:[],source_fields_editable:false,requirements_v1:{version:1,write_mode:'APPEND',date_scope:'ALL'},transformation_source_refs:[]}}}
 function status(id=current,stage='requirements'){const i=keys.indexOf(stage);return {task_id:taskId,run_id:id,current_stage:stage,updated_at:'2026-10-10T00:00:00Z',historical:id===old,matches_current:true,category:'待你確認',owner:'你',completed:[],waiting:false,issues:[],stages:keys.map((key,n)=>({key,number:n+1,label:labels[n],status:n===i?'current':'blocked',can_operate:id!==old&&n<=i,blocked_reason:n>i?'先完成前一階段的必要核准與證據。':null})),next_action:{label:'確認需求版本',stage,enabled:id!==old},source_scope_note:'完整執行尚未驗收'};}
-async function fixture(page:Page,options:{stage?:string;waiting?:boolean;issues?:any[];unknown?:boolean}={}) {
+async function fixture(page:Page,options:{stage?:string;waiting?:boolean;issues?:any[];unknown?:boolean;actionLabel?:string;qaRevision?:boolean}={}) {
  let stale=false,reads=0,posts=0;const records=[run(),run(old)];
+ if(options.qaRevision)Object.assign(records[0],{write_started:true,qa_revision:{checksum:'c'.repeat(64)}});
  await page.route('**/api/**',async route=>{
   const path=new URL(route.request().url()).pathname;
   if(route.request().method()!=='GET'){
@@ -16,7 +17,11 @@ async function fixture(page:Page,options:{stage?:string;waiting?:boolean;issues?
    if(path.endsWith('/revisions')){const child={...run('33333333-3333-4333-8333-333333333333'),state:'QUEUED',approval:null,parent_run_id:current,input_summary:{...run().input_summary,...route.request().postDataJSON()}};records.unshift(child);if(options.unknown)return route.abort();return route.fulfill({json:child,status:201})}
    return route.fulfill({json:{}});
   }
-  if(path.endsWith('/workflow-status')){reads++;if(stale)return route.abort();const id=path.split('/').at(-2)!;return route.fulfill({json:{...status(id,options.stage),waiting:!!options.waiting,issues:options.issues||[]}})}
+  if(path.endsWith('/workflow-status')){reads++;if(stale)return route.abort();const id=path.split('/').at(-2)!;const s=status(id,options.stage);return route.fulfill({json:{...s,next_action:{...s.next_action,label:options.actionLabel||s.next_action.label},waiting:!!options.waiting,issues:options.issues||[]}})}
+  if(path==='/api/projects')return route.fulfill({json:[{project_id:project,project_name:'階段導引專案',description:'',naming_rules:{},default_ai_profile:'test',default_connection:'test'}]});
+  if(path===`/api/projects/${project}/tasks`)return route.fulfill({json:[{id:taskId,name:'階段導引合成測試',project_id:project,source:'CSV',target:'VERTICA',latest_run:records[0]}]});
+  if(path===`/api/projects/${project}/evaluation`)return route.fulfill({json:{project_id:project,basis:'ALL_PERSISTED_RUNS',cases:[{task_id:taskId,run_id:current,state:'NEEDS_REVIEW'}]}});
+  if(path.endsWith('/history-assets'))return route.fulfill({json:{jobs:[{artifact_id:'legacy',name:'old.hpl',version:1,download_url:'/api/legacy-download',transforms:[],hops:[],content:'<pipeline/>'}],sql:[],hop_logs:[]}});
   if(path==='/api/tasks')return route.fulfill({json:[]});
   if(path==='/api/health')return route.fulfill({json:{mode:'postgres'}});
   if(path==='/api/ready')return route.fulfill({json:{execution_enabled:false}});
@@ -65,7 +70,8 @@ test('歷史版跨階段、重載与返回版本一致；缺失版不替換',asy
  await page.getByRole('tab',{name:/3 · 流程設計/}).click();await expect(page).toHaveURL(new RegExp('/design/'+old));
  await expect(page.getByRole('button',{name:'授權 Developer 設計'})).toHaveCount(0);
  await page.reload();await expect(page.getByLabel('共用 Run 版本')).toHaveValue(old);
- await page.goBack();await expect(page.getByLabel('共用 Run 版本')).toHaveValue(old);
+ await page.goBack();await expect(page).toHaveURL(new RegExp('/requirements/'+old));await expect(page.getByLabel('共用 Run 版本')).toHaveValue(old);
+ await expect(page.getByRole('button',{name:'重新核對狀態'})).toBeEnabled();
  await page.goto(base+'/quality/missing');await expect(page.getByRole('alert')).toContainText('未改用最新版本');
  await expect(page.getByLabel('共用 Run 版本')).toHaveValue('missing');
 });
@@ -120,4 +126,44 @@ for(const width of [390,768,1440])test(`${width}px 七階段鍵盤与版面`,asy
  await page.getByRole('tab',{name:/1 · 需求/}).focus();await page.keyboard.press('ArrowRight');await expect(page.getByRole('tab',{name:/2 · 需求審查/})).toBeFocused();
  for(const key of keys){await page.getByRole('tab',{name:new RegExp(`${keys.indexOf(key)+1} ·`)}).click();await expect(page).toHaveURL(new RegExp('/'+key+'/'+current));expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true)}
  await page.screenshot({path:test.info().outputPath(`stage-${width}.png`),fullPage:true});
+});
+
+test('規格退回導向設計，QA 補證導向品質；不建立需求新版或重跑',async({page})=>{
+ const f=await fixture(page,{stage:'quality',actionLabel:'補充證據並重新審查（不重跑 Hop）',issues:[{message:'缺同次執行證據',stage:'quality'},{message:'規格語意不符',stage:'design'}]});
+ await page.goto(base+'/results/'+current);
+ await page.getByRole('button',{name:'檢視 QA 意見與補證'}).click();await expect(page).toHaveURL(new RegExp('/quality/'+current));
+ await expect(page.getByRole('region',{name:'目前狀態與下一步'})).toContainText('不重跑 Hop');
+ await page.getByRole('button',{name:'檢視並修正规格'}).click();await expect(page).toHaveURL(new RegExp('/design/'+current));
+ await expect(page.getByRole('form',{name:'需求補正'})).toHaveCount(0);expect(f.counts().posts).toBe(0);
+});
+
+test('待核對結果不提供導引重試；標準答案沿用共用 Run',async({page})=>{
+ const f=await fixture(page,{stage:'results',actionLabel:'核對結果並結案'});await page.goto(base+'/results/'+current);
+ await expect(page.getByRole('region',{name:'目前狀態與下一步'})).toContainText('核對結果並結案');
+ await expect(page.getByRole('button',{name:/一般重試|重新執行/})).toHaveCount(0);
+ await page.getByRole('tab',{name:/4 · 執行確認/}).click();await expect(page.getByLabel('標準答案準備版本')).toHaveCount(0);
+ await expect(page.getByLabel('共用 Run 版本')).toHaveValue(current);expect(f.counts().posts).toBe(0);
+});
+
+test('專案接續開啟精確 Run 與階段；舊版下載保留',async({page})=>{
+ await fixture(page,{stage:'design'});await page.goto(`/#/projects/${project}/history`);
+ await page.getByRole('button',{name:'繼續處理 階段導引合成測試'}).click();await expect(page).toHaveURL(new RegExp('/design/'+current));
+ await page.getByText('舊版紀錄：Task 節點、Log、Hop、SQL 與下載',{exact:true}).click();
+ await page.getByRole('button',{name:'讀取舊版產物'}).click();await expect(page.getByRole('link',{name:'下載舊版 old.hpl'})).toHaveAttribute('href','/api/legacy-download');
+});
+
+test('離線停用操作，恢復連線只讀核對',async({page})=>{
+ const f=await fixture(page);await page.goto(base+'/requirements/'+current);
+ await expect(page.getByRole('button',{name:'補正需求並建立新版'})).toBeEnabled();
+ await page.evaluate(()=>window.dispatchEvent(new Event('offline')));await expect(page.getByRole('alert')).toContainText('網路已斷線');
+ await expect(page.getByRole('button',{name:'補正需求並建立新版'})).toBeDisabled();
+ await page.evaluate(()=>window.dispatchEvent(new Event('online')));await expect(page.getByRole('button',{name:'補正需求並建立新版'})).toBeEnabled();expect(f.counts().posts).toBe(0);
+});
+
+test('QA 退回修正版保留已執行結果並要求新目標；不自動送出',async({page})=>{
+ const f=await fixture(page,{stage:'quality',qaRevision:true});await page.goto(base+'/quality/'+current);
+ await page.getByRole('button',{name:'建立修正版（保留原始執行，使用新目標）'}).click();
+ await expect(page.getByRole('form',{name:'需求補正'})).toBeVisible();
+ await expect(page.getByLabel('目標 Table',{exact:true})).toBeFocused();
+ await expect(page.getByText(/必須指定 ai_sample 中不同的新目標/)).toBeVisible();expect(f.counts().posts).toBe(0);
 });

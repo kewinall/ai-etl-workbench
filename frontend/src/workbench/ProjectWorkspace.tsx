@@ -7,6 +7,7 @@ import {ProjectEvaluation} from './ProjectEvaluation';
 import {mergeProjectHistory} from './projectHistory';
 import {historyPage} from './historyPage';
 import {OperationLatch} from './operationLatch';
+import {TaskContinuation} from './TaskContinuation';
 
 type Project = {project_id: string; project_name: string; description: string; default_ai_profile: string; default_connection: string; naming_rules: Record<string, any>; updated_at: string};
 type Props = {projectId?: string; tab?: string; navigate: (path: string) => void; onError: (message: string) => void};
@@ -218,7 +219,7 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
               <button disabled={pagedTasks.page===pagedTasks.pages} onClick={()=>setTaskPage(pagedTasks.page+1)}>下一頁 Task</button>
             </nav>
             <p>每頁 25 筆；搜尋與狀態篩選涵蓋此專案全部已載入 Task，不限於目前頁面。</p>
-            {pagedTasks.rows.map(t => <button className="wb-history-row" key={t.id} onClick={() => navigate(`/projects/${projectId}/tasks/${encodeURIComponent(t.id)}`)}><span><strong>{t.name}</strong><small>{t.id} · {t.source} → {t.target}</small><small>舊版 Task：{t.status} · 最新 Run 歷史交付：{t.latest_run?.historical_release_count??0}</small></span><span>{t.display_state} →</span></button>)}
+            {pagedTasks.rows.map(t => <TaskContinuation key={t.id} task={t} projectId={projectId} navigate={navigate}/>)}
             {!tasks.length?<p>此專案尚無 Task，可使用上方「建立 Task」。</p>:!visibleTasks.length&&<p>沒有符合搜尋或狀態條件的 Task。</p>}
           </>}
         </section>}

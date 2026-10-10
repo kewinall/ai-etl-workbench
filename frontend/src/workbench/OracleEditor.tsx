@@ -1,8 +1,10 @@
 import {useEffect,useState} from 'react';
 import {request,jsonBody} from './api';
 import {oracleDocument,type OracleColumn,type OracleCell} from './oracleDocument';
+import {useWorkflowReadOnly} from './useWorkflowRefresh';
 
 export function OracleEditor({base,onHistory}:{base:string;onHistory:(items:any[])=>void}) {
+  const readOnly=useWorkflowReadOnly();
   const [context,setContext]=useState<any>(null),[columns,setColumns]=useState<OracleColumn[]>([]);
   const [rows,setRows]=useState<OracleCell[][]>([]),[dirty,setDirty]=useState(false);
   const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState('');
@@ -55,7 +57,7 @@ export function OracleEditor({base,onHistory}:{base:string;onHistory:(items:any[
     {loading&&<p role="status">正在檢查規格與欄位…</p>}
     {error&&<p role="alert">{error}</p>}{message&&<p role="status">{message}</p>}
     {!context&&!loading&&<button onClick={()=>setAttempt(n=>n+1)}>重新檢查答案欄位</button>}
-    {context&&<><fieldset disabled={busy} style={{minWidth:0,border:0,padding:0}}><legend>答案欄位與資料（{rows.length} 筆）</legend>
+    {context&&<><fieldset disabled={busy||readOnly} style={{minWidth:0,border:0,padding:0}}><legend>答案欄位與資料（{rows.length} 筆）</legend>
       <p>NULL 政策由你明確指定；新增資料列後請逐欄填寫。保存會建立不可變版本。</p>
       {columns.map((column,i)=><label key={column.name} style={{display:'block'}}><input type="checkbox" checked={column.nullable} onChange={e=>{changed();setColumns(old=>old.map((c,j)=>j===i?{...c,nullable:e.target.checked}:c));if(!e.target.checked)setRows(old=>old.map(row=>row.map((cell,j)=>j===i?{...cell,isNull:false}:cell)))}}/>{column.name}（{column.kind}）允許 NULL</label>)}
       <div style={{maxWidth:'100%',overflowX:'auto'}}><table><thead><tr><th>筆次</th>{columns.map(c=><th key={c.name}>{c.name}</th>)}<th>操作</th></tr></thead><tbody>{rows.map((row,index)=><tr key={index}><td>{index+1}</td>{columns.map((column,i)=><td key={column.name}>
