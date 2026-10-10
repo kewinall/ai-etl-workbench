@@ -166,7 +166,7 @@ class RunQueue:
                 return existing
             failed_revision = (parent['state']=='FAILED' and parent['phase']=='HOP_EXECUTION'
                 and parent['write_started'] and parent['lease_token'] is None
-                and parent['outcome_code'] in ('HOP_RESULT_UNKNOWN','HOP_EXECUTION_FAILED'))
+                and parent['outcome_code'] in ('HOP_RESULT_UNKNOWN','HOP_EXECUTION_FAILED','HOP_EXECUTED_QA_REQUIRED'))
             from .qa_revision import offer as qa_revision_offer
             qa_revision = qa_revision_offer(self, conn, parent)
             if qa_revision_checksum is not None and (not qa_revision or qa_revision['checksum'] != qa_revision_checksum):
@@ -316,7 +316,7 @@ class RunQueue:
             events = conn.execute('SELECT event_id,event_type,phase,created_at,event_context FROM platform.task_run_event WHERE run_id=%s ORDER BY event_id', (run_id,)).fetchall()
             failed_revision_available=(run['state']=='FAILED' and run['phase']=='HOP_EXECUTION'
                 and run['write_started'] and run['lease_token'] is None
-                and run['outcome_code'] in ('HOP_RESULT_UNKNOWN','HOP_EXECUTION_FAILED')
+                and run['outcome_code'] in ('HOP_RESULT_UNKNOWN','HOP_EXECUTION_FAILED','HOP_EXECUTED_QA_REQUIRED')
                 and conn.execute('SELECT 1 FROM platform.execution_reconciliation WHERE run_id=%s',(run_id,)).fetchone() is not None
                 and conn.execute('SELECT 1 FROM platform.task_run WHERE parent_run_id=%s',(run_id,)).fetchone() is None)
             from .qa_revision import offer as qa_revision_offer

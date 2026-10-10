@@ -26,10 +26,11 @@
       "task_id": "TASK-20261010-0019",
       "run_id": "714fad5b-b564-40bd-a60d-cb61134656a0",
       "target": "ai_sample.ui_accept_join_20261010",
-      "url": "http://127.0.0.1:5197/#/projects/346e9419-4b0e-4ba7-ad29-1756ca7da833/tasks/TASK-20261010-0019/review/714fad5b-b564-40bd-a60d-cb61134656a0",
-      "status": "SA_VALIDATED_AWAITING_HUMAN_REVIEW",
+      "url": "http://127.0.0.1:5197/#/projects/346e9419-4b0e-4ba7-ad29-1756ca7da833/tasks/TASK-20261010-0019/results/714fad5b-b564-40bd-a60d-cb61134656a0",
+      "status": "HOP_EXECUTED_COMPARISON_FAILED_AWAITING_HUMAN_CLOSURE",
       "parent_run_id": "5dc43645-41ae-4d1f-a025-dbb73418e631",
-      "revision_reason": "Confirmed original input; control found missing write_mode/date_scope. Website revision explicitly adds APPEND/ALL and four-column projection. New input approval required."
+      "revision_reason": "Confirmed original input; control found missing write_mode/date_scope. Website revision explicitly adds APPEND/ALL and four-column projection. New input approval required.",
+      "reason": "Actual five output rows match pre-execution fixed fixture, but approved oracle is empty and forbids NULL. Recovery consumed once and failed; original one-write execution retained. Human closure and new-target revision required; no QA/release."
     }
   ],
   "full_chain_accepted": false

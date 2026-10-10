@@ -70,3 +70,19 @@ Worker真實Task清單形狀回歸3 passed（0.14s）；前端build PASS。全�
 真實四欄預覽：source.0.id → id BIGINT、source.0.left_value → left_value VARCHAR(32)、source.1.id → id_2 BIGINT、source.1.right_value → right_value VARCHAR(32)。建議人工將左右id改為left_id／right_id，保留技術來源識別，便於固定答案绑定。若使用id／id_2亦須依核准命名绑定固定答案，不能只為符合結果而改答案。
 
 backend設計契約／Gateway／阻擋原因18 PASS（0.70s），browser23 PASS／1 preview-only skipped（35.3s），build PASS；實際5197頁面4欄預覽、未確認、API寫入0；Run updated_at／命名契約／Developer invocation／write_started未變。證據 ui-accept-design-preview-2026-10-10.json。必要人工點：核對並保存命名，再授權 Developer 一次模型呼叫；仍未執行ETL或完整交付。
+
+## 2026-10-10：Join 真實執行後的按鈕與比對失敗修正
+
+實際進度：使用者已完成命名、Developer、規格、標準答案與 Hop 核准；Run 714fad5b-b564-40bd-a60d-cb61134656a0 的 Hop 成功，Vertica 新目標 ai_sample.ui_accept_join_20261010 有 5 筆，WRITE_STARTED 只有 1 次。獨立唯讀查詢與本次執行前已保存 examples/ui-acceptance/expected.json 的固定答案一致，但不可取代平台 QA 比對。
+
+已核准的標準答案 ce17a841-ba47-4467-ba41-8ecb8fcaad02 實際是 rows=[]、四欄 nullable=false。結果讀取因此為 RESULT_NULL_NOT_ALLOWED；使用者已授權的重新比對 d4113c01-f15b-4ead-bea6-201d938f8f37 已由專用唯讀 Worker 消費一次並記錄 FAILED，沒有重跑 Hop。不得事後改寫已執行版答案、核准或宣稱 MATCH/QA PASS。
+
+修正內容：比對恢復共用讀取更新及唯讀保護；補接 supervisor 比對 consumer，專用 CLI 不會落回 Hop 派發；workflow 留在第⑤階段並顯示具體比對問題；第⑥階段可前往結果區。空白標準答案須明確確認預期零筆。失敗原因只保存白名單代碼，不保存驅動程式原始錯誤或秘密。補接比對 FAILED 後的人工結案與新目標修正版，所有上游核准仍重新確認。
+
+下一步人工操作：開啟 Join 的 results/714fad5b-b564-40bd-a60d-cb61134656a0；在「只重新比對結果」下核對失敗原因與「人工核對與結案」。確認本次 Hop 已停止、核對目標 5 筆，選取 docs/verification/ui-accept-join-comparison-failure-2026-10-10.json 作為本機查核證據，逐項確認後保存結案（不重跑）。再由需求階段建立新目標 ui_accept_join_20261010_r3 的修正版；新執行前明確輸入固定 5 筆答案，id、id_2、right_value 允許 NULL，left_value 不允許 NULL。不能重用原目標或反推答案。平台不會替使用者簽署人工查核或核准。
+
+驗證：完整隔離後端 2035 PASS、139 明示跳過（47.35s）；受影響結案／修正版／比對測試 55 PASS（11.68s）；browser 25 PASS、1 真實執行環境禁用的合成準備測試跳過（34.9s）。實際新 Join 7 階段 × 390/768/1440 共 21 檢視，版本一致、無溢出、無 pageerror、無寫入，QA 返回結果按鈕可操作，人工結案未確認時停用。原正式 CSV/Excel GET-only 下載及指紋回歸通過。
+
+證據：ui-accept-join-comparison-failure-2026-10-10.json、ui-accept-join-buttons-2026-10-10.json。CSV/Excel 仍待人工確認，Join 尚未通過平台比對、QA、可攜驗證與正式 Release，三案例全鏈仍部分完成。5183 未升級；未推送 project source。
+
+補充實際按鈕驗證：依實際 DOM 名稱點選 14 個「重新載入／讀取／核對」按鈕並等待讀回，零寫入、零 pageerror。頁面剛載入時部分按鈕因讀取中暫時停用，不將該瞬間狀態當成永久失效；主要比對恢復問題已以上述保存狀態與服務消費證據驗證。

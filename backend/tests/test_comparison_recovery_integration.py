@@ -173,3 +173,47 @@ def test_claim_cannot_be_repeated_or_finished_by_another_owner(executed):
         recovery.finish(q,{**claimed,'claim_token':uuid4()})
     assert recovery.read(q,task,run)['status']=='CLAIMED'
     assert recovery.finish(q,claimed)['status']=='FAILED'
+
+
+@pytest.mark.parametrize('reason', ['RESULT_NULL_NOT_ALLOWED','secret connection details'])
+def test_failed_read_reports_only_allowlisted_reason_and_never_replays(executed,monkeypatch,reason):
+    q,conn,task,run,api,calls=executed
+    checksum=recovery.read(q,task,run)['binding_checksum']
+    recovery.enqueue(q,task,run,checksum,True)
+    def fail(*args):raise ValueError(reason)
+    monkeypatch.setattr(worker,'record_bound_comparison',fail)
+    result=worker.run_once(q,q,task,run)
+    assert result['status']=='FAILED'
+    assert result['outcome_code']==(reason if reason=='RESULT_NULL_NOT_ALLOWED' else 'COMPARISON_RECOVERY_FAILED_NO_ETL_RETRY')
+    assert worker.run_once(q,q,task,run)=={'status':'IDLE'}
+    assert len(calls)==1
+
+
+def test_failed_comparison_requires_human_closure_before_new_target_revision(executed,monkeypatch):
+    q,conn,task,run,api,calls=executed
+    from app import execution_reconciliation as reconciliation
+    assert reconciliation.read(q,task,run)['status']=='NOT_ELIGIBLE'
+    recovery.enqueue(q,task,run,recovery.read(q,task,run)['binding_checksum'],True)
+    def fail(*args):raise ValueError('RESULT_NULL_NOT_ALLOWED')
+    monkeypatch.setattr(worker,'record_bound_comparison',fail)
+    worker.run_once(q,q,task,run)
+    parent=q.detail(task,run)
+    assert not parent['failed_revision_available']
+    offer=reconciliation.read(q,task,run)
+    assert offer['status']=='AWAITING_RECONCILIATION'
+    receipt=reconciliation.close(q,task,run,offer['binding']['checksum'],'a'*64,5,
+                                  engine_stopped=True,target_checked=True,confirmed=True)
+    parent=q.detail(task,run)
+    assert parent['failed_revision_available']
+    assert parent['outcome_code']=='HOP_EXECUTED_QA_REQUIRED'
+    args=[task,run,'correct-oracle',parent['input_checksum'],parent['input_snapshot']['requirement_text'],
+          'ai_sample',parent['input_snapshot']['target_config']['table']]
+    from app.run_queue import RunConflict
+    with pytest.raises(RunConflict,match='NEW_TARGET_REQUIRED'):q.revise(*args)
+    args[-1]='ui_accept_corrected_oracle'
+    child=q.revise(*args)
+    assert child['parent_run_id']==run
+    assert not child['write_started']
+    assert q.detail(task,child['run_id'])['approval'] is None
+    assert len(calls)==1
+    assert receipt['original_outcome']=='HOP_EXECUTED_QA_REQUIRED'

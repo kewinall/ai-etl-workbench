@@ -1,0 +1,1185 @@
+{
+  "scope": "Actual new Join case GET-only stage/button audit; no manual closure or new approval",
+  "errors": [],
+  "mutations": [],
+  "audits": [
+    {
+      "width": 390,
+      "stage": "requirements",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "建立準備版本",
+          "disabled": true
+        },
+        {
+          "label": "重新載入版本",
+          "disabled": false
+        },
+        {
+          "label": "5dc43645-41ae-4d1f-a025-dbb73418e631",
+          "disabled": false
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 390,
+      "stage": "review",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "重新載入 SA 狀態",
+          "disabled": true
+        },
+        {
+          "label": "重新核對 SA 交接",
+          "disabled": false
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 390,
+      "stage": "design",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "取得來源命名建議",
+          "disabled": true
+        },
+        {
+          "label": "重新載入 Developer 狀態",
+          "disabled": false
+        },
+        {
+          "label": "載入規格版本",
+          "disabled": true
+        },
+        {
+          "label": "建立規格",
+          "disabled": true
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 390,
+      "stage": "confirm",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "重新讀取標準答案",
+          "disabled": true
+        },
+        {
+          "label": "重新核對 Hop 執行條件",
+          "disabled": false
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 390,
+      "stage": "results",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "重新讀取版本產物",
+          "disabled": false
+        },
+        {
+          "label": "重新讀取比對證據",
+          "disabled": true
+        },
+        {
+          "label": "重新核對 Hop 執行條件",
+          "disabled": false
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 390,
+      "stage": "quality",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "前往執行結果與比對",
+          "disabled": false
+        },
+        {
+          "label": "重新核對 QA 派發條件",
+          "disabled": false
+        },
+        {
+          "label": "重新讀取 QA 審查",
+          "disabled": true
+        },
+        {
+          "label": "重新讀取核准狀態",
+          "disabled": true
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 390,
+      "stage": "delivery",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "處理中…",
+          "disabled": true
+        },
+        {
+          "label": "重新核對交付條件",
+          "disabled": true
+        },
+        {
+          "label": "載入／重新整理 SDM 歷史",
+          "disabled": false
+        },
+        {
+          "label": "重新核對 Release",
+          "disabled": true
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 768,
+      "stage": "requirements",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "建立準備版本",
+          "disabled": true
+        },
+        {
+          "label": "重新載入版本",
+          "disabled": false
+        },
+        {
+          "label": "5dc43645-41ae-4d1f-a025-dbb73418e631",
+          "disabled": false
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 768,
+      "stage": "review",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "重新載入 SA 狀態",
+          "disabled": true
+        },
+        {
+          "label": "重新核對 SA 交接",
+          "disabled": false
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 768,
+      "stage": "design",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "取得來源命名建議",
+          "disabled": true
+        },
+        {
+          "label": "重新載入 Developer 狀態",
+          "disabled": false
+        },
+        {
+          "label": "載入規格版本",
+          "disabled": true
+        },
+        {
+          "label": "建立規格",
+          "disabled": true
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 768,
+      "stage": "confirm",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "重新讀取標準答案",
+          "disabled": true
+        },
+        {
+          "label": "重新核對 Hop 執行條件",
+          "disabled": false
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 768,
+      "stage": "results",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "重新讀取版本產物",
+          "disabled": false
+        },
+        {
+          "label": "重新讀取比對證據",
+          "disabled": true
+        },
+        {
+          "label": "重新核對 Hop 執行條件",
+          "disabled": false
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 768,
+      "stage": "quality",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "前往執行結果與比對",
+          "disabled": false
+        },
+        {
+          "label": "重新核對 QA 派發條件",
+          "disabled": false
+        },
+        {
+          "label": "重新讀取 QA 審查",
+          "disabled": true
+        },
+        {
+          "label": "重新讀取核准狀態",
+          "disabled": true
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 768,
+      "stage": "delivery",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "處理中…",
+          "disabled": true
+        },
+        {
+          "label": "重新核對交付條件",
+          "disabled": true
+        },
+        {
+          "label": "載入／重新整理 SDM 歷史",
+          "disabled": false
+        },
+        {
+          "label": "重新核對 Release",
+          "disabled": true
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 1440,
+      "stage": "requirements",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "建立準備版本",
+          "disabled": true
+        },
+        {
+          "label": "重新載入版本",
+          "disabled": false
+        },
+        {
+          "label": "5dc43645-41ae-4d1f-a025-dbb73418e631",
+          "disabled": false
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 1440,
+      "stage": "review",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "重新載入 SA 狀態",
+          "disabled": true
+        },
+        {
+          "label": "重新核對 SA 交接",
+          "disabled": false
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 1440,
+      "stage": "design",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "取得來源命名建議",
+          "disabled": true
+        },
+        {
+          "label": "重新載入 Developer 狀態",
+          "disabled": false
+        },
+        {
+          "label": "載入規格版本",
+          "disabled": true
+        },
+        {
+          "label": "建立規格",
+          "disabled": true
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 1440,
+      "stage": "confirm",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "重新讀取標準答案",
+          "disabled": true
+        },
+        {
+          "label": "重新核對 Hop 執行條件",
+          "disabled": false
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 1440,
+      "stage": "results",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "重新讀取版本產物",
+          "disabled": false
+        },
+        {
+          "label": "重新讀取比對證據",
+          "disabled": true
+        },
+        {
+          "label": "重新核對 Hop 執行條件",
+          "disabled": false
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 1440,
+      "stage": "quality",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "前往執行結果與比對",
+          "disabled": false
+        },
+        {
+          "label": "重新核對 QA 派發條件",
+          "disabled": false
+        },
+        {
+          "label": "重新讀取 QA 審查",
+          "disabled": true
+        },
+        {
+          "label": "重新讀取核准狀態",
+          "disabled": true
+        }
+      ],
+      "no_overflow": true
+    },
+    {
+      "width": 1440,
+      "stage": "delivery",
+      "run": "714fad5b-b564-40bd-a60d-cb61134656a0",
+      "buttons": [
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "Pilot 成果",
+          "disabled": false
+        },
+        {
+          "label": "平台設定中心",
+          "disabled": false
+        },
+        {
+          "label": "操作指南",
+          "disabled": false
+        },
+        {
+          "label": "專案工作區",
+          "disabled": false
+        },
+        {
+          "label": "← 返回此專案歷史 Task",
+          "disabled": false
+        },
+        {
+          "label": "讀取中…",
+          "disabled": true
+        },
+        {
+          "label": "前往執行與結果",
+          "disabled": true
+        },
+        {
+          "label": "處理中…",
+          "disabled": true
+        },
+        {
+          "label": "重新核對交付條件",
+          "disabled": true
+        },
+        {
+          "label": "載入／重新整理 SDM 歷史",
+          "disabled": false
+        },
+        {
+          "label": "重新核對 Release",
+          "disabled": true
+        }
+      ],
+      "no_overflow": true
+    }
+  ],
+  "actual_read_button_checks": [
+    {
+      "stage": "requirements",
+      "name": "重新核對狀態",
+      "click_readback": true
+    },
+    {
+      "stage": "requirements",
+      "name": "重新載入版本",
+      "click_readback": true
+    },
+    {
+      "stage": "review",
+      "name": "重新載入 SA 狀態",
+      "click_readback": true
+    },
+    {
+      "stage": "review",
+      "name": "重新核對 SA 交接",
+      "click_readback": true
+    },
+    {
+      "stage": "confirm",
+      "name": "重新讀取標準答案",
+      "click_readback": true
+    },
+    {
+      "stage": "confirm",
+      "name": "重新核對 Hop 執行條件",
+      "click_readback": true
+    },
+    {
+      "stage": "results",
+      "name": "重新讀取版本產物",
+      "click_readback": true
+    },
+    {
+      "stage": "results",
+      "name": "重新讀取比對證據",
+      "click_readback": true
+    },
+    {
+      "stage": "results",
+      "name": "重新核對 Hop 執行條件",
+      "click_readback": true
+    },
+    {
+      "stage": "quality",
+      "name": "重新核對 QA 派發條件",
+      "click_readback": true
+    },
+    {
+      "stage": "quality",
+      "name": "重新讀取 QA 審查",
+      "click_readback": true
+    },
+    {
+      "stage": "quality",
+      "name": "重新讀取核准狀態",
+      "click_readback": true
+    },
+    {
+      "stage": "delivery",
+      "name": "重新核對交付條件",
+      "click_readback": true
+    },
+    {
+      "stage": "delivery",
+      "name": "重新核對 Release",
+      "click_readback": true
+    }
+  ],
+  "read_button_errors": [],
+  "read_button_writes": []
+}

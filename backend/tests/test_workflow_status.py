@@ -84,6 +84,16 @@ def test_qa_evidence_reassessment_is_not_hop_execution():
     assert '不重跑 Hop' in status['next_action']['label']
 
 
+@pytest.mark.parametrize('recovery_status', ['QUEUED', 'CLAIMED', 'FAILED'])
+def test_finished_hop_without_comparison_stays_at_results(recovery_status):
+    status=case(run={'write_started':True,'outcome_code':'HOP_EXECUTED_QA_REQUIRED'},
+                comparison_recovery={'status':recovery_status})
+    assert status['current_stage']=='results'
+    assert not status['stages'][5]['can_operate']
+    assert status['waiting']==(recovery_status!='FAILED')
+    assert '不可重跑' in status['execution_blocked_reason']
+
+
 def test_unknown_model_result_does_not_enable_redispatch():
     status = case(developer={'invocation': {'status': 'DEVELOPER_OUTCOME_UNKNOWN'}})
     assert not status['next_action']['enabled']

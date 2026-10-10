@@ -9,12 +9,15 @@ from .sa_contract import digest
 def offer(run):
     if (run['state']!='NEEDS_REVIEW' or run['phase']!='HOP_EXECUTION'
             or run['write_started'] is not True or run['lease_token'] is not None
-            or run['outcome_code'] not in ('HOP_RESULT_UNKNOWN','HOP_EXECUTION_FAILED')):
+            or (run['outcome_code'] not in ('HOP_RESULT_UNKNOWN','HOP_EXECUTION_FAILED')
+                and not (run['outcome_code']=='HOP_EXECUTED_QA_REQUIRED' and run.get('comparison_failure')))):
         raise RunConflict('RECONCILIATION_NOT_ELIGIBLE')
     binding={'version':1,'run_id':str(run['run_id']),'task_id':run['task_id'],
         'project_id':str(run['project_id']),'input_checksum':run['input_checksum'],
         'settings_checksum':run['settings_snapshot']['checksum'],
         'outcome_code':run['outcome_code'],'updated_at':run['updated_at'].isoformat()}
+    if run.get('comparison_failure'):
+        binding['comparison_failure'] = run['comparison_failure']
     return {**binding,'checksum':digest(binding)}
 
 
@@ -23,6 +26,10 @@ def _load(queue,conn,task_id,run_id):
     row=conn.execute('SELECT * FROM platform.task_run WHERE task_id=%s AND run_id=%s FOR UPDATE',(task_id,run_id)).fetchone()
     if not row:raise ValueError('RUN_NOT_FOUND')
     saved=conn.execute('SELECT * FROM platform.execution_reconciliation WHERE run_id=%s',(run_id,)).fetchone()
+    if row['outcome_code']=='HOP_EXECUTED_QA_REQUIRED':
+        failure=conn.execute("SELECT recovery_id,binding_checksum,outcome_code FROM platform.comparison_recovery WHERE run_id=%s AND status='FAILED' FOR SHARE",(run_id,)).fetchone()
+        if failure and not conn.execute("SELECT 1 FROM platform.agent_invocation WHERE run_id=%s AND role='pilot_qa'",(run_id,)).fetchone():
+            row={**row,'comparison_failure':{**failure,'recovery_id':str(failure['recovery_id'])}}
     return row,saved
 
 

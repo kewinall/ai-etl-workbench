@@ -11,7 +11,24 @@ def test_readiness_and_offers_never_create_dispatch(monkeypatch):
     monkeypatch.setattr(worker,'get',get)
     tasks=[{'id':'TASK-TEST'}]
     assert list(worker.pending(tasks))==[]
-    assert len(reads)==6
+    assert len(reads)==7
+
+
+def test_authorized_comparison_uses_read_only_worker_not_hop(monkeypatch):
+    def get(path):
+        if path.endswith('/runs'):return {'runs':[{'run_id':'11111111-1111-4111-8111-111111111111'}]}
+        if path.endswith('/comparison-recovery'):return {'status':'QUEUED','recovery_id':'approved-read'}
+        return {}
+    monkeypatch.setattr(worker,'get',get)
+    assert list(worker.pending([{'id':'TASK-TEST'}]))==[
+        ('comparison','approved-read','TASK-TEST','11111111-1111-4111-8111-111111111111',None)]
+    captured=[]
+    monkeypatch.setattr(worker.subprocess,'CREATE_NO_WINDOW',0,raising=False)
+    monkeypatch.setattr(worker.subprocess,'run',lambda args,**kw:captured.append(args))
+    worker.launch('comparison','TASK-TEST','11111111-1111-4111-8111-111111111111',None,'project')
+    assert 'app.comparison_recovery_worker' in captured[0]
+    assert 'app.pilot_hop_worker' not in captured[0]
+    assert '--candidate-id' not in captured[0]
 
 def test_unknown_results_and_claimed_hop_never_replay(monkeypatch):
     def get(path):

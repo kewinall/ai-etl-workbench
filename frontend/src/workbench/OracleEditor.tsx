@@ -9,6 +9,7 @@ export function OracleEditor({base,onHistory}:{base:string;onHistory:(items:any[
   const [rows,setRows]=useState<OracleCell[][]>([]),[dirty,setDirty]=useState(false);
   const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState('');
   const [message,setMessage]=useState(''),[saved,setSaved]=useState<any>(null),[confirmed,setConfirmed]=useState(false),[attempt,setAttempt]=useState(0);
+  const [zeroConfirmed,setZeroConfirmed]=useState(false);
   useEffect(()=>{
     let live=true;setLoading(true);setError('');
     request(base+'/oracle-editor-context').then(data=>{if(live){setContext(data);setColumns(data.columns)}})
@@ -26,9 +27,9 @@ export function OracleEditor({base,onHistory}:{base:string;onHistory:(items:any[
     window.addEventListener('workbench:before-navigate',leave);window.addEventListener('beforeunload',unload);
     return()=>{window.removeEventListener('workbench:before-navigate',leave);window.removeEventListener('beforeunload',unload)};
   },[dirty,busy]);
-  const changed=()=>{setDirty(true);setSaved(null);setConfirmed(false);setMessage('');setError('')};
+  const changed=()=>{setDirty(true);setSaved(null);setConfirmed(false);setZeroConfirmed(false);setMessage('');setError('')};
   const save=async()=>{
-    if(busy||!context)return;setBusy(true);setError('');setMessage('');setSaved(null);setConfirmed(false);
+    if(busy||!context||(!rows.length&&!zeroConfirmed))return;setBusy(true);setError('');setMessage('');setSaved(null);setConfirmed(false);
     try{
       const document=oracleDocument(context,columns,rows);
       const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(document));
@@ -65,7 +66,8 @@ export function OracleEditor({base,onHistory}:{base:string;onHistory:(items:any[
         {column.nullable&&<label><input type="checkbox" aria-label={`第 ${index+1} 筆 ${column.name} NULL`} checked={row[i].isNull} onChange={e=>{changed();setRows(old=>old.map((r,n)=>n===index?r.map((cell,j)=>j===i?{...cell,isNull:e.target.checked}:cell):r))}}/>NULL</label>}
       </td>)}<td><button onClick={()=>{changed();setRows(old=>old.filter((_,n)=>n!==index))}}>刪除第 {index+1} 筆</button></td></tr>)}</tbody></table></div>
       <button disabled={rows.length>=context.max_rows} onClick={()=>{changed();setRows(old=>[...old,columns.map(()=>({value:'',isNull:false}))])}}>新增答案資料列</button>
-      <button onClick={save}>{busy?'處理中…':'保存答案版本'}</button>
+      {!rows.length&&<><p role="alert">目前尚未輸入任何答案資料列。保存空表格會把「預期輸出 0 筆」作為標準答案，並非稍後再補。</p><label><input type="checkbox" checked={zeroConfirmed} onChange={e=>setZeroConfirmed(e.target.checked)}/>我確認預期結果確實為 0 筆</label></>}
+      <button disabled={!rows.length&&!zeroConfirmed} onClick={save}>{busy?'處理中…':'保存答案版本'}</button>
       {saved&&<><p>目前表格對應答案第 {saved.version} 版 · {saved.document_checksum}</p>{!saved.approval_recorded&&<><label><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>我已確認上方答案內容與版本，核准供後續 QA 比對</label><button disabled={!confirmed||dirty} onClick={approve}>核准此答案版本</button></>}</>}
     </fieldset><p>歷史答案可在上方唯讀查閱；本表單只能核准本次保存並核對的版本。修改任一欄位後須重新保存。</p></>}
   </section>;

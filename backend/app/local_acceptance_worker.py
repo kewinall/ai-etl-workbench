@@ -43,6 +43,9 @@ def pending(tasks):
                 yield role,record['invocation_id'],task_id,run_id,None
         job=get(base+'/hop-dispatch').get('request') or {}
         if job.get('status')=='QUEUED':yield 'hop',job['request_id'],task_id,run_id,None
+        recovery=get(base+'/comparison-recovery')
+        if recovery.get('status')=='QUEUED':
+            yield 'comparison',recovery['recovery_id'],task_id,run_id,None
         release=get(base+'/release')
         candidate=release.get('candidate')
         if candidate and release.get('status')=='PORTABILITY_REQUIRED' and not release.get('portability'):
@@ -50,7 +53,7 @@ def pending(tasks):
 
 def launch(role,task,run,candidate,project):
     env={**os.environ,'WORKBENCH_LOCAL_API_CONTAINER':CONTAINER,'WORKBENCH_LOCAL_WSL_DISTRO':'RockyLinux9'}
-    if role not in ('hop','replay'):
+    if role not in ('hop','replay','comparison'):
         args=[sys.executable,'-m','app.'+role,'--task-id',task,'--run-id',run]
         if role=='local_qa_worker':args.append('--website-authorized')
         return subprocess.run(args,env=env,capture_output=True,text=True,encoding='utf-8',timeout=240,
@@ -58,10 +61,10 @@ def launch(role,task,run,candidate,project):
     env_args=['env','UI_ACCEPT_PROJECT_ID='+project,'docker','compose',
               '-f','/mnt/d/ChatGPT/ai_agents_v2/deploy/compose.stage-guidance.yml',
               '-f','/mnt/d/ChatGPT/ai_agents_v2/deploy/compose.ui-acceptance.yml',
-              'run','--rm','--no-deps','acceptance-hop' if role=='hop' else 'acceptance-replay',
-              'python','-m','app.pilot_hop_worker' if role=='hop' else 'app.release_replay_worker',
+              'run','--rm','--no-deps','acceptance-hop' if role in ('hop','comparison') else 'acceptance-replay',
+              'python','-m',{'hop':'app.pilot_hop_worker','comparison':'app.comparison_recovery_worker','replay':'app.release_replay_worker'}[role],
               '--task-id',task,'--run-id',run]
-    env_args+=['--once'] if role=='hop' else ['--candidate-id',candidate]
+    env_args+=['--once'] if role=='hop' else [] if role=='comparison' else ['--candidate-id',candidate]
     return subprocess.run(['wsl.exe','-d','RockyLinux9','-u','root','--',*env_args],
                           capture_output=True,text=True,encoding='utf-8',timeout=1200,
                           creationflags=subprocess.CREATE_NO_WINDOW)

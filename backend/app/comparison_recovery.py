@@ -123,11 +123,13 @@ def checked_comparison(conn, run_id, comparison_id, checksum, binding):
     return evidence
 
 
-def finish(queue, request, result=None):
+def finish(queue, request, result=None, *, failure_code=None):
     with queue.conn() as conn:
         queue.locked_task(conn,request['task_id'])
         comparison_id = checksum = None
         status, code = 'FAILED','COMPARISON_RECOVERY_FAILED_NO_ETL_RETRY'
+        if failure_code in {'RESULT_NULL_NOT_ALLOWED', 'RESULT_COLUMN_ORDER_MISMATCH', 'RESULT_TYPE_MISMATCH'}:
+            code = failure_code
         if result is not None:
             check_current(queue,conn,request)
             comparison_id,checksum = result['comparison_id'],result['checksum']

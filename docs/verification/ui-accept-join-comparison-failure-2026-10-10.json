@@ -1,0 +1,80 @@
+{
+  "task_id": "TASK-20261010-0019",
+  "run_id": "714fad5b-b564-40bd-a60d-cb61134656a0",
+  "actual_rows": [
+    {
+      "id": null,
+      "left_value": "LNULL",
+      "id_2": null,
+      "right_value": null
+    },
+    {
+      "id": 1,
+      "left_value": "L1",
+      "id_2": 1,
+      "right_value": "R1a"
+    },
+    {
+      "id": 1,
+      "left_value": "L1",
+      "id_2": 1,
+      "right_value": "R1b"
+    },
+    {
+      "id": 2,
+      "left_value": "L2",
+      "id_2": 2,
+      "right_value": "R2"
+    },
+    {
+      "id": 3,
+      "left_value": "L3",
+      "id_2": null,
+      "right_value": null
+    }
+  ],
+  "approved_oracle": {
+    "version": 1,
+    "specification_checksum": "16b7c58e62cbf14f488fb36ce4004c7d66c5b527711fd95f471086669b365135",
+    "naming_checksum": "f757fc792c7ef1ac4f1b82ee903038de15cbcbaf10b663acda7d759998220605",
+    "columns": [
+      {
+        "name": "id",
+        "kind": "INTEGER",
+        "nullable": false
+      },
+      {
+        "name": "left_value",
+        "kind": "TEXT",
+        "nullable": false
+      },
+      {
+        "name": "id_2",
+        "kind": "INTEGER",
+        "nullable": false
+      },
+      {
+        "name": "right_value",
+        "kind": "TEXT",
+        "nullable": false
+      }
+    ],
+    "rows": []
+  },
+  "write_started_count": 1,
+  "recovery_events": [
+    "COMPARISON_RECOVERY_QUEUED",
+    "COMPARISON_RECOVERY_CLAIMED",
+    "COMPARISON_RECOVERY_FAILED"
+  ],
+  "query_checksum": "be00314552c2410362ab503bfd52830dff959ec76767c3dff146259cbff50257",
+  "hop_log_checksum": "0d0fdea189843305b9bd82d5effe1fb4528476fc3dbf47b8ed87a901d5190ce8",
+  "independent_fixed_answer_match": true,
+  "platform_comparison_status": "FAILED",
+  "recovery_failure": "RESULT_NULL_NOT_ALLOWED",
+  "full_chain_accepted": false,
+  "qa_called": false,
+  "release_ready": false,
+  "scope": "Actual new Hop/Vertica execution; independent read is not a replacement oracle or QA approval",
+  "fixed_answer_file": "examples/ui-acceptance/expected.json"
+}

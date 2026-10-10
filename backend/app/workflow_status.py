@@ -10,7 +10,7 @@ WAITING = {'QUEUED', 'RUNNING', 'DISPATCH_RESERVED', 'CLAIMED', 'SA_QUEUED', 'QA
 
 
 def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
-              hop, qa, qa_approval, release, services=None):
+              hop, qa, qa_approval, release, services=None, comparison_recovery=None):
     """A projection of authoritative readers, never a new mutable state machine."""
     historical = str(run['run_id']) != str(latest_run_id)
     current = run.get('matches_current') is True and not historical
@@ -68,7 +68,7 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
             owner, action, enabled, waiting = '執行服務', '等待執行結果', False, True
         elif job.get('overdue') or code in ('HOP_RESULT_UNKNOWN', 'HOP_EXECUTION_FAILED') or job.get('status') == 'NEEDS_REVIEW':
             owner, action, enabled, waiting = '你', '核對結果並結案', current, False
-    if completed[4]:
+    if completed[4] and (qa.get('eligible') or qa_record or qa_ok):
         index, owner, action, enabled, waiting = 5, '你', '授權品質審查', current and qa.get('eligible') is True and qa.get('dispatch_enabled') is True, False
         if qa_record.get('status') in WAITING:
             owner, action, enabled, waiting = 'AI', '等待品質審查', False, True
@@ -78,6 +78,14 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
             action = '補充證據並重新審查（不重跑 Hop）'
         elif qa_record:
             action, enabled = '處理 QA 意見與證據缺口', current
+    recovery = comparison_recovery or {}
+    if completed[4] and not (qa.get('eligible') or qa_record or qa_ok):
+        completed[4] = False
+        index, owner, action, enabled, waiting = 4, '你', '檢查結果比對與標準答案', current, False
+        if recovery.get('status') in ('QUEUED', 'CLAIMED'):
+            owner, action, enabled, waiting = '執行服務', '等待只讀結果比對（不重跑 ETL）', False, True
+        elif recovery.get('status') == 'FAILED':
+            action = '處理結果比對失敗（保留原執行）'
     if qa_ok:
         index, owner, action, enabled, waiting = 6, '你', '準備 SDM 與候選包', current, False
         if portable.get('status') == 'RUNNING' and not portable.get('overdue'):
@@ -112,7 +120,7 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
                 'blocked_reason': None if ready else f'{kind} 執行服務未就緒；請由環境管理者啟動此專案的服務，再重新核對。'}
         pending_role = ('sa' if index == 1 and sa_record.get('status') in WAITING else
                         'developer' if index == 2 and dev_record.get('status') in WAITING else
-                        'hop' if index == 4 and job.get('status') in WAITING else
+                        'hop' if index == 4 and (job.get('status') in WAITING or recovery.get('status') in ('QUEUED', 'CLAIMED')) else
                         'qa' if index == 5 and qa_record.get('status') in WAITING else
                         'portability' if index == 6 and portable.get('status') == 'RUNNING' else None)
         if pending_role and not qualifications[pending_role]['service_ready']:
@@ -131,7 +139,7 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
               for i, key in enumerate(KEYS)]
     category = ('執行服務未就緒' if service_blocker else '可交付' if release.get('release_ready') else '系統處理中' if waiting else
                 '待核對' if '核對結果' in action or 'UNKNOWN' in code else
-                '需修正' if issues or '問題' in action or '缺口' in action else '待你確認')
+                '需修正' if issues or '問題' in action or '缺口' in action or recovery.get('status')=='FAILED' else '待你確認')
     return {'task_id': run['task_id'], 'run_id': str(run['run_id']),
             'updated_at': run.get('updated_at'), 'read_at': datetime.now(timezone.utc),
             'historical': historical, 'matches_current': run.get('matches_current') is True,
@@ -143,7 +151,8 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
             'services': services, 'service_blocked_reason': service_blocker,
             'operation_qualifications': qualifications,
             'waiting': waiting, 'category': category, 'issues': issues,
-            'execution_blocked_reason': hop.get('blocked_reason'),
+            'execution_blocked_reason': ('Hop 已完成，但尚缺有效結果比對；請檢查標準答案與比對失敗原因，不可重跑原目標。' if completed[4] is False and code == 'HOP_EXECUTED_QA_REQUIRED' else hop.get('blocked_reason')),
+            'comparison_recovery': comparison_recovery,
             'source_scope_note': 'JSON／資料表來源的完整執行驗收尚未完成；可檢視規格與候選證據，勿視為全鏈通過。',
             'release_status': release.get('status'), 'release': release.get('release'),
             'execution_authorized': False}
@@ -161,6 +170,7 @@ def read(queue, repo, task_id, run_id):
     from .release_store import status as release_status
     from .run_api import public_run
     from .worker_presence import WorkerRegistry
+    from .comparison_recovery import read as recovery_read
     # Every reader validates Task/Run identity. Do not mask unavailable stores as empty.
     before = queue.detail(task_id, run_id)
     runs = queue.list_runs(task_id)
@@ -173,7 +183,8 @@ def read(queue, repo, task_id, run_id):
         developer=developer_read(queue, task_id, run_id), specifications=specifications,
         hop=hop_read(queue, task_id, run_id), qa=qa,
         qa_approval=read_approval(queue, task_id, run_id), release=release_status(queue, repo, task_id, run_id),
-        services=WorkerRegistry(queue).snapshot(before['project_id']))
+        services=WorkerRegistry(queue).snapshot(before['project_id']),
+        comparison_recovery=recovery_read(queue, task_id, run_id))
     after = queue.detail(task_id, run_id)
     if public_run(before) != public_run(after) or str(queue.list_runs(task_id)[0]['run_id']) != str(runs[0]['run_id']):
         raise RunConflict('WORKFLOW_READ_CHANGED')

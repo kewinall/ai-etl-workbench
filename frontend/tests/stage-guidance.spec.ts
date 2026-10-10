@@ -224,3 +224,35 @@ for (const [path,field] of [['requirements_v1.write_mode','write_mode'],['requir
  await expect(page.getByLabel('命名英文 1',{exact:true})).toHaveValue('left_id');
  expect(previews).toBe(1);expect(f.counts().posts).toBe(0);
 });
+
+test('重新比對使用共用更新顯示結果，不重送授權（合成 UI）',async({page})=>{
+ const tracker=await fixture(page,{stage:'results'});
+ await page.route('**/hop-dispatch',r=>r.fulfill({json:{request:{status:'NEEDS_REVIEW',outcome_code:'HOP_PREPARATION_OR_COMPARISON_FAILED'},offer:null}}));
+ let state='QUEUED';
+ await page.route('**/comparison-recovery',r=>r.fulfill({json:{status:state,outcome_code:state==='FAILED'?'RESULT_NULL_NOT_ALLOWED':null}}));
+ await page.goto(base+'/results/'+current);
+ const panel=page.getByRole('region',{name:'只重新比對結果'});
+ await expect(panel).toContainText('已排入結果比對');
+ state='FAILED';
+ await page.evaluate(path=>window.dispatchEvent(new CustomEvent('workbench:read-refresh',{detail:{path}})),`/api/tasks/${taskId}/runs/${current}`);
+ await expect(panel).toContainText('實際結果含 NULL');
+ await expect(panel.getByRole('button',{name:'授權重新比對（不重跑 ETL）'})).toHaveCount(0);
+ expect(tracker.counts().posts).toBe(0);
+});
+
+test('空白標準答案必須明確確認零筆，新增資料列立即取消零筆確認（合成 UI）',async({page})=>{
+ const tracker=await fixture(page,{stage:'confirm'});
+ await page.route('**/specifications',r=>r.fulfill({json:{items:[{specification_id:'spec',version:1,approval_effective:true}]}}));
+ await page.route('**/oracle-editor-context',r=>r.fulfill({json:{version:1,columns:[{name:'id',kind:'INTEGER',nullable:false}],max_rows:10000}}));
+ await page.goto(base+'/confirm/'+current);
+ const panel=page.getByRole('region',{name:'標準答案輸入'});
+ await expect(panel.getByRole('button',{name:'保存答案版本'})).toBeDisabled();
+ await panel.getByLabel('我確認預期結果確實為 0 筆').check();
+ await expect(panel.getByRole('button',{name:'保存答案版本'})).toBeEnabled();
+ await panel.getByRole('button',{name:'新增答案資料列'}).click();
+ await expect(panel.getByLabel('第 1 筆 id',{exact:true})).toBeVisible();
+ await panel.getByRole('button',{name:'刪除第 1 筆'}).click();
+ await expect(panel.getByLabel('我確認預期結果確實為 0 筆')).not.toBeChecked();
+ await expect(panel.getByRole('button',{name:'保存答案版本'})).toBeDisabled();
+ expect(tracker.counts().posts).toBe(0);
+});
