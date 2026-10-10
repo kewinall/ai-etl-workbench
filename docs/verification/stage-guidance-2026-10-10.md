@@ -57,3 +57,11 @@ wsl -d RockyLinux9 -u root -- docker compose -f /mnt/d/ChatGPT/ai_agents_v2/depl
 本次三個 UI 工程里程碑已實作並分段驗證；整體 WS-0007 保持 active。尚未更新既有部署，也尚未推送本次專案 commits。原有未提交 test_join_replay_worker.py 保留，不納入本次提交。
 
 下一步：先審閱獨立預覽與本機提交；具備原有模型／寫入／QA／交付核准後，在新的合成案例完成真實模型→Hop→Vertica→QA→ZIP 的每個階段與退回分支，再評估套用既有部署。JSON／資料表來源完整執行仍未驗收。草稿僅暫存目前頁面，重載前需保存新版或另行保留內容。
+
+## 本輪缺口修正（仍為部分完成）
+
+- 控制服務缺席時顯示執行服務未就緒與管理者處理方式；下一步卡片明示前往階段，不冒充派發。
+- Join 補正使用既有契約、差異預覽、新版；草稿包含 Join。執行產物及標準答案訂閱共用唯讀更新；設計頁移除重複 SDM，舊版入口依真正歷史產物存在判定。
+- 5197 隔離後端回歸：2018 passed/139 skipped/1 warning，45.30s。瀏覽器 16 passed，26.1s（新增 Join 修訂預覽；不代表 Native 全鏈）。
+- 真實本機 copilot/gpt-5.4 連線檢查 CONNECTED，完整 trace：ui-accept-model-connection-2026-10-10.json；無工具、無自動重試。前次檢查輸入缺追蹤欄位，未計入通過證據。
+- Worker 新增 WORKBENCH_LOCAL_API_CONTAINER/WORKBENCH_LOCAL_WSL_DISTRO，預設維持原容器；控制 Worker 可限 --project-id。服務接通及三案例正式交付尚未完成。

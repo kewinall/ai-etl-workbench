@@ -100,7 +100,7 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
     const button=document.querySelector<HTMLButtonElement>('[data-revision-start]');
     button?.click();
     let frame=0,tries=0;
-    const focus=()=>{const field=document.querySelector<HTMLElement>(`[data-field="${pendingField}"]`);if(field&&!field.matches(':disabled')){field.focus();field.scrollIntoView({block:'center'});setPendingField('')}else if(tries++<60)frame=requestAnimationFrame(focus);else setPendingField('')};
+    const focus=()=>{const field=document.querySelector<HTMLElement>(`[data-field="${pendingField}"]`);if(field&&!field.matches(':disabled')){(field.matches('input,select,textarea,button')?field:field.querySelector<HTMLElement>('input,select,textarea,button'))?.focus();field.scrollIntoView({block:'center'});setPendingField('')}else if(tries++<60)frame=requestAnimationFrame(focus);else setPendingField('')};
     frame=requestAnimationFrame(focus);
     return()=>cancelAnimationFrame(frame);
   },[pendingField,stage,loading,error]);
@@ -125,12 +125,13 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
     {error&&<p role="alert">資訊過期／無法確認：{error} 依賴新狀態的操作已停用；不會自動重送請求。</p>}
     {valid&&<section className="panel workflow-next" aria-label="目前狀態與下一步"><h3>第 {keys.indexOf(workflow.current_stage)+1} 階段：{labels[keys.indexOf(workflow.current_stage)]}</h3>
       <dl><dt>已完成</dt><dd>{workflow.completed.join('、')||'尚無有效核准'}</dd><dt>現在需要誰</dt><dd>{workflow.owner}</dd><dt>下一步</dt><dd>{workflow.next_action.label}</dd></dl>
-      <button className="primary" disabled={loading||!!error} onClick={()=>{select(workflow.next_action.stage);document.getElementById(`stage-panel-${workflow.next_action.stage}`)?.scrollIntoView({block:'start'})}}>{workflow.next_action.label}</button>
+      <button className="primary" disabled={loading||!!error} onClick={()=>{select(workflow.next_action.stage);requestAnimationFrame(()=>document.getElementById(`stage-panel-${workflow.next_action.stage}`)?.scrollIntoView({block:'start'}))}}>前往{labels[keys.indexOf(workflow.next_action.stage)]}</button>
+      {workflow.service_blocked_reason&&<p role="status">{workflow.service_blocked_reason}</p>}
       {workflow.execution_blocked_reason&&workflow.current_stage==='confirm'&&<p>{workflow.execution_blocked_reason}</p>}
       <details><summary>來源支援與驗收範圍</summary><p>{workflow.source_scope_note}</p></details>
     </section>}
     {stageInfo?.blocked_reason&&<p role="status">{stageInfo.blocked_reason} 此階段可檢視，操作須等前置條件成立。</p>}
-    {valid&&!!workflow.issues.length&&<section className="panel workflow-issues" aria-label="問題處理區"><h3>待處理問題</h3><ul>{workflow.issues.map((issue:any,i:number)=><li key={i}><b>{issue.message}</b><p>原因：{issue.issue_type||issue.code||'審查缺口'} · 對應欄位：{issue.field_path||issue.evidence_ids?.join('、')||'需求說明'}</p><button disabled={loading||!!error||workflow.historical} onClick={()=>{if(issue.stage){select(issue.stage);return}const path=issue.field_path||issue.evidence_ids?.[0]||'';setPendingField(/schema/.test(path)?'target_schema':/table/.test(path)?'target_table':'requirement_text');select('requirements')}}>{issue.stage==='quality'?'檢視 QA 意見與補證':issue.stage==='design'?'檢視並修正规格':'前往修正'}</button></li>)}</ul></section>}
+    {valid&&!!workflow.issues.length&&<section className="panel workflow-issues" aria-label="問題處理區"><h3>待處理問題</h3><ul>{workflow.issues.map((issue:any,i:number)=><li key={i}><b>{issue.message}</b><p>原因：{issue.issue_type||issue.code||'審查缺口'} · 對應欄位：{issue.field_path||issue.evidence_ids?.join('、')||'需求說明'}</p><button disabled={loading||!!error||workflow.historical} onClick={()=>{if(issue.stage){select(issue.stage);return}const path=issue.field_path||issue.evidence_ids?.[0]||'';setPendingField(/join/.test(path)?'join':/transformation|filter|aggregation/.test(path)?'transformation':/schema/.test(path)?'target_schema':/table/.test(path)?'target_table':'requirement_text');select('requirements')}}>{issue.stage==='quality'?'檢視 QA 意見與補證':issue.stage==='design'?'檢視並修正规格':'前往修正'}</button></li>)}</ul></section>}
     <WorkflowReadOnly.Provider value={!!readonly}>
     <section className="panel" hidden={stage!=='requirements'} role="tabpanel" id="stage-panel-requirements" aria-labelledby="stage-requirements">
       {(!runId||valid)&&<fieldset className="workflow-controls" disabled={loading||!!error}><RunVersions taskId={task.id} requestedRunId={selected||undefined} onSelectRun={id=>select('requirements',id)}/></fieldset>}

@@ -3,7 +3,6 @@ import {useWorkflowReadOnly,useWorkflowRefresh} from './useWorkflowRefresh';
 import {request, jsonBody} from './api';
 import {SpecificationEditor} from './SpecificationEditor';
 import {SdmPreview} from './SdmPreview';
-import {SdmHistory} from './SdmHistory';
 import {JoinSummary} from './JoinSummary';
 import {SourceOrderSummary} from './SourceOrder';
 import {JsonSpecificationBinding} from './JsonSpecificationBinding';
@@ -87,6 +86,5 @@ export function SpecificationHistory({taskId, runId}: {taskId: string; runId: st
         <details><summary>Hop 候選指紋</summary><p className="spec-checksum">HPL：{preview.hpl_checksum}</p><p className="spec-checksum">HWF：{preview.hwf_checksum}</p><p className="spec-checksum">DDL：{preview.ddl_checksum}</p></details>
       </div>)}
     </>}
-    <SdmHistory key={base} base={base}/>
   </section>;
 }

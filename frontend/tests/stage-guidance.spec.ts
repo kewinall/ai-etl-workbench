@@ -7,8 +7,9 @@ const labels=['需求與資料規格','需求審查','流程設計審查','執�
 const base=`/#/projects/${project}/tasks/${taskId}`;
 function run(id=current){return {run_id:id,task_id:taskId,created_at:'2026-10-10T00:00:00Z',state:'NEEDS_REVIEW',phase:'REQUIREMENT_GATE',matches_current:true,write_started:false,input_checksum:'a'.repeat(64),settings_checksum:'b'.repeat(64),events:[],gate_result:{status:'NEEDS_INPUT',issues:[{message:'請補正目標',field_path:'target.table'}]},settings_summary:{},input_summary:{requirement_text:'原始需求，其他內容必須保留',target_schema:'ai_sample',target_table:'original',source_fields:[],source_fields_editable:false,requirements_v1:{version:1,write_mode:'APPEND',date_scope:'ALL'},transformation_source_refs:[]}}}
 function status(id=current,stage='requirements'){const i=keys.indexOf(stage);return {task_id:taskId,run_id:id,current_stage:stage,updated_at:'2026-10-10T00:00:00Z',historical:id===old,matches_current:true,category:'待你確認',owner:'你',completed:[],waiting:false,issues:[],stages:keys.map((key,n)=>({key,number:n+1,label:labels[n],status:n===i?'current':'blocked',can_operate:id!==old&&n<=i,blocked_reason:n>i?'先完成前一階段的必要核准與證據。':null})),next_action:{label:'確認需求版本',stage,enabled:id!==old},source_scope_note:'完整執行尚未驗收'};}
-async function fixture(page:Page,options:{stage?:string;waiting?:boolean;issues?:any[];unknown?:boolean;actionLabel?:string;qaRevision?:boolean}={}) {
+async function fixture(page:Page,options:{stage?:string;waiting?:boolean;issues?:any[];unknown?:boolean;actionLabel?:string;qaRevision?:boolean;join?:boolean}={}) {
  let stale=false,reads=0,posts=0;const records=[run(),run(old)];
+ if(options.join)Object.assign(records[0].input_summary,{sources:[{label:'左表',fields:[{name:'id',type:'BIGINT'}]},{label:'右表',fields:[{name:'id',type:'BIGINT'}]}]});
  if(options.qaRevision)Object.assign(records[0],{write_started:true,qa_revision:{checksum:'c'.repeat(64)}});
  await page.route('**/api/**',async route=>{
   const path=new URL(route.request().url()).pathname;
@@ -57,7 +58,7 @@ test('真實隔離 API：新 Task 建立版本、確認輸入与唯讀狀態，�
  await expect(page.getByLabel('共用 Run 版本')).not.toHaveValue('');
  await page.getByLabel('我已核對本次需求及設定版本').check();
  await page.getByRole('button',{name:'確認此版輸入',exact:true}).click();
- await expect(page.getByRole('region',{name:'目前狀態與下一步'})).toContainText('等待需求審查');
+ await expect(page.getByRole('region',{name:'目前狀態與下一步'})).toContainText('控制服務未就緒');
  const id=await page.getByLabel('共用 Run 版本').inputValue();
  const d=await (await request.get(`/api/tasks/${t.id}/runs/${id}`)).json();
  expect(d.approval.decision).toBe('APPROVE');expect(d.write_started).toBe(false);
@@ -167,3 +168,14 @@ test('QA 退回修正版保留已執行結果並要求新目標；不自動送�
  await expect(page.getByLabel('目標 Table',{exact:true})).toBeFocused();
  await expect(page.getByText(/必須指定 ai_sample 中不同的新目標/)).toBeVisible();expect(f.counts().posts).toBe(0);
 });
+
+ test('Join 修訂先預覽且保留原版，不自動送出',async({page})=>{
+ const f=await fixture(page,{join:true});await page.goto(base+'/requirements/'+current);
+ await page.getByRole('button',{name:'補正需求並建立新版'}).click();
+ await page.getByRole('button',{name:'設定 Join 條件'}).click();
+ await page.getByLabel('Join 類型').selectOption('LEFT');
+ await page.getByLabel('左表鍵欄位').selectOption('id');await page.getByLabel('右表鍵欄位').selectOption('id');
+ await page.getByLabel('NULL 鍵').selectOption('NEVER_MATCH');await page.getByLabel('重複鍵').selectOption('EXPAND');await page.getByLabel('字串比對').selectOption('CASE_SENSITIVE_NO_TRIM');
+ await page.getByRole('button',{name:'預覽修訂差異'}).click();
+ await expect(page.getByText('join_contract_v1',{exact:false})).toBeVisible();expect(f.counts().posts).toBe(0);
+ });

@@ -18,6 +18,7 @@ import {JsonInputEditor, JsonInputSummary} from './JsonInputContract';
 import {useDraftGuard} from './useDraftGuard';
 import {OperationLatch} from './operationLatch';
 import {useWorkflowReadOnly,useWorkflowRefresh} from './useWorkflowRefresh';
+import {JoinInputEditor} from './JoinInputEditor';
 
 const states: Record<string, string> = {QUEUED: '待處理（未啟動）', RUNNING: '處理中', NEEDS_REVIEW: '需要人工檢查', SUCCEEDED: '流程已結束', FAILED: '失敗', CANCELLED: '已取消'};
 
@@ -37,6 +38,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
   const [csvContract, setCsvContract] = useState<any>(null);
   const [excelContract, setExcelContract] = useState<any>(null);
   const [jsonContract, setJsonContract] = useState<any>(null);
+  const [joinContract,setJoinContract]=useState<any>(null);
   const [replacement, setReplacement] = useState<any>(null);
   const [replacementPending, setReplacementPending] = useState(false);
   const [draft, setDraft] = useState({requirement_text: '', target_schema: '', target_table: ''});
@@ -47,7 +49,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
   const savedDrafts=useRef(new Map<string,any>());
   useDraftGuard(editing,mutating,setMessage);
   useEffect(()=>{if(pendingRun&&!busy&&!editing){const id=pendingRun;setPendingRun('');onSelectRun?.(id)}},[pendingRun,busy,editing,onSelectRun]);
-  const draftSignature=JSON.stringify({draft,conditions,transformation,sourceOrder,sourceFields,csvContract,excelContract,jsonContract,replacement});
+  const draftSignature=JSON.stringify({draft,conditions,transformation,sourceOrder,sourceFields,csvContract,excelContract,jsonContract,joinContract,replacement});
   useEffect(()=>{setPreview(null);setDiffConfirmed(false)},[draftSignature]);
   const revisionKey = useRef(crypto.randomUUID());
   useWorkflowRefresh(`/api/tasks/${encodeURIComponent(taskId)}/runs/${requestedRunId||''}`,async()=>{await load();if(detail)setDetail(await request(`/api/tasks/${taskId}/runs/${detail.run_id}`))},editing||busy);
@@ -87,6 +89,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
       ...(sourceOrder ? {source_order_v1: sourceOrder} : {}),
       ...(excelContract ? {excel_input_contract_v1: excelContract} : {}),
       ...(jsonContract ? {json_input_contract_v1: jsonContract} : {}),
+      ...(joinContract ? {join_contract_v1: joinContract} : {}),
     };
   };
   const revise = () => action(async () => {
@@ -178,12 +181,15 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
           setCsvContract(null);
           setExcelContract(null);
           setJsonContract(null);
+          const originalJoin=detail.input_summary.join_contract_v1;
+          setJoinContract(originalJoin?.joins ? {version:1,joins:originalJoin.joins} : null);
           const saved=savedDrafts.current.get(detail.run_id);
-          if(saved){setDraft(saved.draft);setConditions(saved.conditions);setTransformation(saved.transformation);setSourceOrder(saved.sourceOrder);setSourceFields(saved.sourceFields);setCsvContract(saved.csvContract);setExcelContract(saved.excelContract);setJsonContract(saved.jsonContract);setReplacement(saved.replacement);revisionKey.current=saved.requestKey}
+          if(saved){setDraft(saved.draft);setConditions(saved.conditions);setTransformation(saved.transformation);setSourceOrder(saved.sourceOrder);setSourceFields(saved.sourceFields);setCsvContract(saved.csvContract);setExcelContract(saved.excelContract);setJsonContract(saved.jsonContract);setJoinContract(saved.joinContract||null);setReplacement(saved.replacement);revisionKey.current=saved.requestKey}
           else revisionKey.current = crypto.randomUUID();
           setUncertain(false);setEditing(true);
         }}>補正需求並建立新版</button>}
         {editing && <form aria-label="需求補正" onSubmit={event => {event.preventDefault();if(!preview){try{setPreview(revisionPayload());setDiffConfirmed(false)}catch(e:any){setMessage(e.message)}}else void revise()}}>
+          <JoinInputEditor sources={detail.input_summary.sources||[]} value={joinContract} onChange={setJoinContract} disabled={busy}/>
           <ExcelInputEditor selection={detail.input_summary.excel_selection} evidence={detail.input_summary.excel_input_contract_v1}
             value={excelContract} disabled={busy} onChange={setExcelContract}/>
           <JsonInputEditor profile={detail.input_summary.json_profile} value={jsonContract} disabled={busy} onChange={setJsonContract}/>
@@ -192,9 +198,9 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
             const current = transformation && !transformation.invalid ? transformation : {version: 1, filters: [], filter_logic: 'ALL', filter_null_policy: 'EXCLUDE_UNKNOWN', aggregation: null, output_columns: []};
             setTransformation({...current, output_columns: current.output_columns.includes(ordinalRef) ? current.output_columns : [...current.output_columns, ordinalRef]});
           }}/>
-          <TransformationEditor value={transformation} sourceLabels={detail.input_summary.source_labels} sources={(detail.input_summary.transformation_source_refs || []).filter((ref: string) => !ref.startsWith('$source_order.'))} generatedOutputs={sourceOrder ? [ordinalRef] : []} disabled={busy} onChange={setTransformation}/>
+          <div data-field="transformation"><TransformationEditor value={transformation} sourceLabels={detail.input_summary.source_labels} sources={(detail.input_summary.transformation_source_refs || []).filter((ref: string) => !ref.startsWith('$source_order.'))} generatedOutputs={sourceOrder ? [ordinalRef] : []} disabled={busy} onChange={setTransformation}/></div>
           {detail.input_summary.csv_contract_editable && <CsvReplacement disabled={busy} onChange={setReplacement} onPending={setReplacementPending}/>}
-          <p>保存會保留舊版本，並建立待確認的新版本，不執行 ETL。僅單一且沒有實體／樣本資料的來源可補正欄位；Join 條件尚未接通。</p>
+          <p>保存會保留舊版本，並建立待確認的新版本，不執行 ETL。僅單一且沒有實體／樣本資料的來源可補正欄位。</p>
           {detail.input_summary.csv_contract_editable && <fieldset><legend>CSV 輸入契約補正</legend>
             <p>指定編碼、分隔與欄位政策；不修改原始檔案，不傳送實際路徑給模型。額外欄位「忽略」表示只使用已定義欄位，「拒收」表示出現未定義欄位即失敗。</p>
             {!csvContract ? <button type="button" onClick={() => {
@@ -241,7 +247,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
           <p>UPSERT 必須提供來源中存在的鍵欄位；日期採起日包含、迄日不包含。不確定可保持「尚未確認」，重新檢查仍會暫停。覆寫意圖不等於核准刪表。</p>
           {preview&&<section aria-label="修訂差異預覽"><h4>建立新版前確認差異</h4><p>下游 SA、命名／設計、規格、執行與 QA 核准依後端規則重新核對；原版結果保留。</p><table><thead><tr><th>欄位</th><th>原值</th><th>新值</th></tr></thead><tbody>{Object.entries(preview).filter(([key,value])=>!['request_key','input_checksum','qa_revision_checksum'].includes(key)&&JSON.stringify(value)!==JSON.stringify(detail.input_summary[key])).map(([key,value])=><tr key={key}><td>{({requirement_text:'需求',target_schema:'目標 Schema',target_table:'目標資料表',requirements_v1:'寫入與資料期間',transformation_contract_v1:'轉換規則',source_fields_v1:'來源欄位'} as any)[key]||key}</td><td><pre>{JSON.stringify(detail.input_summary[key]??'原版未提供',null,2)}</pre></td><td><pre>{JSON.stringify(value,null,2)}</pre></td></tr>)}</tbody></table><label><input type="checkbox" checked={diffConfirmed} onChange={e=>setDiffConfirmed(e.target.checked)}/>已核對差異，同意建立待需求確認的新版</label></section>}
           {uncertain&&<section role="alert"><p>送出結果待核對，不能再次提交。</p><button type="button" disabled={busy} onClick={()=>action(async()=>{const list=await request(`/api/tasks/${taskId}/runs`);setRuns(list.runs);const child=list.runs.find((r:any)=>r.parent_run_id===detail.run_id);if(child){setEditing(false);await open(child.run_id);setPendingRun(child.run_id)}else{setUncertain(false);setMessage('已重新核對：尚未找到子版本，保留同一 request key；仍需人工確認差異才可再次送出。')}})}>重新讀取新版建立結果</button></section>}
-          <div className="run-actions"><button type="submit" disabled={busy || replacementPending || uncertain || !draft.requirement_text.trim() || !!preview&&!diffConfirmed}>{preview?'保存補正並建立新版':'預覽修訂差異'}</button><button type="button" disabled={busy||replacementPending||uncertain} onClick={()=>{savedDrafts.current.set(detail.run_id,{draft,conditions,transformation,sourceOrder,sourceFields,csvContract,excelContract,jsonContract,replacement,requestKey:revisionKey.current});setEditing(false);setMessage('草稿已暫存於本頁；尚未建立新版或核准，重新整理會清除本頁草稿。')}}>儲存草稿</button><button type="button" disabled={busy || replacementPending||uncertain} onClick={() => setEditing(false)}>放棄補正</button></div>
+          <div className="run-actions"><button type="submit" disabled={busy || replacementPending || uncertain || !draft.requirement_text.trim() || !!preview&&!diffConfirmed}>{preview?'保存補正並建立新版':'預覽修訂差異'}</button><button type="button" disabled={busy||replacementPending||uncertain} onClick={()=>{savedDrafts.current.set(detail.run_id,{draft,conditions,transformation,sourceOrder,sourceFields,csvContract,excelContract,jsonContract,joinContract,replacement,requestKey:revisionKey.current});setEditing(false);setMessage('草稿已暫存於本頁；尚未建立新版或核准，重新整理會清除本頁草稿。')}}>儲存草稿</button><button type="button" disabled={busy || replacementPending||uncertain} onClick={() => setEditing(false)}>放棄補正</button></div>
         </form>}
       </>}
       <dl><dt>AI Profile</dt><dd>{detail.settings_summary.ai_profile_id}</dd><dt>資料連線</dt><dd>{detail.settings_summary.connection_id}</dd><dt>輸入 checksum</dt><dd>{detail.input_checksum}</dd><dt>設定 checksum</dt><dd>{detail.settings_checksum}</dd></dl>

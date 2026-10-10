@@ -1,9 +1,12 @@
-import {useState,type ReactNode} from 'react';
+import {useEffect,useState,type ReactNode} from 'react';
 import {request} from './api';
 
 export function LegacyTaskRecords({task,renderValue}:{task:any;renderValue:(value:any)=>ReactNode}) {
   const [assets,setAssets]=useState<any>(null),[error,setError]=useState(''),[selected,setSelected]=useState('');
   const node=task.nodes?.find((n:any)=>n.key===selected);
+  const metadata=!!(task.nodes?.length||task.logs?.length||task.last_error||task.error_test_result);
+  useEffect(()=>{let live=true;if(!metadata)request(`/api/tasks/${encodeURIComponent(task.id)}/history-assets`).then(value=>live&&setAssets(value)).catch(e=>live&&setError(e.message));return()=>{live=false}},[task.id,metadata]);
+  if(!metadata&&!error&&(!assets||!assets.jobs?.length&&!assets.sql?.length&&!assets.hop_logs?.length))return null;
   return <details className="panel"><summary>舊版紀錄：Task 節點、Log、Hop、SQL 與下載</summary>
     <p>這些是舊版 Task 保存內容；不代表目前查看 Run 的執行或有效核准。</p>
     <h3>舊版節點</h3>{task.nodes?.map((n:any)=><button key={n.key} aria-pressed={selected===n.key} onClick={()=>setSelected(n.key)}>{n.label} · {n.status}</button>)}

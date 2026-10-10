@@ -14,6 +14,11 @@ export function OracleHistory({taskId,requestedRunId,onSelectRun,stage}:{taskId:
   const [specs,setSpecs]=useState<any[]>([]),[spec,setSpec]=useState('');
   const [items,setItems]=useState<any[]>([]),[error,setError]=useState('');
   const [loading,setLoading]=useState(true),[refresh,setRefresh]=useState(0);
+  useWorkflowRefresh(`/api/tasks/${encodeURIComponent(taskId)}/runs/${requestedRunId||run}`,async()=>{
+    if(!run||!spec)return;
+    try{const data=await request(`/api/tasks/${encodeURIComponent(taskId)}/runs/${run}/specifications/${spec}/oracles`);setItems(data.items);setError('')}
+    catch(e:any){setError(e.message)}
+  });
   useEffect(()=>{
     let live=true;setLoading(true);setError('');setRuns([]);setRun('');setSpecs([]);setSpec('');setItems([]);
     request(`/api/tasks/${encodeURIComponent(taskId)}/runs`).then(data=>{if(live){

@@ -1,12 +1,14 @@
 import {useEffect, useState} from 'react';
 import {request} from './api';
 import {ExecutionDiagnosis} from './ExecutionDiagnosis';
+import {useWorkflowRefresh} from './useWorkflowRefresh';
 
 export function RunArtifacts({taskId,requestedRunId}:{taskId:string;requestedRunId?:string}) {
   const [runs,setRuns]=useState<any[]>([]),[selected,setSelected]=useState('');
   const [data,setData]=useState<any>(null),[error,setError]=useState(''),[node,setNode]=useState('');
   const [refresh,setRefresh]=useState(0),[pending,setPending]=useState(true);
   const base=`/api/tasks/${encodeURIComponent(taskId)}/runs`;
+  useWorkflowRefresh(`${base}/${requestedRunId||selected}`,()=>setRefresh(n=>n+1));
   useEffect(()=>{let live=true;setError('');request(base).then(r=>{if(live){setRuns(r.runs);if(requestedRunId&&!r.runs.some((x:any)=>x.run_id===requestedRunId)){setSelected('');setError('指定版本不存在；未改用最新版本。');setPending(false);return}setSelected(s=>requestedRunId||(r.runs.some((x:any)=>x.run_id===s)?s:r.runs[0]?.run_id||''));if(!r.runs.length)setPending(false)}}).catch(e=>{if(live){setError(e.message);setPending(false)}});return()=>{live=false}},[base,refresh,requestedRunId]);
   useEffect(()=>{let live=true;setData(null);setNode('');setError('');if(!selected)return;setPending(true);
     request(`${base}/${selected}/artifacts`).then(r=>live&&setData(r)).catch(e=>live&&setError(e.message)).finally(()=>live&&setPending(false));return()=>{live=false}},[base,selected,refresh]);

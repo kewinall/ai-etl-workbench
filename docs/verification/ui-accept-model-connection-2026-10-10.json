@@ -1,0 +1,31 @@
+{
+  "status": "CONNECTED",
+  "response": {
+    "ok": true
+  },
+  "trace": {
+    "provider": "LOCAL_COPILOT",
+    "model": "copilot/gpt-5.4",
+    "usage": {
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "usage_type": "PARTIAL",
+      "usage_source": "copilot_json_events",
+      "ai_credits": 2.6759,
+      "premium_requests": 1,
+      "cli_sessions": 1,
+      "automatic_retries": 0,
+      "tool_execution_count": 0
+    },
+    "run_id": "e9fc7038-476c-4bd8-b843-ed1ba5c79a48",
+    "input_checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "context_checksum": "1bc48b75c33e0ad3442257e40d5a1bf9124bb117da76d50a28e59d0acdafc8c4",
+    "prompt_checksum": "432d6a9502449d13636da991241e1fd32138b8e6fa8cb9b689da798ef8cbac8b",
+    "schema_checksum": "7606656fb55092ddca485900d5615523cd2b8b14c17bb34adce43f04d3a18709",
+    "duration_ms": 6484,
+    "output_checksum": "6bc0da1f42f96fc37b8bd7ed20ba57606d2a0da5cda2b135c7854fbdc985b8a3",
+    "execution_authorized": false
+  },
+  "scope": "MODEL_CONNECTION_ONLY_NOT_TASK_ACCEPTANCE"
+}

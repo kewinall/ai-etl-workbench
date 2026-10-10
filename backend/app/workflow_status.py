@@ -10,7 +10,7 @@ WAITING = {'QUEUED', 'RUNNING', 'DISPATCH_RESERVED', 'CLAIMED', 'SA_QUEUED', 'QA
 
 
 def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
-              hop, qa, qa_approval, release):
+              hop, qa, qa_approval, release, services=None):
     """A projection of authoritative readers, never a new mutable state machine."""
     historical = str(run['run_id']) != str(latest_run_id)
     current = run.get('matches_current') is True and not historical
@@ -97,13 +97,19 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
     if not current:
         enabled, waiting = release.get('release_ready') is True, False
         action = '下載正式交付' if enabled else '檢視歷史與失效核准原因'
+    service_blocker = None
+    if services is not None and current and index == 1 and approved_input and run['state'] in ('QUEUED', 'RUNNING'):
+        control = next((w for w in services.get('workers', []) if w['kind'] == 'CONTROL'), {})
+        if not control.get('can_dispatch'):
+            service_blocker = '控制服務未就緒；請由環境管理者啟動此環境的控制 Worker，再重新核對狀態。'
+            owner, action, enabled, waiting = '環境管理者', '查看服務就緒條件', False, False
     stages = [{'key': key, 'number': i + 1, 'label': LABELS[i],
                'status': 'complete' if completed[i] else 'current' if i == index else 'blocked',
                'can_operate': current and i <= index,
                'blocked_reason': None if completed[i] or (current and i <= index) else
                ('歷史或上游內容已變更；只讀檢視，不沿用核准。' if not current else '先完成前一階段的必要核准與證據。')}
               for i, key in enumerate(KEYS)]
-    category = ('可交付' if release.get('release_ready') else '系統處理中' if waiting else
+    category = ('執行服務未就緒' if service_blocker else '可交付' if release.get('release_ready') else '系統處理中' if waiting else
                 '待核對' if '核對結果' in action or 'UNKNOWN' in code else
                 '需修正' if issues or '問題' in action or '缺口' in action else '待你確認')
     return {'task_id': run['task_id'], 'run_id': str(run['run_id']),
@@ -111,7 +117,10 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
             'historical': historical, 'matches_current': run.get('matches_current') is True,
             'stages': stages, 'current_stage': KEYS[index], 'owner': owner,
             'completed': [LABELS[i] for i, done in enumerate(completed) if done],
-            'next_action': {'label': action, 'stage': KEYS[index], 'enabled': enabled},
+            'next_action': {'label': action, 'stage': KEYS[index], 'enabled': enabled,
+                            'type': 'NAVIGATE', 'operation_enabled': enabled,
+                            'blocked_reason': service_blocker},
+            'services': services, 'service_blocked_reason': service_blocker,
             'waiting': waiting, 'category': category, 'issues': issues,
             'execution_blocked_reason': hop.get('blocked_reason'),
             'source_scope_note': 'JSON／資料表來源的完整執行驗收尚未完成；可檢視規格與候選證據，勿視為全鏈通過。',
@@ -130,6 +139,7 @@ def read(queue, repo, task_id, run_id):
     from .qa_approval import read_approval
     from .release_store import status as release_status
     from .run_api import public_run
+    from .worker_presence import WorkerRegistry
     # Every reader validates Task/Run identity. Do not mask unavailable stores as empty.
     before = queue.detail(task_id, run_id)
     runs = queue.list_runs(task_id)
@@ -141,7 +151,8 @@ def read(queue, repo, task_id, run_id):
         sa=SAJournal(queue).read(task_id, run_id), sa_approval=sa_read(queue, task_id, run_id),
         developer=developer_read(queue, task_id, run_id), specifications=specifications,
         hop=hop_read(queue, task_id, run_id), qa=qa,
-        qa_approval=read_approval(queue, task_id, run_id), release=release_status(queue, repo, task_id, run_id))
+        qa_approval=read_approval(queue, task_id, run_id), release=release_status(queue, repo, task_id, run_id),
+        services=WorkerRegistry(queue).snapshot())
     after = queue.detail(task_id, run_id)
     if public_run(before) != public_run(after) or str(queue.list_runs(task_id)[0]['run_id']) != str(runs[0]['run_id']):
         raise RunConflict('WORKFLOW_READ_CHANGED')

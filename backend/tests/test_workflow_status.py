@@ -23,6 +23,19 @@ def test_no_approval_never_implies_execution_or_completion():
     assert not status['stages'][3]['can_operate']
 
 
+def test_queued_without_control_worker_is_not_processing():
+    status = case(run={'approval': {'decision': 'APPROVE'}}, services={'workers': []})
+    assert status['category'] == '執行服務未就緒'
+    assert not status['waiting']
+    assert not status['next_action']['operation_enabled']
+    assert status['next_action']['type'] == 'NAVIGATE'
+    assert '控制 Worker' in status['service_blocked_reason']
+    online = case(run={'approval': {'decision': 'APPROVE'}},
+                  services={'workers': [{'kind': 'CONTROL', 'can_dispatch': True}]})
+    assert online['waiting']
+    assert online['category'] == '系統處理中'
+
+
 def test_missing_requirements_returns_to_original_input():
     status = case(run={'state': 'NEEDS_REVIEW', 'approval': {'decision': 'APPROVE'},
                       'gate_result': {'status': 'NEEDS_INPUT', 'issues': [{'message': '缺目標', 'field_path': 'target.table'}]}})
