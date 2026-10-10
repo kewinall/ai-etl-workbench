@@ -212,3 +212,15 @@ for (const [path,field] of [['requirements_v1.write_mode','write_mode'],['requir
  await expect(page.getByRole('button',{name:'建立準備版本',exact:true})).toBeEnabled();
  await page.goto(base+'/requirements/'+old);await expect(page.getByRole('button',{name:'建立準備版本',exact:true})).toBeDisabled();
 });
+
+ test('設計自動顯示唯讀命名建議，等待人工確認，不保存或授權模型',async({page})=>{
+ const f=await fixture(page,{stage:'design'});let previews=0;
+ await page.route('**/naming-contract/suggestion',route=>{previews++;return route.fulfill({json:{contract:{status:'DRAFT',columns:[{source_name:'source.0.id',english_name:'id',vertica_type:'BIGINT',confidence:1,reason:'deterministic_normalizer'}]}}})});
+ await page.goto(base+'/design/'+current);
+ await expect(page.getByLabel('命名英文 1',{exact:true})).toHaveValue('id');
+ await expect(page.getByRole('button',{name:'確認並保存命名版本',exact:true})).toBeDisabled();
+ await page.getByLabel('命名英文 1',{exact:true}).fill('left_id');
+ await page.getByRole('button',{name:'重新核對狀態',exact:true}).click();
+ await expect(page.getByLabel('命名英文 1',{exact:true})).toHaveValue('left_id');
+ expect(previews).toBe(1);expect(f.counts().posts).toBe(0);
+});

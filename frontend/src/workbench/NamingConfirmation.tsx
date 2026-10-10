@@ -8,7 +8,7 @@ export function NamingConfirmation({taskId,runId,historical,editable,sourceOrder
  const [columns,setColumns]=useState<any[]>([]),[saved,setSaved]=useState<any>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[confirmed,setConfirmed]=useState(false),[editing,setEditing]=useState(false);
  const readBase=historical&&runId?`/api/tasks/${encodeURIComponent(taskId)}/runs/${runId}/specifications`:base;
  const load=async()=>{const v=await request(readBase);const contract=historical?v.items[0]?.bound_naming:v.contract;setSaved(contract);setColumns(contract?.contract_json?.columns||[])};
- useEffect(()=>{let live=true;request(readBase).then(v=>{if(live){const contract=historical?v.items[0]?.bound_naming:v.contract;setSaved(contract);setColumns(contract?.contract_json?.columns||[])}}).catch(e=>{if(live)setError(e.message)});return()=>{live=false}},[readBase,historical]);
+ useEffect(()=>{let live=true;request(readBase).then(async v=>{if(!live)return;const contract=historical?v.items[0]?.bound_naming:v.contract;setSaved(contract);setColumns(contract?.contract_json?.columns||[]);if(!contract&&!historical&&editable){const suggestion=await request(`${base}/suggestion`);if(live&&suggestion.contract?.columns){setColumns(suggestion.contract.columns);setEditing(true);setConfirmed(false)}}}).catch(e=>{if(live)setError(e.message)});return()=>{live=false}},[readBase,historical]);
  useDraftGuard(editing,busy,setError);
  useWorkflowRefresh(`/api/tasks/${encodeURIComponent(taskId)}/runs/${runId||''}`,load,editing||busy);
  async function act(work:()=>Promise<void>){setBusy(true);setError('');try{await work()}catch(e){setError(e instanceof Error?e.message:'命名操作失敗')}finally{setBusy(false)}}
@@ -22,7 +22,7 @@ export function NamingConfirmation({taskId,runId,historical,editable,sourceOrder
   {!editing&&<><button disabled={busy||!editable} onClick={()=>act(async()=>{const v=await request(`${base}/suggest`,{method:'POST'});setColumns(v.contract.columns);setEditing(true);setConfirmed(false)})}>取得來源命名建議</button>
    {saved&&<button disabled={busy||!editable} onClick={()=>{setColumns(saved.contract_json.columns);setEditing(true);setConfirmed(false)}}>修改並建立命名新版</button>}
    {columns.map((c,i)=><p key={i}>{c.source_name} → {c.english_name} · {c.vertica_type}</p>)}</>}
-  {editing&&<><div>{columns.map((c,i)=><fieldset key={i}><legend>命名欄位 {i+1}</legend>
+  {editing&&<><p role="status">命名建議尚未確認；由既有規則產生，未呼叫模型、未保存核准。請核對後另行確認。</p><div>{columns.map((c,i)=><fieldset key={i}><legend>命名欄位 {i+1}</legend>
    <label>來源或聚合代號<input aria-label={`命名來源 ${i+1}`} value={c.source_name} onChange={e=>update(i,'source_name',e.target.value)}/></label>
    <label>英文名稱<input aria-label={`命名英文 ${i+1}`} value={c.english_name} onChange={e=>update(i,'english_name',e.target.value)}/></label>
    <label>Vertica 型別<input aria-label={`命名型別 ${i+1}`} value={c.vertica_type} onChange={e=>update(i,'vertica_type',e.target.value)}/></label>

@@ -428,6 +428,7 @@ def revise_requirements(task_id:str,data:RequirementSupplement):
  repo.update_source_config(task_id,config);repo.resolve_requirement_issues(task_id);repo.reset_task(task_id)
  return {'status':'CREATED','task_id':task_id,'resume_from':'REQUIREMENT_GATE'}
 @app.post('/api/tasks/{task_id}/naming-contract/suggest')
+@app.get('/api/tasks/{task_id}/naming-contract/suggestion')
 def suggest_naming_contract(task_id:str):
  task=repo.get_task(task_id)
  if not task:raise HTTPException(404,'Task not found')

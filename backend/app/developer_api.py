@@ -24,11 +24,19 @@ def read(queue, task_id, run_id):
         run = conn.execute('SELECT * FROM platform.task_run WHERE task_id=%s AND run_id=%s', (task_id, run_id)).fetchone()
         if not run: raise ValueError('RUN_NOT_FOUND')
         row = conn.execute("SELECT * FROM platform.agent_invocation WHERE task_id=%s AND run_id=%s AND role='pilot_developer'", (task_id, run_id)).fetchone()
+        blocked_reason = None
         try:
             captured = load_context(queue, conn, task_id, run_id)
             context = captured['context']
-        except ValueError:
+        except ValueError as error:
             context = None
+            blocked_reason = {
+                'DEVELOPER_NAMING_CONFIRMATION_REQUIRED': '請先核對並確認本版命名對照，才能授權 Developer 設計。',
+                'DEVELOPER_SA_APPROVAL_REQUIRED': '請先人工確認本版 SA 需求審查結果。',
+                'SA_HANDOFF_REVIEW_REQUIRED': '請先完成本版 SA 審查及人工確認。',
+                'SA_HANDOFF_NOT_ELIGIBLE': '本版需求或 SA 證據尚未通過，請返回需求審查核對。',
+                'SA_HANDOFF_CONTEXT_CHANGED': '上游版本已變更，請重新核對需求與 SA 核准。',
+            }.get(str(error), '本版設計前置證據無法確認，請重新核對需求、SA 與命名版本。')
         settings = run['settings_snapshot']
         model = settings.get('model_routes', {}).get('etl_specification')
         native = settings['ai']['provider_type'] == 'LOCAL_COPILOT' and bool(model and model.startswith('copilot/'))
@@ -52,6 +60,7 @@ def read(queue, task_id, run_id):
             record.update(error_code=output.get('error_code'), failure_stage=output.get('failure_stage'))
         material = developer_material(context or {'version': 1})
         return {'invocation':record, 'context':context, 'model':model,
+                'blocked_reason':blocked_reason,
                 'matches_current': bool(context and (not row or context == row['input_json']['context'])),
                 'eligible': bool(context and native and not row),
                 'dispatch_enabled': os.getenv('WORKBENCH_DEVELOPER_DISPATCH_ENABLED') == 'true',

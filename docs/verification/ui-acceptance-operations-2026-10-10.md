@@ -62,3 +62,11 @@ Join 第②版由使用者確認輸入並保存 SA 授權後，發現專案Task�
 CSV／Excel的原準備版本 input相同，但 credential_versions 已變更而失效，沒有核准／写入。修正唯讀保護中取消與建立新快照的資格判定，經正常網站保留並取消舊版、建立新版本：CSV 71c7b365-7770-4de4-b2f0-70c0ad28adf6；Excel 7bf591fd-7409-4d1a-89ba-f852c0555c3d。新版本matches_current=true、等待輸入確認；不沿用舊核准，也未呼叫這兩案例模型。歷史／原始證據來源／過期狀態仍不得取消或建立新版本。證據 ui-accept-fresh-inputs-2026-10-10.json。
 
 Worker真實Task清單形狀回歸3 passed（0.14s）；前端build PASS。全鏈仍未通過，仍需后續命名／設計、固定答案、原寫入、QA、隔離候選包及交付核准。
+
+## 接續：設計階段命名預覽
+
+使用者已確認 SA 結果，Join 進入第③階段；目前未有命名契約，所以 Developer 尚未派發。新增相容唯讀 GET naming-contract/suggestion，沿用 deterministic naming_suggestions，不呼叫模型、不建立契約或核准；設計頁初次直接显示未確認建議，人工核對後才可保存命名，再另行授權 Developer。修改中的建議由草稿離開保護及共用刷新守衛保留，預覽不能算命名通過。Developer API/畫面明示缺命名、SA未確認或上游失效等原因；不暴露原始例外。
+
+真實四欄預覽：source.0.id → id BIGINT、source.0.left_value → left_value VARCHAR(32)、source.1.id → id_2 BIGINT、source.1.right_value → right_value VARCHAR(32)。建議人工將左右id改為left_id／right_id，保留技術來源識別，便於固定答案绑定。若使用id／id_2亦須依核准命名绑定固定答案，不能只為符合結果而改答案。
+
+backend設計契約／Gateway／阻擋原因18 PASS（0.70s），browser23 PASS／1 preview-only skipped（35.3s），build PASS；實際5197頁面4欄預覽、未確認、API寫入0；Run updated_at／命名契約／Developer invocation／write_started未變。證據 ui-accept-design-preview-2026-10-10.json。必要人工點：核對並保存命名，再授權 Developer 一次模型呼叫；仍未執行ETL或完整交付。

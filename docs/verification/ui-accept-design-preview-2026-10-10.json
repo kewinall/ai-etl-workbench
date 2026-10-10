@@ -1,0 +1,40 @@
+{
+  "scope": "DETERMINISTIC_NAMING_PREVIEW_ONLY_NOT_APPROVAL_OR_MODEL",
+  "task_id": "TASK-20261010-0019",
+  "run_id": "714fad5b-b564-40bd-a60d-cb61134656a0",
+  "columns": [
+    {
+      "source_name": "source.0.id",
+      "english_name": "id",
+      "vertica_type": "BIGINT",
+      "confidence": 1.0,
+      "reason": "deterministic_normalizer"
+    },
+    {
+      "source_name": "source.0.left_value",
+      "english_name": "left_value",
+      "vertica_type": "VARCHAR(32)",
+      "confidence": 1.0,
+      "reason": "deterministic_normalizer"
+    },
+    {
+      "source_name": "source.1.id",
+      "english_name": "id_2",
+      "vertica_type": "BIGINT",
+      "confidence": 1.0,
+      "reason": "deterministic_normalizer"
+    },
+    {
+      "source_name": "source.1.right_value",
+      "english_name": "right_value",
+      "vertica_type": "VARCHAR(32)",
+      "confidence": 1.0,
+      "reason": "deterministic_normalizer"
+    }
+  ],
+  "naming_contract": null,
+  "developer_invocation": null,
+  "developer_blocked_reason": "請先核對並確認本版命名對照，才能授權 Developer 設計。",
+  "run_unchanged": true,
+  "write_started": false
+}
