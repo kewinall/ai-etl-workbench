@@ -1,0 +1,30 @@
+{
+  "project_id": "346e9419-4b0e-4ba7-ad29-1756ca7da833",
+  "cases": [
+    {
+      "key": "csv",
+      "task_id": "TASK-20261010-0017",
+      "run_id": "491aad97-c2f5-4243-b061-0dcac2e6b99d",
+      "target": "ai_sample.ui_accept_csv_20261010",
+      "url": "http://127.0.0.1:5197/#/projects/346e9419-4b0e-4ba7-ad29-1756ca7da833/tasks/TASK-20261010-0017/requirements/491aad97-c2f5-4243-b061-0dcac2e6b99d",
+      "status": "AWAITING_HUMAN_INPUT_APPROVAL"
+    },
+    {
+      "key": "excel",
+      "task_id": "TASK-20261010-0018",
+      "run_id": "a97606b5-78a3-426a-b74c-e026f0614be6",
+      "target": "ai_sample.ui_accept_excel_20261010",
+      "url": "http://127.0.0.1:5197/#/projects/346e9419-4b0e-4ba7-ad29-1756ca7da833/tasks/TASK-20261010-0018/requirements/a97606b5-78a3-426a-b74c-e026f0614be6",
+      "status": "AWAITING_HUMAN_INPUT_APPROVAL"
+    },
+    {
+      "key": "join",
+      "task_id": "TASK-20261010-0019",
+      "run_id": "5dc43645-41ae-4d1f-a025-dbb73418e631",
+      "target": "ai_sample.ui_accept_join_20261010",
+      "url": "http://127.0.0.1:5197/#/projects/346e9419-4b0e-4ba7-ad29-1756ca7da833/tasks/TASK-20261010-0019/requirements/5dc43645-41ae-4d1f-a025-dbb73418e631",
+      "status": "AWAITING_HUMAN_INPUT_APPROVAL"
+    }
+  ],
+  "full_chain_accepted": false
+}

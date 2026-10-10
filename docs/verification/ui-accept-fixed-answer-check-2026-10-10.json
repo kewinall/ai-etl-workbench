@@ -1,0 +1,9 @@
+{
+  "scope": "FIXTURE_FIXED_ANSWER_CHECK_ONLY_NOT_HOP_OR_TASK_ACCEPTANCE",
+  "csv_rows": 6,
+  "excel_rows_excluding_blank": 6,
+  "csv_excel_expected_groups": 2,
+  "join_expected_rows": 5,
+  "expected_sha256": "c31a5140551ccdab58185fc64609fab77e677a7cae9f4ab587a688340db5b05a",
+  "passed": true
+}

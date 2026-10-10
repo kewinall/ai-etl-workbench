@@ -1,0 +1,243 @@
+{
+  "scope": "READ_ONLY_NEW_CASE_PREPARATION_NOT_EXECUTION",
+  "cases": [
+    {
+      "task_id": "TASK-20261010-0017",
+      "run_id": "491aad97-c2f5-4243-b061-0dcac2e6b99d",
+      "state": "QUEUED",
+      "approval": false,
+      "write_started": false,
+      "model_invocations": {
+        "sa": null,
+        "developer": null,
+        "qa": null
+      },
+      "current_stage": "requirements",
+      "next_action": {
+        "label": "檢視歷史與失效核准原因",
+        "stage": "requirements",
+        "enabled": false,
+        "type": "NAVIGATE",
+        "operation_enabled": false,
+        "blocked_reason": null
+      },
+      "services": {
+        "workers": [
+          {
+            "kind": "CONTROL",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:22.934854+00:00"
+          },
+          {
+            "kind": "SA_LITELLM",
+            "status": "NOT_STARTED",
+            "active_instances": 0,
+            "can_dispatch": false,
+            "last_seen": null
+          },
+          {
+            "kind": "SA_COPILOT",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:16.485946+00:00"
+          },
+          {
+            "kind": "DEVELOPER_COPILOT",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:16.606871+00:00"
+          },
+          {
+            "kind": "QA_COPILOT",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:17.653499+00:00"
+          },
+          {
+            "kind": "HOP",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:18.480062+00:00"
+          },
+          {
+            "kind": "PORTABILITY",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:19.015169+00:00"
+          }
+        ],
+        "server_time": "2026-10-10T11:56:24.080684+00:00",
+        "expires_after_seconds": 45,
+        "scope": "RECENT_HEARTBEAT_NOT_MODEL_OR_ETL_HEALTH"
+      }
+    },
+    {
+      "task_id": "TASK-20261010-0018",
+      "run_id": "a97606b5-78a3-426a-b74c-e026f0614be6",
+      "state": "QUEUED",
+      "approval": false,
+      "write_started": false,
+      "model_invocations": {
+        "sa": null,
+        "developer": null,
+        "qa": null
+      },
+      "current_stage": "requirements",
+      "next_action": {
+        "label": "檢視歷史與失效核准原因",
+        "stage": "requirements",
+        "enabled": false,
+        "type": "NAVIGATE",
+        "operation_enabled": false,
+        "blocked_reason": null
+      },
+      "services": {
+        "workers": [
+          {
+            "kind": "CONTROL",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:22.934854+00:00"
+          },
+          {
+            "kind": "SA_LITELLM",
+            "status": "NOT_STARTED",
+            "active_instances": 0,
+            "can_dispatch": false,
+            "last_seen": null
+          },
+          {
+            "kind": "SA_COPILOT",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:16.485946+00:00"
+          },
+          {
+            "kind": "DEVELOPER_COPILOT",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:16.606871+00:00"
+          },
+          {
+            "kind": "QA_COPILOT",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:17.653499+00:00"
+          },
+          {
+            "kind": "HOP",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:18.480062+00:00"
+          },
+          {
+            "kind": "PORTABILITY",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:19.015169+00:00"
+          }
+        ],
+        "server_time": "2026-10-10T11:56:24.250932+00:00",
+        "expires_after_seconds": 45,
+        "scope": "RECENT_HEARTBEAT_NOT_MODEL_OR_ETL_HEALTH"
+      }
+    },
+    {
+      "task_id": "TASK-20261010-0019",
+      "run_id": "5dc43645-41ae-4d1f-a025-dbb73418e631",
+      "state": "QUEUED",
+      "approval": false,
+      "write_started": false,
+      "model_invocations": {
+        "sa": null,
+        "developer": null,
+        "qa": null
+      },
+      "current_stage": "requirements",
+      "next_action": {
+        "label": "確認需求版本",
+        "stage": "requirements",
+        "enabled": true,
+        "type": "NAVIGATE",
+        "operation_enabled": true,
+        "blocked_reason": null
+      },
+      "services": {
+        "workers": [
+          {
+            "kind": "CONTROL",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:22.934854+00:00"
+          },
+          {
+            "kind": "SA_LITELLM",
+            "status": "NOT_STARTED",
+            "active_instances": 0,
+            "can_dispatch": false,
+            "last_seen": null
+          },
+          {
+            "kind": "SA_COPILOT",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:16.485946+00:00"
+          },
+          {
+            "kind": "DEVELOPER_COPILOT",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:16.606871+00:00"
+          },
+          {
+            "kind": "QA_COPILOT",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:17.653499+00:00"
+          },
+          {
+            "kind": "HOP",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:18.480062+00:00"
+          },
+          {
+            "kind": "PORTABILITY",
+            "status": "ONLINE",
+            "active_instances": 1,
+            "can_dispatch": true,
+            "last_seen": "2026-10-10T11:56:19.015169+00:00"
+          }
+        ],
+        "server_time": "2026-10-10T11:56:24.482157+00:00",
+        "expires_after_seconds": 45,
+        "scope": "RECENT_HEARTBEAT_NOT_MODEL_OR_ETL_HEALTH"
+      }
+    }
+  ],
+  "fixture_sha256": {
+    "expected.json": "c31a5140551ccdab58185fc64609fab77e677a7cae9f4ab587a688340db5b05a",
+    "filter.csv": "aa83b9f0743456477b5fe3381b8835dd18000b4bb0d3b91e8809ffcaccf8e20e",
+    "filter.xlsx": "ab88251bef37709b244200867447e489364d05534399bf471ca499adbc9c2fa5",
+    "left.csv": "7b46c751fbae428f30853fe971aa0570e33d395874c16897367dccdf73fa0875",
+    "right.csv": "335ad6273351c40479e3e97307a145d4cf1b2e5a10721b30f0189c4dd0b46ca8"
+  }
+}

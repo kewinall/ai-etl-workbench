@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "purpose": "Fixed before any acceptance Task model or Hop execution; bind physical column names only after approved specification.",
+  "csv_and_excel": {
+    "filter": "amount > 100; NULL does not pass",
+    "group_by": ["category"],
+    "aggregates": ["SUM(amount)", "COUNT_ROWS"],
+    "rows": [
+      {"category": "A", "sum_amount": "150.25", "count_rows": 1},
+      {"category": "B", "sum_amount": "500.50", "count_rows": 2}
+    ],
+    "excel": {"sheet": "明細", "header_row": 2, "blank_rows": "SKIP", "empty_amount": "NULL"}
+  },
+  "join": {
+    "type": "LEFT", "keys": ["left.id", "right.id"],
+    "null_keys": "NEVER_MATCH", "duplicate_keys": "EXPAND",
+    "row_count": 5,
+    "rows": [
+      {"left_id": 1, "left_value": "L1", "right_id": 1, "right_value": "R1a"},
+      {"left_id": 1, "left_value": "L1", "right_id": 1, "right_value": "R1b"},
+      {"left_id": 2, "left_value": "L2", "right_id": 2, "right_value": "R2"},
+      {"left_id": 3, "left_value": "L3", "right_id": null, "right_value": null},
+      {"left_id": null, "left_value": "LNULL", "right_id": null, "right_value": null}
+    ]
+  },
+  "comparison": "Compare unordered multisets with exact decimal values and explicit NULLs; never derive expected values from observed output.",
+  "full_chain_accepted": false
+}
