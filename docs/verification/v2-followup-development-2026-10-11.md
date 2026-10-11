@@ -112,3 +112,11 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - failed-revision 原為 mock 測試但被既有導航環境 skip 隱藏，且仍走過期需求頁診斷／直接提交。改独立合成 fixture，真正結果頁只一份診斷、上方明確修正版入口、預覽差異與確認、新目標、原 checksum、父資料保留及子核准清空；1 passed 2.5 秒。此項現在預設必跑，不代表真實故障再執行。
 - Copilot standalone 測試更新需求審查與共用刷新；啟動前要求 execution_enabled=false、明確隔離容器與 CONTROL 相同、明確已連線檢查的模型，拒絕 5183／5197 容器；不再使用預設生產容器或硬編碼模型。CONTROL 只消費新測試 Project 唯一 Run。測試語法與探索確認，尚未執行真實模型，不在三新案例之外新增實際模型用量。
 - 本批 source build PASS；完整預設瀏覽器最終 105 passed / 36 skipped / 0 failed（2.9 分鐘），runtime-temp/v2-followup-recovery-default-browser；新增必跑失敗修訂為合成 API 工程檢查，skip 減少不代表多一次真實執行。後端未變更，2132 passed / 139 skipped 沿用前批。三新真實案例仍待 5197 受控部署與逐階段完整驗收；WS-0007 不標完成。
+
+## 5197 受控部署與既有正式案例回歸
+
+- 工程 source a7a666f 依既有 5197 驗收範圍部署；先保存五個既有正式 Release（5197 三案＋5183 固定唯讀 CSV/Excel）的 ZIP SHA、位元組、完整 Run 雜湊、更新時間及 WRITE_STARTED=1 基準。
+- 使用既有 stage-guidance + ui-acceptance compose，UI_ACCEPT_PROJECT_ID 固定原隔離驗收專案，只 up --no-deps --build api web。沒有 migrate、重啟控制 Worker、變更資料庫/volume、部署 5183 或重跑 ETL；Compose 成功 exit 0，API healthy。
+- 前端實際 index-BppNKZAm.js，全部 deployed backend/app Python source 正規化 LF 指紋與本機相同。八個受保護容器 ID/image/StartedAt 完全相等：5197 PostgreSQL/control/evidence/portable DB，5183 api/web/PostgreSQL/control。
+- 部署後五個原 Release checksum、bytes、Run hash、updated_at 及 WRITE_STARTED 完全不變。真正部署的 5197 三案七階段、三種寬度、键盤、下載及 SDM 歷史 GET-only 回歸最終 10 passed（24.6 秒），非 GET 攔截且無寫入。證據 docs/verification/v2-followup-5197-deploy-readback-2026-10-11.json，私有 runtime-temp/v2-followup-5197-deploy。
+- 5197 現在 source a7a666f；此部署回歸僅為既有資料只讀驗證，新的 CSV／Excel／Join 完整執行仍未完成，不能用此回歸替代。下一步以新 Task、新 ui_accept_* 目標及執行前固定答案，經正常網站建立與原核准，逐階段保存新模型、Hop、QA、可攜及 ZIP 證據。
