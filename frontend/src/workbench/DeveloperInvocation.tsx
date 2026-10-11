@@ -17,8 +17,8 @@ export function DeveloperInvocation({taskId, runId}: {taskId: string; runId: str
     request(base).then(value => {if (live) setData(value)}).catch(err => {if (live) setError(err.message)});
     return () => {live = false};
   }, [base]);
-  async function load() {
-    setBusy(true); setError(''); setData(null); setConfirmed(false);
+  async function load(background=false) {
+    setBusy(true); if(!background)setError(''); setData(null); setConfirmed(false);
     try {setData(await request(base))} catch (err: any) {setError(err.message)} finally {setBusy(false)}
   }
   async function authorize() {
@@ -31,15 +31,15 @@ export function DeveloperInvocation({taskId, runId}: {taskId: string; runId: str
     } catch (err: any) {setData(null); setConfirmed(false); setError(err.message)}
     finally {setBusy(false)}
   }
-  useWorkflowRefresh(base,load,busy);
+  useWorkflowRefresh(base,()=>load(true),busy);
   const item = data?.invocation;
   return <section aria-label="Developer 設計協作">
     <h4>Developer 設計協作</h4>
     <p>根據已人工確認的 SA 建議與命名契約提出規格。程式驗證及保存後，仍需另行核准規格；不會自動執行 ETL。</p>
-    {(!managed||error)&&<button disabled={busy} onClick={load}>{managed?'重試讀取 Developer 狀態':'重新載入 Developer 狀態'}</button>}
+    {(!managed||error)&&<button disabled={busy} onClick={()=>load()}>{managed?'重試讀取 Developer 狀態':'重新載入 Developer 狀態'}</button>}
     {serviceBlocker&&<p role="status">{serviceBlocker}</p>}
     {error && <p role="alert">{error}。未重新送出模型請求，請重新核對。</p>}
-    {data && !item && <>
+    {data && !item && !error && <>
       {!data.eligible ? <p>{data.blocked_reason||'尚不符合派發條件：請先確認 SA 建議與命名契約，並使用已設定的本機 Copilot 路由。'}</p>
         : !data.dispatch_enabled ? <p>部署尚未啟用 Developer 派發，不會呼叫模型。</p> : <>
           <p>模型：{data.model}。一次 Copilot CLI，不自動重試、換模型或使用工具；無輸出 Token 硬上限，使用已登入帳號額度。本機 Developer Worker 必須另行執行，授權不代表已上線。</p>
@@ -58,7 +58,7 @@ export function DeveloperInvocation({taskId, runId}: {taskId: string; runId: str
         診斷代碼：{item.error_code || '未記錄'}。這不是可執行規格；不會重播此呼叫。
       </p>}
       {item.proposal && <><p>{item.proposal.summary}</p><p>引用證據：{item.proposal.evidence_ids?.join('、')}</p></>}
-      {item.specification && <p>規格版本 {item.specification.version} 已保存。請在下方「規格」區重新載入並檢視後核准。</p>}
+      {item.specification && <p>規格版本 {item.specification.version} 已保存。請在下方「規格」區檢視後核准；若資料未更新，可使用上方「重新核對狀態」。</p>}
       <p>輸出 Token：{item.usage?.output_tokens ?? '不可用'}；AI credits：{item.usage?.ai_credits ?? '不可用'}；Premium requests：{item.usage?.premium_requests ?? '不可用'}。缺值不當作零，不估算費用。</p>
     </>}
   </section>;

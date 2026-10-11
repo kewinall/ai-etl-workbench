@@ -1,14 +1,14 @@
 {
   "date": "2026-10-11",
-  "scope": "Static conditional test gates; entries are files, not the number of skipped parameter instances.",
+  "scope": "Initial static conditional test inventory, including entries subsequently made unconditional. Entries are files, not skipped parameter instances.",
   "default_regression": {
     "backend": {
       "passed": 2132,
       "skipped": 139
     },
     "browser": {
-      "passed": 102,
-      "skipped": 39
+      "passed": 104,
+      "skipped": 37
     },
     "scope": "Isolated deterministic engineering including oracle draft regression; real execution cases are separate."
   },
@@ -87,19 +87,17 @@
     {
       "file": "frontend/tests/developer-invocation.spec.ts",
       "kind": "browser",
-      "gates": [
+      "gates": [],
+      "environment_keys": [],
+      "this_followup_execution": "PASS: unconditional synthetic browser fixture; no provider/ETL/real settings writes. Focused pair 2 passed / 3.2s.",
+      "legacy_selectors_present": false,
+      "previous_gates": [
         {
           "line": 5,
           "condition": "test.skip(!task||!run||!project, 'Requires existing navigation');"
         }
       ],
-      "environment_keys": [
-        "WORKBENCH_BOUND_RESULT_TASK",
-        "WORKBENCH_BOUND_RESULT_RUN",
-        "WORKBENCH_BOUND_RESULT_PROJECT"
-      ],
-      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
-      "legacy_selectors_present": false
+      "obsolete_selector_review": "Removed existing-navigation skip; current design/quality/confirm stages and shared refresh; original authorization/single-post/conflict/layout assertions retained."
     },
     {
       "file": "frontend/tests/excel-contract-live.spec.ts",
@@ -381,19 +379,17 @@
     {
       "file": "frontend/tests/qa-hop-authorization.spec.ts",
       "kind": "browser",
-      "gates": [
+      "gates": [],
+      "environment_keys": [],
+      "this_followup_execution": "PASS: unconditional synthetic browser fixture; no provider/ETL/real settings writes. Focused pair 2 passed / 3.2s.",
+      "legacy_selectors_present": false,
+      "previous_gates": [
         {
           "line": 5,
           "condition": "test.skip(!task||!run||!project,'Requires existing navigation');"
         }
       ],
-      "environment_keys": [
-        "WORKBENCH_BOUND_RESULT_TASK",
-        "WORKBENCH_BOUND_RESULT_RUN",
-        "WORKBENCH_BOUND_RESULT_PROJECT"
-      ],
-      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
-      "legacy_selectors_present": true
+      "obsolete_selector_review": "Removed existing-navigation skip; current design/quality/confirm stages and shared refresh; original authorization/single-post/conflict/layout assertions retained."
     },
     {
       "file": "frontend/tests/qa-review-history.spec.ts",

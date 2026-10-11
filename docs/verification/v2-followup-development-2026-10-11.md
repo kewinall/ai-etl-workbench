@@ -94,3 +94,11 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - 正式三案唯讀最終 10 passed（42 秒）：9 個案例／寬度組合加 opt-in proof。路由攔截非 GET/HEAD/OPTIONS，before/after Run 與 Release 完整讀回相同，每案 WRITE_STARTED 仍為 1，ZIP 指紋與保存紀錄相同；零瀏覽器寫入。證據 runtime-temp/v2-followup-native-readonly-final。這是既有真實案例回歸，不能替代本輪新三案七階段執行驗收。
 - 本批完整後端 2132 passed / 139 skipped / 0 failed（60.99 秒），frontend build PASS；完整預設瀏覽器 102 passed / 39 skipped / 0 failed（2.9 分鐘），輸出 runtime-temp/v2-followup-upload-default-browser。skip 仍不算 PASS。
 - 尚待：Developer／QA-Hop／Copilot／失敗歷史等 opt-in 舊入口逐項修訂、適用異常分支與新的三案真實七階段。5197 API/web 未部署本批，5183 未變，沒有模型／Hop／Vertica 寫入／QA／正式交付建立。原 Join 未提交修改保持原 SHA256。
+
+## 第三段第三批：授權操作測試常態化
+
+- Developer 與 QA-Hop 兩項原本是合成 API 測試，卻要求既有真實導航環境才執行，預設一直 skip。新增獨立 authorizationWorkspace fixture，所有 API 讀取合成、未預期寫入直接攔截，沒有真實 provider 或資料庫副作用；資格只是前端測試輸入，不代表後端通過。
+- 改走設計／品質／執行確認與共用刷新，保留原確認 checkbox、授權內容 binding、單次 POST、保存讀回、409、DDL、queued 隱藏授權及 390px 斷言。移除兩項不必要 opt-in，未移除真正 provider 測試的授權要求。
+- 首次實跑 1 passed / 1 failed：Developer 409 訊息被 changed 事件引發的背景 GET 清除，重新顯示授權。修正背景 GET 保留錯誤，錯誤存在時不显示新授權；明確「重試讀取 Developer 狀態」讀回後才清除錯誤。新測試確認共用刷新仍保留衝突、checkbox 不出現、POST 仍只有成功與衝突兩次；明確 GET 恢復不送模型請求。
+- 最終 focused 2 passed（3.2 秒），build PASS（原 bundle-size warning）。Developer 保存文案改為檢視下方規格，資料未更新使用共用刷新，不再要求已移除的局部刷新入口。
+- 本批不變更後端，後端有效結果沿用第二批 2132 passed / 139 skipped；完整預設瀏覽器最終 104 passed / 37 skipped / 0 failed（2.8 分鐘），證據 runtime-temp/v2-followup-authorization-default-browser。減少的兩項 skip 是現在每輪必跑的合成授權測試，並非真實 provider 驗收。Copilot 真實模型與 recovery-history 真實失敗歷史舊入口仍待修訂／實測；新三案完整執行未完成。
