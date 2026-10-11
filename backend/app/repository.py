@@ -14,6 +14,9 @@ STEPS=[('router','Rule Router'),('profiler','Source Profiler'),('sa','Requiremen
 class TaskCreationConflict(ValueError):
  pass
 
+class TaskVersionConflict(ValueError):
+ pass
+
 class SettingsConflict(ValueError):
  pass
 
@@ -104,6 +107,8 @@ class PostgresRepository:
   target=(data.get('target_type') or 'VERTICA').upper()
   if target not in ('POSTGRESQL','VERTICA'):raise ValueError('Unsupported target database')
   with self.conn() as c:
+   c.execute('SELECT task_id FROM platform.task WHERE task_id=%s FOR UPDATE',(task_id,)).fetchone()
+   if c.execute('SELECT 1 FROM platform.task_run WHERE task_id=%s LIMIT 1',(task_id,)).fetchone():raise TaskVersionConflict('TASK_VERSIONED_EDIT_REQUIRED')
    target_config={**(data.get('target_config') or {}),'type':target,'schema':data['target_schema'],'table':data['target_table']}
    c.execute("update platform.task set task_name=%s,task_type=%s,task_category=%s,requirement_text=%s,source_type=%s,source_config=%s,target_type=%s,target_config=%s,model_provider=%s,error_test_config=%s,error_test_result=null,updated_at=now() where task_id=%s",(data['name'],operation,data.get('category','STAGE'),data['requirement'],source,json.dumps(source_config),target,json.dumps(target_config),data['model'],json.dumps(data.get('error_test_config') or {}),task_id))
    c.execute("insert into platform.task_event(task_id,level,node_key,message,detail) values(%s,'INFO',%s,'Task settings updated before rerun',%s)",(task_id,data['operation'].lower() if data['operation'].lower() in [s[0] for s in STEPS] else 'router',json.dumps({'source_type':source,'target':{'type':target,'schema':data['target_schema'],'table':data['target_table']},'model':data['model']})))

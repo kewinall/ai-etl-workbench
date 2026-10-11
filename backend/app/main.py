@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-from .repository import PostgresRepository, TaskCreationConflict, SettingsConflict
+from .repository import PostgresRepository, TaskCreationConflict, SettingsConflict, TaskVersionConflict
 from .project_api import create_project_router
 from .execution_settings import resolve_settings
 from .ai_profile_api import create_ai_profile_router
@@ -19,15 +19,14 @@ from .oracle_api import create_oracle_router
 from .naming_input import NamingContractInput
 from .runtime_api import create_runtime_router
 from .run_queue import RunQueue
-from .execution import build_hpl,execute_hop,persist_artifact,persist_validation,semantic_validate,static_validate
 from .etl_analyzer import AnalyzerError, analyze_file, discover_files, resolve_source
-from .requirement_engine import canonicalize, copilot_prompt, plan, requirement_gate
+from .requirement_engine import copilot_prompt
 from .source_profiler import profile_task
-from .sample_data import ensure_query_target, ensure_sample_target, materialize_samples, materialize_stage_server_sample, rebuild_managed_sample
+from .sample_data import ensure_sample_target, materialize_stage_server_sample, rebuild_managed_sample
 from .task_uploads import cleanup_expired, save_and_profile
 from .excel_profile import create_excel_profile_router, verify_excel_source
 from .json_source_profile import create_json_profile_router, verify_json_source
-from .platform_harness import checksum, encrypt_secret, litellm_complete, naming_suggestions, requirement_issues
+from .platform_harness import checksum, encrypt_secret, naming_suggestions, requirement_issues
 from .release import create_release, create_sdm, sha as artifact_sha
 
 ROOT=Path(__file__).resolve().parents[2];load_dotenv(ROOT/'.env');DB=os.environ['DATABASE_URL'];repo=PostgresRepository(DB)
@@ -536,192 +535,23 @@ def update_task(task_id:str,data:TaskUpdate):
  d=repo.get_task(task_id)
  if not d:raise HTTPException(404,'Task not found')
  if d['status']=='RUNNING':raise HTTPException(409,'Running task cannot be edited')
- return repo.update_task(task_id,data.model_dump())
+ try:return repo.update_task(task_id,data.model_dump())
+ except TaskVersionConflict:raise HTTPException(409,detail={'code':'TASK_VERSIONED_EDIT_REQUIRED','message':'此 Task 已有版本，請透過需求修訂建立新版；不能直接改寫原需求、來源或目標。'}) from None
+def legacy_execution_retired(task_id: str):
+ raise HTTPException(410, detail={'code': 'LEGACY_EXECUTION_RETIRED', 'message': '舊版 Task 執行入口已停用；請由七階段工作區選取版本並完成核准。', 'task_id': task_id, 'runs_url': f'/api/tasks/{task_id}/runs'})
+
 @app.post('/api/tasks/{task_id}/rerun')
-def rerun(task_id:str):
- if not repo.reset_task(task_id):raise HTTPException(404,'Task not found')
- return {'status':'CREATED','task_id':task_id}
+def rerun(task_id: str):
+ return legacy_execution_retired(task_id)
+
 @app.post('/api/tasks/{task_id}/supplement')
-def supplement(task_id:str,data:RequirementSupplement):
- current=repo.get_task(task_id)
- if not current:raise HTTPException(404,'Task not found')
- if current['status'] not in ('NEEDS_INPUT','REVIEW_REQUIRED'):raise HTTPException(409,'Task is not waiting for supplemental input')
- config=dict(current.get('source_config') or {});config['requirement_supplement']={'values':data.values,'note':data.note,'submitted_at':datetime.now(timezone.utc).isoformat()}
- repo.update_source_config(task_id,config)
- if not repo.reset_task(task_id):raise HTTPException(404,'Task not found')
- return {'status':'CREATED','task_id':task_id,'resume_from':'Requirement Gate','source_profile_reuse':'checksum_or_metadata_match'}
+def supplement(task_id: str):
+ return legacy_execution_retired(task_id)
+
 @app.post('/api/tasks/{task_id}/run')
-def run_task(task_id:str):
- if os.getenv('WORKBENCH_EXECUTION_ENABLED','true').lower()!='true':raise HTTPException(503,detail={'code':'EXECUTION_DISABLED','message':'容器執行整合尚未驗收，Task 執行暫停'})
- t=repo.get_task(task_id)
- if not t:raise HTTPException(404,'Task not found')
- issues=requirement_issues(t)
- if issues:
-  revision=repo.save_requirement_issues(task_id,issues);repo.pause_task(task_id,'NEEDS_INPUT','router',{'code':'REQUIREMENT_ISSUES','issues':issues,'revision':revision},'Requirement Gate 發現缺漏、矛盾或不安全設定；請補正後重跑');return repo.get_task(task_id)
- if t['source'] in ('CSV','EXCEL','JSON'):
-  contract=repo.naming_contract(task_id)
-  if not contract or contract['status']!='CONFIRMED':
-   repo.pause_task(task_id,'NEEDS_INPUT','router',{'code':'NAMING_CONFIRMATION_REQUIRED','action':'呼叫 /naming-contract/suggest，確認後再重跑'},'檔案來源必須先確認中英欄位與型別 NamingContract');return repo.get_task(task_id)
- if not repo.claim_task(task_id):raise HTTPException(409,'Task is already running or must be reset before execution')
- t=repo.get_task(task_id)
- cfg=t.get('error_test_config') or {}
- def inject(node_key:str):
-  if not cfg.get('enabled') or cfg.get('node')!=node_key:return None
-  code=cfg.get('expected_error_code') or 'INJECTED_TEST_ERROR';detail={'code':code,'error_test':True,'test_passed':True,'scenario':cfg.get('scenario'),'description':cfg.get('description'),'action':f'錯誤情境測試 PASSED：系統已在指定步驟攔截 {code}'}
-  repo.update_node(task_id,node_key,'FAILED',detail,f"Error scenario test triggered at {node_key}: {code}")
-  repo.set_error_test_result(task_id,{'passed':True,'expected_error_code':code,'actual_error_code':code,'node':node_key,'scenario':cfg.get('scenario'),'message':'系統成功攔截預期錯誤'})
-  return repo.get_task(task_id)
- repo.update_node(task_id,'router','RUNNING',message='Rule Router started')
- injected=inject('router')
- if injected:return injected
- operation=t['type']
- repo.update_node(task_id,'router','SUCCEEDED',{'operation':operation},f'Rule Router selected {operation}')
- repo.update_node(task_id,'profiler','RUNNING',message='Source Profiler started')
- injected=inject('profiler')
- if injected:return injected
- if t['source'] in ('CSV','EXCEL','JSON','VERTICA','MIXED'):
-  try:
-   configured=(t.get('source_config',{}) or {}).get('sources') or []
-   if t.get('source_config',{}).get('has_actual_data') is False or any(x.get('has_actual_data') is False for x in configured):
-    t['source_config']=materialize_samples(task_id,t['source_config']);repo.update_source_config(task_id,t['source_config'])
-    if len(t['source_config']['sources'])==1:t['source_config']={**t['source_config'],**t['source_config']['sources'][0]};repo.update_source_config(task_id,t['source_config'])
-   if str(t['target_config'].get('stage_mode','NORMAL')).upper() in ('EXTERNAL','FLEX'):
-    server_source=((t.get('source_config',{}) or {}).get('sources') or [t.get('source_config',{})])[0];t['target_config']=materialize_stage_server_sample(task_id,t['target_config'],server_source);repo.update_target_config(task_id,t['target_config'])
-   source_profile=profile_task(t);sample=source_profile['samples'];columns=source_profile['columns']
-   if t['source']=='EXCEL':
-    execution_dir=ROOT/'runtime-temp'/'generated-sources'/task_id;execution_dir.mkdir(parents=True,exist_ok=True);execution_path=execution_dir/'excel-execution.csv'
-    with execution_path.open('w',encoding='utf-8-sig',newline='') as stream:
-     writer=csv.DictWriter(stream,fieldnames=columns);writer.writeheader();writer.writerows([{name:row.get(name) for name in columns} for row in sample[:10]])
-    t['source_config']={**t['source_config'],'file_path':str(execution_path),'execution_source_type':'CSV','delimiter':',','encoding':'utf-8-sig'};repo.update_source_config(task_id,t['source_config'])
-   if len(source_profile['sources'])==1 and str(t['target_config'].get('stage_mode','NORMAL')).upper()=='NORMAL':
-    configured_fields=(t.get('source_config') or {}).get('fields') or []
-    fields=configured_fields if configured_fields and all(x.get('name') and x.get('type') for x in configured_fields) else source_profile['sources'][0].get('fields') or []
-    ensure_sample_target(t['target_config'],fields)
-    if fields is not configured_fields:
-     t['source_config']={**t['source_config'],'fields':fields};repo.update_source_config(task_id,t['source_config'])
-   class ProfileReader:fieldnames=columns
-   reader=ProfileReader()
-   repo.save_source_profile(task_id,source_profile)
-   repo.update_node(task_id,'profiler','SUCCEEDED',{'sources':source_profile['sources'],'columns':columns,'sample_rows':len(sample),'fingerprint':source_profile['fingerprint'],'issues':source_profile['issues']},f"Source profile completed for {len(source_profile['sources'])} source(s)")
-  except Exception as e:
-   repo.update_node(task_id,'profiler','FAILED',{'code':'SOURCE_PROFILE_ERROR','error':str(e)},'Source profiling failed');return repo.get_task(task_id)
- else:
-  configured=t['source_config'].get('sources') or [{'alias':'src','schema':t['source_config'].get('schema') or 'poc_source','table':t['source_config'].get('table') or 'demo_customer_orders','fields':[]}]
-  try:
-   if not isinstance(configured,list) or not configured:raise ValueError('At least one PostgreSQL source is required')
-   profiles=[]
-   with repo.conn() as conn:
-    for source in configured:
-     schema=source.get('schema','');table=source.get('table','');alias=source.get('alias','')
-     if not all(re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*',x or '') for x in (schema,table,alias)):raise ValueError(f'Invalid source identifier: {source}')
-     actual=conn.execute("select column_name,data_type from information_schema.columns where table_schema=%s and table_name=%s order by ordinal_position",(schema,table)).fetchall()
-     if not actual:raise ValueError(f'Source table {schema}.{table} does not exist or has no columns')
-     actual_fields=[{'name':x['column_name'],'type':x['data_type']} for x in actual]
-     provided=source.get('fields') or []
-     if isinstance(provided,str):provided=[{'name':part.split(':',1)[0].strip(),'type':part.split(':',1)[1].strip() if ':' in part else ''} for part in provided.split(',') if part.strip()]
-     missing=[x.get('name') for x in provided if x.get('name') not in {a['name'] for a in actual_fields}]
-     if missing:raise ValueError(f"Configured fields not found in {schema}.{table}: {', '.join(missing)}")
-     profiles.append({'alias':alias,'schema':schema,'table':table,'provided_fields':provided,'actual_fields':actual_fields})
-     preview=conn.execute(f'SELECT * FROM "{schema}"."{table}" LIMIT 3');profiles[-1]['sample']=[dict(x) for x in preview.fetchall()]
-    raw_query=t['source_config'].get('query','').strip()
-    if raw_query:
-     query=validate_query_sources(validate_read_only_query(raw_query),configured);rows=conn.execute(f'SELECT * FROM ({query}) AS source_preview LIMIT 10');columns=[x.name for x in rows.description];sample=[dict(x) for x in rows.fetchall()]
-    elif len(configured)==1:
-     query=f'SELECT * FROM "{configured[0]["schema"]}"."{configured[0]["table"]}"';rows=conn.execute(f'SELECT * FROM ({query}) AS source_preview LIMIT 10');columns=[x.name for x in rows.description];sample=[dict(x) for x in rows.fetchall()]
-    else:
-     query='';columns=[f"{p['alias']}.{f['name']}" for p in profiles for f in p['actual_fields']];sample=[{'source':p['alias'],'rows':p['sample']} for p in profiles]
-   t['source_config']['sources']=configured
-   if query:t['source_config']['query']=query
-   repo.update_node(task_id,'profiler','SUCCEEDED',{'sources':profiles,'source_count':len(profiles),'columns':columns,'sample_rows':sum(len(p['sample']) for p in profiles),'query':query or None,'query_pending':not bool(query)},f'PostgreSQL source profile completed for {len(profiles)} source(s); SQL generation {"not required" if query else "pending SA Agent"}')
-  except Exception as e:
-   repo.update_node(task_id,'profiler','FAILED',{'code':'POSTGRESQL_PROFILE_ERROR','error':str(e),'sources':configured},'PostgreSQL multi-source profiling failed');return repo.get_task(task_id)
- project=repo.get_project(t['project_id']) or {};profile_id=project.get('default_ai_profile','nova-default');ai_profile=repo.ai_profile(profile_id)
- repo.update_node(task_id,'sa','RUNNING',message='Requirement / SA Agent preflight started')
- injected=inject('sa')
- if injected:return injected
- if not ai_profile or not ai_profile.get('enabled'):
-  repo.pause_task(task_id,'MODEL_RETRY_REQUIRED','sa',{'code':'MODEL_PROFILE_UNAVAILABLE','profile_id':profile_id,'action':'檢查平台設定中心的 AI Provider Profile'},'AI Profile 不可用；Task 已停止');return repo.get_task(task_id)
- try:
-  columns_for_model=(reader.fieldnames or []) if t['source']=='CSV' else columns
-  model_input={'task_id':task_id,'requirement':t['requirement'],'source_columns':columns_for_model};raw_specification,model_run=litellm_complete(ai_profile,'etl_specification',[{'role':'system','content':'你是企業 ETL Specification Agent。只能回傳有效 JSON，不可執行工具或修改檔案。'},{'role':'user','content':sa_prompt(t,sample,columns_for_model)}],secret=repo.read_secret(ai_profile['secret_ref']) if ai_profile.get('secret_ref') else None)
-  repo.record_harness_invocation(task_id,'ETL_SPECIFICATION','litellm_bedrock',model_run['model'],1,checksum(model_input),model_input,raw_specification,'SUCCEEDED',model_run['duration_ms'])
-  profile=profile_task(t) if t['source'] in ('CSV','EXCEL','VERTICA','MIXED') else {'sources':t['source_config'].get('sources') or [],'samples':sample,'columns':columns_for_model,'issues':[]}
-  repo.save_source_profile(task_id,profile)
-  specification=canonicalize(raw_specification,t,profile)
-  specification.update(plan(specification))
-  gate=requirement_gate(t,specification,profile)
-  specification['missing_items']=[x for x in gate['issues'] if x.get('severity')=='BLOCKING']
-  specification['warnings'].extend(x for x in gate['issues'] if x.get('severity') in ('WARNING','INFERRED'))
-  repo.save_specification(task_id,specification,'VALIDATED' if gate['valid'] else gate['status'])
-  if not gate['valid']:
-   repo.record_agent_usage(task_id,'REQUIREMENT_SA',t['requirement'],{'source_config':t['source_config'],'target_config':t['target_config']},specification,model_run)
-   repo.pause_task(task_id,gate['status'],'sa',{'code':gate['status'],'issues':gate['issues'],'editable_fields':[x['field'] for x in gate['issues']]},'需求需補充或人工確認後，將從 Requirement Gate 重新執行');return repo.get_task(task_id)
-  vertica_sources=[s for s in profile['sources'] if s.get('type')=='VERTICA']
-  if vertica_sources and not t['source_config'].get('query'):
-   candidate=specification.get('sql_query') or ''
-   if len(vertica_sources)==1 and not candidate.strip():
-    source=vertica_sources[0];names=[f['name'] for f in source.get('fields') or []]
-    candidate='SELECT '+','.join(f'"{name}"' for name in names)+f' FROM "{source["schema"]}"."{source.get("object") or source.get("table")}"'
-   generated,columns,sample,explain=validate_vertica_query(candidate,vertica_sources)
-   t['source_config']['sources']=profile['sources'];t['source_config']['query']=generated;t['source_config']['output_fields']=columns
-   repo.update_source_config(task_id,t['source_config']);specification.update({'sql_query':generated,'generated_query_preview_rows':len(sample),'vertica_explain':explain})
-   repo.save_specification(task_id,specification,'VALIDATED')
-  if t['source']=='POSTGRESQL_TABLE' and len(t['source_config'].get('sources') or [])>1 and not t['source_config'].get('query'):
-   generated=validate_query_sources(validate_read_only_query(specification.get('sql_query') or ''),t['source_config']['sources'])
-   with repo.conn() as conn:
-    preview=conn.execute(f'SELECT * FROM ({generated}) AS generated_preview LIMIT 10');columns=[x.name for x in preview.description];sample=[dict(x) for x in preview.fetchall()]
-   t['source_config']['query']=generated;repo.update_source_config(task_id,t['source_config']);specification['sql_query']=generated;specification['generated_query_preview_rows']=len(sample)
-  repo.record_agent_usage(task_id,'REQUIREMENT_SA',t['requirement'],{'source_config':t['source_config'],'target_config':t['target_config']},specification,model_run)
-  repo.update_node(task_id,'sa','SUCCEEDED',{'specification':specification,'model_run':model_run},f"Requirement / SA Agent completed through {model_run['model']}")
- except subprocess.TimeoutExpired:
-  repo.pause_task(task_id,'MODEL_RETRY_REQUIRED','sa',{'code':'MODEL_TIMEOUT','profile_id':profile_id,'timeout_seconds':180,'action':'重試 AI Profile'},'模型逾時；Task 已停止');return repo.get_task(task_id)
- except Exception as e:
-  repo.pause_task(task_id,'MODEL_RETRY_REQUIRED','sa',{'code':'MODEL_OUTPUT_OR_SCHEMA_INVALID','profile_id':profile_id,'error':str(e)[:4000],'action':'檢查 Bedrock/LiteLLM 設定後重試'},'模型輸出或設定無效；Task 已停止');return repo.get_task(task_id)
- repo.update_node(task_id,'developer','RUNNING',message='Developer Agent started HPL generation')
- injected=inject('developer')
- if injected:return injected
- try:
-  artifact=build_hpl(t,(reader.fieldnames or []) if t['source']=='CSV' else columns)
-  if artifact.get('sql_pushdown') and artifact.get('query'):ensure_query_target(t['target_config'],artifact['query'])
-  artifact_id=persist_artifact(DB,task_id,artifact)
-  repo.update_node(task_id,'developer','SUCCEEDED',{**artifact,'artifact_id':artifact_id},f"Developer Agent generated {artifact.get('artifact_type','HPL')} v{artifact['version']}")
- except Exception as e:
-  repo.update_node(task_id,'developer','FAILED',{'code':'HPL_GENERATION_FAILED','error':str(e)},'Developer Agent failed to generate HPL');return repo.get_task(task_id)
- repo.update_node(task_id,'static','RUNNING',message='Programmatic Static Validator started')
- injected=inject('static')
- if injected:return injected
- try:
-  static_result=static_validate(artifact);persist_validation(DB,task_id,'STATIC',static_result)
-  if not static_result['valid']:
-   repo.update_node(task_id,'static','FAILED',{'code':'STATIC_VALIDATION_FAILED',**static_result},'HPL static validation failed');return repo.get_task(task_id)
-  repo.update_node(task_id,'static','SUCCEEDED',static_result,'HPL XML and required transforms passed static validation')
- except Exception as e:
-  repo.update_node(task_id,'static','FAILED',{'code':'STATIC_VALIDATION_ERROR','error':str(e)},'Static Validator raised an error');return repo.get_task(task_id)
- repo.update_node(task_id,'semantic','RUNNING',message='Semantic Validator started')
- injected=inject('semantic')
- if injected:return injected
- semantic_result=semantic_validate(t,artifact);persist_validation(DB,task_id,'SEMANTIC',semantic_result)
- if not semantic_result['valid']:
-  repo.update_node(task_id,'semantic','FAILED',{'code':'SEMANTIC_VALIDATION_FAILED',**semantic_result},'HPL semantic validation failed');return repo.get_task(task_id)
- repo.update_node(task_id,'semantic','SUCCEEDED',semantic_result,'HPL matches source, target and validation policy')
- repo.update_node(task_id,'executor','RUNNING',message='Independent Hop Executor started hop-run.bat')
- injected=inject('executor')
- if injected:return injected
- try:
-  hop_result=execute_hop(DB,t,artifact,artifact_id)
-  if hop_result['exit_code']!=0:
-   repo.update_node(task_id,'executor','FAILED',{'code':'HOP_EXECUTION_FAILED',**hop_result},'Apache Hop returned a non-zero exit code');return repo.get_task(task_id)
-  repo.update_node(task_id,'executor','SUCCEEDED',hop_result,f"Apache Hop completed and wrote {hop_result['rows_written']} rows")
- except Exception as e:
-  repo.update_node(task_id,'executor','FAILED',{'code':'HOP_EXECUTION_ERROR','error':str(e)},'Hop Executor raised an error');return repo.get_task(task_id)
- repo.update_node(task_id,'postwrite','RUNNING',message='Post-write count validation started')
- injected=inject('postwrite')
- if injected:return injected
- if hop_result['rows_written']<1 or hop_result['rows_written']>10:
-  repo.update_node(task_id,'postwrite','FAILED',{'code':'POST_WRITE_COUNT_MISMATCH',**hop_result},'Post-write count is outside the expected 1..10 range');return repo.get_task(task_id)
- repo.set_rows(task_id,hop_result['rows_written'])
- repo.update_node(task_id,'postwrite','SUCCEEDED',{'rows_written':hop_result['rows_written'],'post_write_count':hop_result['after_count'],'policy':'FIRST_10_VALID_ROWS'},'Post-write count validation passed')
- return repo.get_task(task_id)
+def run_task(task_id: str):
+ return legacy_execution_retired(task_id)
+
 @app.get('/api/models')
 def models():return {'providers':[cli_probe('codex_cli'),cli_probe('copilot')],'ai_profiles':repo.ai_profiles(),'usage':repo.usage(),'task_usage':repo.task_usage(),'analyzer_usage':repo.analyzer_usage()}
 @app.post('/api/models/{provider}/health')

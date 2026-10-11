@@ -1,0 +1,404 @@
+{
+  "scope": "Static route inventory; no claim of complete direct-call rejection coverage",
+  "items": [
+    {
+      "file": "backend/app/ai_profile_api.py",
+      "line": 79,
+      "method": "PUT",
+      "path": "/{profile_id}",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/ai_profile_api.py",
+      "line": 97,
+      "method": "POST",
+      "path": "/{profile_id}/secret",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/ai_profile_api.py",
+      "line": 111,
+      "method": "POST",
+      "path": "/{profile_id}/test",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/connection_test_api.py",
+      "line": 42,
+      "method": "POST",
+      "path": "/{connection_id}/test",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/developer_api.py",
+      "line": 84,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/developer/authorize",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/excel_profile.py",
+      "line": 86,
+      "method": "POST",
+      "path": "/api/task-sources/{upload_id}/excel-profile",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/formal_release_api.py",
+      "line": 31,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/release/candidate",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/formal_release_api.py",
+      "line": 35,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/release/approve",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/hop_dispatch_api.py",
+      "line": 63,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/hop-dispatch",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/hop_dispatch_api.py",
+      "line": 70,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/comparison-recovery",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/hop_dispatch_api.py",
+      "line": 77,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/hop-preparation-reconciliation",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/json_source_profile.py",
+      "line": 45,
+      "method": "POST",
+      "path": "/api/task-sources/{upload_id}/json-profile",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 309,
+      "method": "POST",
+      "path": "/api/analyzer/analyze-batch-async",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 316,
+      "method": "POST",
+      "path": "/api/analyzer/upload",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 340,
+      "method": "POST",
+      "path": "/api/analyzer/analyze",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 348,
+      "method": "POST",
+      "path": "/api/analyzer/analyze-batch",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 378,
+      "method": "POST",
+      "path": "/api/projects/{project_id}/tasks",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 385,
+      "method": "POST",
+      "path": "/api/tasks",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 414,
+      "method": "POST",
+      "path": "/api/tasks/{task_id}/requirements/validate",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 421,
+      "method": "POST",
+      "path": "/api/tasks/{task_id}/requirements/revise",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 429,
+      "method": "POST",
+      "path": "/api/tasks/{task_id}/naming-contract/suggest",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 442,
+      "method": "POST",
+      "path": "/api/tasks/{task_id}/naming-contract/confirm",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 452,
+      "method": "POST",
+      "path": "/api/tasks/{task_id}/sample-source/rebuild",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 470,
+      "method": "POST",
+      "path": "/api/task-sources/upload",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 533,
+      "method": "PUT",
+      "path": "/api/tasks/{task_id}",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 543,
+      "method": "POST",
+      "path": "/api/tasks/{task_id}/rerun",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 547,
+      "method": "POST",
+      "path": "/api/tasks/{task_id}/supplement",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 551,
+      "method": "POST",
+      "path": "/api/tasks/{task_id}/run",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 557,
+      "method": "POST",
+      "path": "/api/models/{provider}/health",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 574,
+      "method": "POST",
+      "path": "/api/database/test",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 589,
+      "method": "PUT",
+      "path": "/api/settings/groups/{group_key}",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 603,
+      "method": "POST",
+      "path": "/api/settings/connections/{connection_id}/secret",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 615,
+      "method": "POST",
+      "path": "/api/tasks/{task_id}/release",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/main.py",
+      "line": 623,
+      "method": "PUT",
+      "path": "/api/settings/{key}",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/oracle_api.py",
+      "line": 45,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/specifications/{specification_id}/oracles",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/oracle_api.py",
+      "line": 51,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/specifications/{specification_id}/oracles/{oracle_id}/approve",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/project_api.py",
+      "line": 109,
+      "method": "POST",
+      "path": "/{project_id}/pilot-cohorts/{cohort_id}/cases/{case_key}/effort",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/project_api.py",
+      "line": 129,
+      "method": "POST",
+      "path": "/{project_id}/pilot-cohorts",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/project_api.py",
+      "line": 197,
+      "method": "POST",
+      "path": "/{project_id}/pilot-cohorts/{cohort_id}/cases/{case_key}/task",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/project_api.py",
+      "line": 211,
+      "method": "POST",
+      "path": "/{project_id}/pilot-cohorts/{cohort_id}/cases/{case_key}/prepare",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/project_api.py",
+      "line": 225,
+      "method": "PUT",
+      "path": "/{project_id}",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/qa_authorization_api.py",
+      "line": 60,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/qa-authorization",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/run_api.py",
+      "line": 180,
+      "method": "POST",
+      "path": "/{task_id}/runs",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/run_api.py",
+      "line": 189,
+      "method": "POST",
+      "path": "/{task_id}/approvals",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/run_api.py",
+      "line": 213,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/reconciliation",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/run_api.py",
+      "line": 229,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/sa-approval",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/run_api.py",
+      "line": 239,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/qa-approval",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/run_api.py",
+      "line": 244,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/sdm-delivery",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/run_api.py",
+      "line": 257,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/revisions",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/run_api.py",
+      "line": 292,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/sa-authorization",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/run_api.py",
+      "line": 299,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/sa-invocation/cancel",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/run_api.py",
+      "line": 306,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/cancel",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/specification_api.py",
+      "line": 47,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/specification/validate",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/specification_api.py",
+      "line": 51,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/specification/compile-preview",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/specification_api.py",
+      "line": 55,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/specifications",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/specification_api.py",
+      "line": 59,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/specifications/{specification_id}/approve",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    },
+    {
+      "file": "backend/app/specification_api.py",
+      "line": 123,
+      "method": "POST",
+      "path": "/{task_id}/runs/{run_id}/specifications/{specification_id}/sdm-candidate",
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+    }
+  ]
+}
