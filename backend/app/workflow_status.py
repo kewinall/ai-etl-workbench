@@ -41,6 +41,7 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
             break
     issues += [{**issue, 'stage': 'quality'} for issue in (qa_record.get('review') or {}).get('issues', [])] if not qa_ok else []
     index, owner, action, enabled, waiting = 0, '你', '確認需求版本', current, False
+    needs_input = False
     code = run.get('outcome_code') or ''
     if approved_input:
         index, action = 1, '授權需求審查'
@@ -49,6 +50,8 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
             owner, action, enabled, waiting = 'AI／控制服務', '等待需求審查', False, True
         elif gate.get('status') == 'NEEDS_INPUT' or review.get('status') == 'NEEDS_INPUT':
             index, action, enabled = 0, '前往修正需求', current
+            # The confirmed input was returned for correction: stage 1 is not complete for this version.
+            needs_input, completed[0] = True, False
         elif sa_approval.get('status') == 'AWAITING_CONFIRMATION':
             action, enabled = '確認需求審查結果', current
         elif sa_record and not sa_ok:
@@ -99,13 +102,20 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
             action, enabled = '檢查可攜驗證問題', current
     if any('UNKNOWN' in str(r.get('status', '')) for r in (sa_record, dev_record, qa_record)):
         owner, action, enabled, waiting = '你', '核對模型呼叫結果，勿重送', False, False
+    cancelled_latest = not historical and run['state'] == 'CANCELLED' and not active_run
     if run['state'] == 'CANCELLED':
-        action, enabled, waiting = '已取消；查看原始輸入及歷史', False, False
+        action, enabled, waiting = (('此版已取消；可建立新準備版本', True, False) if cancelled_latest
+                                    else ('已取消；查看原始輸入及歷史', False, False))
     if run.get('failed_revision_available'):
         index, owner, action, enabled, waiting = 4, '你', '此版已結案；可建立修正版', current, False
-    if not current:
+    # Latest version whose inputs/settings changed after it was prepared: the only way forward is to cancel it
+    # (when nothing was written) and prepare a new snapshot. Historical versions stay read-only.
+    stale_latest = (not historical and not current and run['state'] in ('QUEUED', 'NEEDS_REVIEW')
+                    and not run.get('write_started') and release.get('release_ready') is not True)
+    if not current and not cancelled_latest:
         enabled, waiting = release.get('release_ready') is True, False
-        action = '下載正式交付' if enabled else '檢視歷史與失效核准原因'
+        action = ('下載正式交付' if enabled else
+                  '內容已變更：取消此版並建立新準備版本' if stale_latest else '檢視歷史與失效核准原因')
     service_blocker = None
     online = None
     service_ops = {}
@@ -158,6 +168,7 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
     effective = ('已正式交付' if delivered else 'QA 已核准，待完成交付' if qa_ok else
                  '已執行，待結果比對與 QA' if milestones['executed'] else '執行中或待核對' if milestones['execution_started'] else
                  '規格已核准，待執行確認' if spec_ok else 'SA 已確認，待流程設計' if sa_ok else
+                 '需求待補正，請建立補正版本' if needs_input else
                  '輸入已確認，待需求審查' if approved_input else '待確認此版輸入')
     if run['state'] == 'CANCELLED':
         effective = '已取消'
@@ -166,12 +177,12 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
             'historical': historical, 'matches_current': run.get('matches_current') is True,
             'stages': stages, 'current_stage': KEYS[index], 'owner': owner,
             'completed': [LABELS[i] for i, done in enumerate(completed) if done],
-            'next_action': {'label': action, 'stage': 'requirements' if run.get('failed_revision_available') and current else KEYS[index], 'enabled': enabled,
+            'next_action': {'label': action, 'stage': 'requirements' if (run.get('failed_revision_available') and current) or stale_latest or cancelled_latest else KEYS[index], 'enabled': enabled,
                             'type': 'DOWNLOAD' if delivered and action == '下載正式交付' else 'NAVIGATE', 'operation_enabled': enabled,
                             'blocked_reason': service_blocker},
             'services': services, 'service_blocked_reason': service_blocker,
             'operation_qualifications': qualifications,
-            'milestones': milestones, 'effective_status': effective, 'delivered': delivered,
+            'milestones': milestones, 'effective_status': effective, 'delivered': delivered, 'needs_input': needs_input, 'stale_latest': stale_latest, 'cancelled_latest': cancelled_latest,
             'waiting': waiting, 'category': category, 'issues': [] if delivered else issues,
             'execution_blocked_reason': ('Hop 已完成，但尚缺有效結果比對；請檢查標準答案與比對失敗原因，不可重跑原目標。' if completed[4] is False and code == 'HOP_EXECUTED_QA_REQUIRED' else hop.get('blocked_reason')),
             'comparison_recovery': comparison_recovery,
@@ -197,7 +208,8 @@ def source_scope_note(run):
     return f'{names} 來源已有真實七階段驗收案例；本版是否通過仍以本版的執行、比對、QA 與交付證據為準。'
 
 
-DELIVERED = '此版已正式交付；只能查看與下載。需要變更時請另建修正版本，不回到原版本修改。'
+# Do not point at operations that do not exist: delivered versions currently have no revision path.
+DELIVERED = '此版已正式交付；只能查看與下載。目前不能從已交付版本建立修正版或新的準備版本，也不會回到原版本修改。'
 
 
 def operation_qualifications(run, *, current, historical, delivered, approved_input, gate, sa_record, sa_ok, sa_approval,
