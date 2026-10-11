@@ -29,14 +29,14 @@
 | R17 | 執行前看目標、副作用、固定答案與資格 | Hop／Oracle UI及 transactional stores；三案 native proof | 三新案例正常網站與實際 Hop／Vertica，事前固定答案為 2／2／5 筆，不從結果反推 |
 | R18 | 執行結果、節點、筆數、差異、失敗原因自動讀回 | RunArtifacts／HopDispatch／ComparisonHistory；native readback proof | 正常三案真實節點、固定答案 MATCH、獨立 SELECT 通過；異常顯示另有工程及保存歷史證據 |
 | R19 | QA 意見、人工核准；缺同次證據只重新審查、不重跑 Hop | qa journal／authorization；QA reassessment UI test；retained-history proof | 工程補證 body／一次预約通過，原真實 NEEDS_REVIEW→PASS 兩紀錄與新 UI 查閱通過；**尚未另作新版真實補證操作** |
-| R20 | 已執行流程修正保留原結果，用新目標與重新核准 | Run revision／qa revision；stage-guidance／recovery-history tests | 工程修正版分支與保存真實失敗／修正歷史有證據；**本輪未新增真實失敗後修正版全鏈**。已交付版本修正版仍明示不支援 |
+| R20 | 已執行流程修正保留原結果，用新目標與重新核准 | Run revision／qa revision；`v2-revision-delivery-2026-10-11.json` | 新 Task-0004 實際 v1 缺欄位失敗、獨立查詢0筆、網站結案；v2使用新目標重新SA／設計／規格／答案／Hop／QA／可攜驗證與正式交付通過。每Run原Hop一次；已交付版本修正版仍不支援 |
 | R21 | 失聯／可能部分寫入顯示待核對，不提供一般重試 | ExecutionReconciliation／準備結案；owner-death、partial、retained-history proofs | current 控制面死亡與真實 PG 網站結案通過；原真實部分提交／失聯的 current UI 唯讀通過；**尚未另作新版 Hop 部分提交與結案** |
 | R22 | 網路斷線／回應遺失先 GET；雙擊不重送模型／執行 | latches／request keys；comparison／QA／Hop／SDM response-loss tests | 工程分支通過、警示不被背景 GET 清除；不把合成回應遺失當真實服務故障 |
 | R23 | SDM、候選包、可攜驗證、正式 ZIP及 manifest 文件清單 | SdmDelivery／release stores；delivery／portability proofs | 三新案例真實 QA／SDM／獨立可攜 DB／正式 ZIP，下載及成員指紋一致；產物自動讀回修正已部署 |
 | R24 | 歷史與舊證據收合，空白舊區不顯示 | LegacyTaskRecords；legacy/history tests | 已完成條件收合與空節點停止新建；舊資料／下載保留，沒有順便刪資料 |
 | R25 | 專案清單共用狀態與接續精確 Run／階段 | Project UI／summary projection；workflow consistency | 工程與真實交付摘要讀回通過；讀取失敗顯示待確認 |
 | R26 | 旧網址相容、移除沒使用舊功能而保留證據 | main routes；retired Task POST 410；legacy UI/API tests | 舊入口／無引用元件及覆寫已退場；部分歷史 GET 明確保留，不能把歷史讀取當未刪舊功能 |
-| R27 | 390／768／1440 與鍵盤完成主要流程 | stage-guidance／native acceptance tests；compiled deployment proofs | 三寬度查閱／下載、工程表單／定位通過；**真實三案寫入流程主要在1440，不宣稱三寬度都重做真實寫入** |
+| R27 | 390／768／1440 與鍵盤完成主要流程 | stage-guidance／native acceptance tests；compiled deployment proofs | 真實原三案寫入主要1440；新失敗與修正版完整網站操作768。新正式交付三寬度唯讀／鍵盤／下載3案例＋1marker PASS；390真實寫入仍未完成，不宣稱三寬度都重做寫入 |
 | R28 | 5197 独立設定與實際 Profile，不動 5183 | compose.ui-acceptance、local Worker target config；three-case model proof | 5197 原／可攜資料隔離、真實 LOCAL_COPILOT 模型；一次秘密移轉已完成，不重複使用授权 |
 | R29 | CSV／Excel／LEFT JOIN 三個新正常七階段案例 | native／delivery／portability 2026-10-11 proof | 三案實際通過，原寫入各一次；未將 JSON／資料表來源標示全鏈完成 |
 | R30 | 舊 Release 唯讀回歸，指紋與寫入次數不變 | release-regression helper；API／web deployment proofs | 八個正式成果持續 GET 核對，原 ZIP／完整 Run／Release／updated／WRITE_STARTED 不變；没有重跑 |

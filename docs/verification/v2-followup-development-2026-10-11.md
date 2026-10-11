@@ -234,3 +234,14 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - 實際原CSV/Excel GET workflow-status全部非DOWNLOAD操作與七stage停用、下載enabled保留；強化real-evidence-readonly原測試的逐操作資格、各stage無enabled checkbox及完整Run前後相等。兩原案例7階段/ZIP hash/原接口POST405 **2PASS5.4s**；新三正式案三寬度/鍵盤/ZIP GET-only **10PASS28.3s**，原三 **10PASS25.9s**。每組三案測試包含9個實際寬度案例＋1個opt-in marker，沒有冒稱10個新ETL。
 - 本批後端全回歸2134/139已在7029156修正時完成，未因部署重複宣稱再跑；full browser147/27亦沿用先前明確scope。新增條件歷史測試default單獨1skip，未以skip當PASS。真實原QA歷史UI、原source下載回歸與當前新版新模型/故障驗收的證據層次仍分開。
 - API回復：讀取本批previous-api-image.txt的舊ID，tag至ai-etl-workbench-api:stage-guidance，再以原stage-guidance＋ui-acceptance Compose/原UI_ACCEPT_PROJECT_ID執行up --no-deps -d api（不build），確認ready、原source指紋及8Release；不run migration/init/Worker或重跑目標。舊指紋/source與本批private基準保留，不在repo保存機密。
+
+## 新失敗修正版實際驗收（2026-10-11 21:49）
+
+- 使用者明確授權新案例全部核准、執行與交付；範圍僅5197、固定A/alpha與B/beta，以及新的ui_accept_revision_20261011_v1/v2。Task TASK-20261011-0004。此前兩個需求版本保留：初步檢查缺漏後補正，以及真實SA指出跨版本目標敘述衝突後再修訂；沒有偽造審查或沿用核准。
+- 原廣泛Worker正常停止後改指定Task/Run。v1 Run a517dab7-c5ab-4f2d-9956-a4774d7f0feb，新空表label改名，原HPL執行一次，退出1；保存缺欄位日誌4959bytes，SHA cc9709c1d469cb88022c991867b9ba7e96989dde778976e73ae45a73cd39ebd8。獨立連線SELECT確認0筆及label_missing_fault，網站一個筆數＋一個確認完成結案，無證據檔案要求、無重跑。
+- 依網站差異預覽建立v2 Run 7a807d23-40b0-4fd4-b40f-7715bc27bf8c，目標全新ui_accept_revision_20261011_v2。重新需求、SA、Developer、規格、事前固定答案與Hop核准；独立讀回兩筆且MATCH；真實LOCAL_COPILOT三角色各單次session、automatic_retries=0；QA PASS及人工核准、SDM、候選、独立可攜DB查詢兩筆、Workflow完整證據、正式Release均通過。
+- Release d8f44386-765e-42db-935b-301aa5af97b1，9705bytes，SHA 6146efb5a925d2030adfcb73077bfb837b1e7586d5ba6fb6860488179701fcd9；ZIP五文件與manifest所有大小/指紋核對，SDM可讀。正式版本只有下載資格，父失敗結果保留，兩Run各WRITE_STARTED=1。新完整網站操作768px；正式成果390/768/1440、七階段/鍵盤/下載3案例＋1marker 4PASS7.1s。不是390真實寫入驗收。
+- 工程守門37PASS5.15s，含5個隔離PG17交易測試；來源父系不可有寫入、Hop派發或執行預約，須完整同Task且到root；指定Run Worker保持預設多Task相容。完整2134/139後端及152/28browser為先前結果，本輪未重跑全套。腳本語法檢查通過。
+- 八既有正式Release與部署前基準比較完整GET/ZIP bytes/SHA/updated/WRITE_STARTED=1不變；5183未操作。v1/v2指定Worker已正常停止。原未提交test_join_replay_worker.py SHA cc1f19bd4e2da5bf311ed3d3f89802f65e497d5fa40e7cc954d32b6a553e9777未變。
+- 工具曾遇已成功回應後讀回欄位名稱錯誤，以及工作目錄錯誤；先GET讀回再修正工具，沒有重送模型、Hop或正式交付。證據v2-revision-delivery-2026-10-11.json；原始日誌、私有state與執行標記留runtime-temp，不入Git。
+- 尚未完成：R19新版合法同次QA補證（不允許降級指引製造條件）、R21新部分提交/失聯結案、390真實寫入、JSON/資料表、REPLACE/UPSERT、已交付版本修訂及維運復原。下一步準備R21具體1001筆來源/固定答案/首1000筆提交後終止時點与隔離守門；此新增故障寫入尚需取得獨立授權，不能重放本案或旧成果。

@@ -2,9 +2,11 @@
 import json,subprocess
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
-state=json.loads((root/'runtime-temp/v2-revision-live-state.json').read_text(encoding='utf-8'))
+state=json.loads((root/'runtime-temp/v2-revision-live-state.json').read_text(encoding='utf-8-sig'))
 assert state['project_id']=='346e9419-4b0e-4ba7-ad29-1756ca7da833'
-assert state['target']=='ui_accept_revision_20261011_v1'
+assert state['target'] in ('ui_accept_revision_20261011_v1','ui_accept_revision_20261011_v2')
+if state['target'].endswith('_v2'):
+ assert state['failure_closed'] and state['failed_execution']['target']=='ui_accept_revision_20261011_v1'
 assert state.get('specification_id') and state.get('oracle_approved') is True
 code=r'''
 import json,os,sys
@@ -29,10 +31,16 @@ with connection_runtime(repo,snapshot,snapshot['checksum']) as runtime:
    cur=db.cursor()
    for table in ['ui_accept_revision_20261011_v1','ui_accept_revision_20261011_v2']:
     cur.execute('SELECT COUNT(*) FROM v_catalog.tables WHERE table_schema=%s AND table_name=%s',('ai_sample',table))
-    assert cur.fetchone()[0]==0,'NEW_TARGET_ALREADY_EXISTS'
-    rows.append(dict(target='ai_sample.'+table,exists=False))
+    exists=cur.fetchone()[0]!=0
+    if table==data['target'] or data['target'].endswith('_v1'):
+     assert not exists,'NEW_TARGET_ALREADY_EXISTS'
+    else:
+     assert exists,'RETAINED_FAILURE_TARGET_MISSING'
+     cur.execute('SELECT COUNT(*) FROM "ai_sample"."ui_accept_revision_20261011_v1"')
+     assert cur.fetchone()[0]==0,'RETAINED_FAILURE_TARGET_CHANGED'
+    rows.append(dict(target='ai_sample.'+table,exists=exists))
  finally:config.clear()
-print(json.dumps(dict(task_id=data['task_id'],run_id=data['run_id'],source_sha256=data['source_sha256'],targets=rows,write_started=False,status='PASS')))
+print(json.dumps(dict(task_id=data['task_id'],run_id=data['run_id'],target=data['target'],source_sha256=data['source_sha256'],targets=rows,write_started=False,status='PASS')))
 '''
 result=subprocess.run(['wsl.exe','-d','RockyLinux9','-u','root','--','docker','exec','-i',
  'ai-etl-stage-guidance-ui-api-1','python','-m','app.bootstrap','python','-c',code,json.dumps(state)],
