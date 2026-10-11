@@ -1,16 +1,17 @@
 import {useEffect,useState} from 'react';
 import {jsonBody,request} from './api';
-import {useWorkflowRefresh,useOperation} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useOperation,useManagedRefresh} from './useWorkflowRefresh';
 import {ExecutionReconciliation} from './ExecutionReconciliation';
 
 export function ComparisonRecovery({base}:{base:string}) {
+  const managed=useManagedRefresh();
   const url=base+'/comparison-recovery';
   const op=useOperation('comparison_recovery');
   const readOnly=!op.enabled;
   const [attempt,setAttempt]=useState(0);
   const [data,setData]=useState<any>(null),[consent,setConsent]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
   useWorkflowRefresh(base,()=>setAttempt(n=>n+1),busy||consent);
-  useEffect(()=>{let live=true;request(url).then(value=>{if(live){setData(value);setError('')}}).catch(e=>{if(live){setData(null);setError(e.message)}});return()=>{live=false}},[url,attempt]);
+  useEffect(()=>{let live=true;request(url).then(value=>{if(live)setData(value)}).catch(e=>{if(live){setData(null);setError(e.message)}});return()=>{live=false}},[url,attempt]);
   async function refresh(){setBusy(true);setConsent(false);setError('');try{setData(await request(url))}catch(e:any){setData(null);setError(e.message)}finally{setBusy(false)}}
   async function save(){if(busy||readOnly||!consent)return;setBusy(true);setError('');try{
     setData(await request(url,jsonBody('POST',{confirmed:consent,binding_checksum:data.binding_checksum})));setConsent(false);
@@ -18,9 +19,9 @@ export function ComparisonRecovery({base}:{base:string}) {
   if(data?.status==='NOT_ELIGIBLE')return null;
   return <section aria-label="只重新比對結果"><h5>只重新比對結果</h5>
     <p>僅適用於 Hop 已確定完成、結果比對後處理失敗的版本。使用原已核准查詢重新讀取目標，不會啟動 Hop、建表、清空或再次寫入；原失敗紀錄仍保留。</p>
-    <button disabled={busy} onClick={refresh}>重新核對比對恢復狀態</button>
+    {(!managed||error)&&<button disabled={busy} onClick={refresh}>{managed?'重試讀取比對恢復狀態':'重新核對比對恢復狀態'}</button>}
     {error&&<p role="alert">{error}。請先重新核對狀態；不會自動重送。</p>}
-    {data?.status==='AWAITING_CONFIRMATION'&&<>
+    {!error&&data?.status==='AWAITING_CONFIRMATION'&&<>
       {!data.enabled?<p>部署尚未啟用受控 Worker。</p>:<>
         <label><input type="checkbox" disabled={readOnly||busy} checked={consent} onChange={e=>setConsent(e.target.checked)}/>我同意只重新讀取並比對原結果，不重跑 ETL，也不視為 QA 或 Release 核准</label>
         <button disabled={readOnly||busy||!consent} onClick={save}>授權重新比對（不重跑 ETL）</button>

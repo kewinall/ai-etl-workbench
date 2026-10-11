@@ -7,8 +7,8 @@
       "skipped": 139
     },
     "browser": {
-      "passed": 105,
-      "skipped": 36
+      "passed": 117,
+      "skipped": 32
     },
     "scope": "Isolated deterministic engineering including oracle draft regression; real execution cases are separate."
   },

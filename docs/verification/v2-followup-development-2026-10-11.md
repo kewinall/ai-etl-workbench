@@ -142,3 +142,13 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - 本批没有修改 application source，backend2132 PASS/139skip及默认browser105 PASS/36skip沿用前批当前source，不重複冒算。native readonly test新增可選proof路径，新三案真实回归已實跑；其余条件测试並未因三案通过而视为全部完成。
 
 本輪三案正常七階段可階段性驗收；WS-0007整體仍進行中。尚待独立里程碑：已交付版本修正版能力、JSON／資料表完整執行、REPLACE／UPSERT、維運復原、完整列印報告及人工成效基準。QA補證、執行失聯、網路回應遺失等保護有工程或保留歷史證據，未在这三案刻意另作新的真實故障／模型成本案例。下一步依 opt-in inventory 的證據層次選定尚未實測分支，補隔離回歸及清楚交接，不重跑這三個已交付目標。
+
+## 異常分支第一批：背景更新與回應遺失
+
+- `comparison-recovery.spec.ts` 原四項是合成 UI 測試，卻只接受5195且先真實建立Task，停留舊需求頁入口。改用既有 `authorizationWorkspace` 純瀏覽器fixture，所有GET合成、非預期寫入攔截，走現在結果階段；保留MATCH/MISMATCH/FAILED/409、確認binding、單次POST、重新載入、390px及Hop原失敗狀態斷言，新增已受理但POST回應遺失分支。不再需要改真實設定或5195。
+- 首次3PASS/2FAIL（22.2秒）：409及回應遺失警示在`workbench:changed`後迅速消失。原因是HopDispatch背景refresh把data設null，卸載ComparisonRecovery，且後者背景GET又清除error；原錯誤與待核對狀態不能保存。
+- Hop／QA背景讀取保留原data、error、consent，編輯同意時暫停背景重讀；明確局部GET重試才清除error與重新檢查派發。未確認寫入結果時隱藏新授權表單，不重送POST；ComparisonRecovery也不在背景GET清除error，主工作區只保留共用刷新，局部按鈕仅讀取失敗或送出不明時出現。
+- QA回應遺失四分支首次4PASS/1FAIL（15.0秒）：QA未保存時背景GET仍顯示授權checkbox。補上error守門；正常單次QA/Hop授權、已受理／未受理回應遺失、明確GET核對、reload及單次POST全部通過。
+- 新增QA／Hop服務未就緒原因與禁用操作、QA NEEDS_REVIEW補證複核只帶前次invocation另預約新審查、無Hop操作。後者是合成API互動驗證，不宣稱新真實QA複核完成；原三案已交付只讀。
+- 最終focused **14PASS（24.0秒）**，build PASS（原bundle-size warning保留）。全部使用当前source5199＋純合成瀏覽器API，未呼叫模型、Hop、Vertica或交付；5197尚未部署本批，5183未更動。原Join未提交hash不變。backend沒有修改，2132PASS/139skip沿用前批。
+- 完整預設瀏覽器最終 **117PASS／32skip／0FAIL（3.4分鐘）**，證據 `runtime-temp/v2-followup-abnormal-default-browser`；減少4個skip是比對恢復合成測試常態化，新增8項合成分支，不等同新真實故障驗收。執行失聯／準備核對的合成測試仍依賴舊有導航環境，下一批繼續常態化並保留原確認/結案/禁止重跑斷言；真實故障案例仍需獨立隔離DB，不在已交付Task注入故障。
