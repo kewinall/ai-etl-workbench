@@ -23,18 +23,19 @@ test('設定政策儲存重載與伺服器限制', async ({page, request}) => {
     await expect(page.getByRole('heading', {name: '驗證與交付策略'})).toBeVisible();
     await expect(page.getByLabel('受控範例 Schema')).toHaveAttribute('readonly', '');
     await expect(page.getByLabel('Release 前必須確認 Naming Contract')).toBeDisabled();
-    await page.getByLabel('範例資料筆數').fill('7');
+    await expect(page.getByLabel('範例資料筆數（已保存偏好）')).toHaveAttribute('readonly', '');
+    await expect(page.getByRole('button', {name: '儲存驗證策略'})).toHaveCount(0);
+    await expect(page.getByText('此設定尚未接入執行流程', {exact: false})).toBeVisible();
     await page.getByRole('button', {name: '執行環境與路徑', exact: true}).click();
     await expect(page.getByRole('heading', {name: '執行環境與工具路徑', exact: true})).toBeVisible();
     await expect(page.getByRole('heading', {name: '驗證與交付策略'})).not.toBeVisible();
     await page.getByRole('button', {name: '驗證與交付', exact: true}).click();
-    await expect(page.getByLabel('範例資料筆數')).toHaveValue('7');
-    const saved = page.waitForResponse(r => r.url().endsWith(endpoint) && r.request().method() === 'PUT');
-    await page.getByRole('button', {name: '儲存驗證策略'}).click();
-    expect((await saved).status()).toBe(200);
+    await expect(page.getByLabel('範例資料筆數（已保存偏好）')).toHaveValue(String(original.sample_rows));
+    // Retain backend policy validation independently of the retired UI editor.
+    expect((await request.put(endpoint, {data: {sample_rows: 7, require_naming_contract: true}})).status()).toBe(200);
     await page.reload();
     await page.getByRole('button', {name: '驗證與交付', exact: true}).click();
-    await expect(page.getByLabel('範例資料筆數')).toHaveValue('7');
+    await expect(page.getByLabel('範例資料筆數（已保存偏好）')).toHaveValue('7');
     for (const path of [endpoint, '/api/settings/validation_release_policy']) {
       const rejected = await request.put(path, {data: {sample_rows: 7, require_naming_contract: false}});
       expect(rejected.status()).toBe(422);

@@ -27,7 +27,7 @@ export function OperatorGuide({navigate}:{navigate:(path:string)=>void}) {
         <li>規格需保存、檢查與人工核准。上游異動後不可沿用舊核准執行。</li></ol>
       <p>在需求補正表單逐欄位新增「結構化轉換意圖」：來源欄位以 source.0／source.1 區分，明定篩選比較、常數型別、分組、COUNT_ROWS 或 COUNT_NON_NULL 及輸出順序。保存後重新確認新版；聚合指標另在命名契約確認 $metric.指標識別 的英文名稱與型別。</p>
       <p>規格保存被語意驗證拒絕時，可在協作紀錄查看節點及預期／實際差異。查閱或編譯預覽不會新增保存失敗事件；沒有意圖契約的舊版本仍需人工逐項核對。</p>
-      <p>CHECKED／PIPELINE_NOT_READY 表示初步檢查完成但後續流程尚未接通，不是 ETL 成功。MATCH 只表示特定標準答案比對相符，不是 QA 或 Release 核准。</p>
+      <p>CHECKED／PIPELINE_NOT_READY 是當時初步需求檢查的紀錄；後續進度請以目前階段狀態為準，它們本身不表示 ETL 成功。MATCH 只表示特定標準答案比對相符，不是 QA 或 Release 核准。</p>
     </section>
     <section className="panel"><h3>4. 查閱歷史與處理失敗</h3>
       <p>Task 依七階段呈現：需求、需求審查、流程設計審查、執行確認、執行與結果、品質審查、成果交付。每階段先看摘要；已完成階段的完整紀錄與技術詳情收合在「查看…」中。畫面只有一個「重新核對狀態」；某區讀取失敗時才出現該區的重試。窄螢幕以「目前查看」展開七階段清單。</p>

@@ -10,7 +10,7 @@ function run(id=current){return {run_id:id,task_id:taskId,created_at:'2026-10-10
 function status(id=current,stage='requirements'){const i=keys.indexOf(stage);return {task_id:taskId,run_id:id,current_stage:stage,updated_at:'2026-10-10T00:00:00Z',historical:id===old,matches_current:true,category:'待你確認',owner:'你',completed:[],waiting:false,issues:[],stages:keys.map((key,n)=>({key,number:n+1,label:labels[n],status:n===i?'current':'blocked',can_operate:id!==old&&n<=i,blocked_reason:n>i?'先完成前一階段的必要核准與證據。':null})),next_action:{label:'確認需求版本',stage,enabled:id!==old},source_scope_note:'完整執行尚未驗收',operation_qualifications:quals(id!==old)};}
 // Synthetic eligibility: every operation allowed on the current version; real gating is tested in workflow-consistency.
 function quals(enabled:boolean){return Object.fromEntries(OPS.map(op=>[op,{type:'SAVE',enabled,blocked_reason:enabled?null:'歷史版本只讀'}]))}
-async function fixture(page:Page,options:{stage?:string;waiting?:boolean;issues?:any[];unknown?:boolean;actionLabel?:string;qaRevision?:boolean;join?:boolean;mismatch?:boolean;readOnlySource?:boolean;cancelled?:boolean}={}) {
+async function fixture(page:Page,options:{stage?:string;waiting?:boolean;issues?:any[];unknown?:boolean;actionLabel?:string;qaRevision?:boolean;join?:boolean;mismatch?:boolean;readOnlySource?:boolean;cancelled?:boolean;emptyLegacy?:boolean;legacyTask?:any}={}) {
  let stale=false,reads=0,posts=0;const records=[run(),run(old)];
  if(options.mismatch)records[0].matches_current=false;
  if(options.cancelled)records.forEach(r=>r.state='CANCELLED');
@@ -28,13 +28,14 @@ async function fixture(page:Page,options:{stage?:string;waiting?:boolean;issues?
   if(path==='/api/projects')return route.fulfill({json:[{project_id:project,project_name:'階段導引專案',description:'',naming_rules:{},default_ai_profile:'test',default_connection:'test'}]});
   if(path===`/api/projects/${project}/tasks`)return route.fulfill({json:[{id:taskId,name:'階段導引合成測試',project_id:project,source:'CSV',target:'VERTICA',latest_run:records[0]}]});
   if(path===`/api/projects/${project}/evaluation`)return route.fulfill({json:{project_id:project,basis:'ALL_PERSISTED_RUNS',cases:[{task_id:taskId,run_id:current,state:'NEEDS_REVIEW'}]}});
+  if(path.endsWith('/history-assets')&&options.emptyLegacy)return route.fulfill({json:{jobs:[],sql:[],hop_logs:[]}});
   if(path.endsWith('/history-assets'))return route.fulfill({json:{jobs:[{artifact_id:'legacy',name:'old.hpl',version:1,download_url:'/api/legacy-download',transforms:[],hops:[],content:'<pipeline/>'}],sql:[],hop_logs:[]}});
   if(path==='/api/tasks')return route.fulfill({json:[]});
   if(path==='/api/health')return route.fulfill({json:{mode:'postgres'}});
   if(path==='/api/ready')return route.fulfill({json:{execution_enabled:false}});
   // Requirements stage shows the Pilot readiness panel again; give it a complete synthetic answer.
   if(path.endsWith('/execution-settings'))return route.fulfill({json:{status:'CONFIGURED_NOT_TESTED',issues:[],execution_enabled:false,runtime_integration:'PENDING',credentials_and_connectivity:'NOT_TESTED'}});
-  if(path===`/api/tasks/${taskId}`)return route.fulfill({json:{id:taskId,project_id:project,name:'階段導引合成測試',source:'CSV',target:'VERTICA',source_config:{sources:[]},target_config:{},nodes:[],logs:[]}});
+  if(path===`/api/tasks/${taskId}`)return route.fulfill({json:{id:taskId,project_id:project,name:'階段導引合成測試',source:'CSV',target:'VERTICA',source_config:{sources:[]},target_config:{},nodes:[],logs:[],...options.legacyTask}});
   if(path.endsWith('/runs'))return route.fulfill({json:{runs:records}});
   if(path.match(/\/runs\/[^/]+$/)){const selected=records.find(r=>r.run_id===path.split('/').at(-1));return route.fulfill({json:selected||{detail:'missing'},status:selected?200:404})}
   if(path.endsWith('/specifications')||path.endsWith('/comparisons')||path.endsWith('/oracles'))return route.fulfill({json:{items:[]}});
@@ -166,7 +167,7 @@ test('專案接續開啟精確 Run 與階段；舊版下載保留',async({page})
  await fixture(page,{stage:'design'});await page.goto(`/#/projects/${project}/history`);
  await page.getByRole('button',{name:'繼續處理 階段導引合成測試'}).click();await expect(page).toHaveURL(new RegExp('/design/'+current));
  await page.getByText('舊版紀錄：Task 節點、Log、Hop、SQL 與下載',{exact:true}).click();
- await page.getByRole('button',{name:'讀取舊版產物'}).click();await expect(page.getByRole('link',{name:'下載舊版 old.hpl'})).toHaveAttribute('href','/api/legacy-download');
+ await expect(page.getByRole('link',{name:'下載舊版 old.hpl'})).toHaveAttribute('href','/api/legacy-download');
 });
 
 test('離線停用操作，恢復連線只讀核對',async({page})=>{
@@ -351,5 +352,32 @@ test('Hop 準備失敗不可沿用需求階段補正入口（合成 API）',asyn
  await page.goto(base+'/requirements/'+current);
  await expect(page.getByText('執行準備失敗，尚未啟動 Hop',{exact:true})).toBeVisible();
  await expect(page.getByRole('button',{name:'補正需求並建立新版',exact:true})).toHaveCount(0);
+ expect(f.counts().posts).toBe(0);
+});
+
+
+test('新版本無舊產物時，空白節點與管理紀錄不顯示舊版區',async({page})=>{
+ await fixture(page,{emptyLegacy:true,legacyTask:{status:'CREATED',nodes:[{key:'router',label:'Rule Router',status:'PENDING',duration_ms:0,detail:{}}],logs:[{level:'INFO',message:'Task created'},{level:'INFO',message:'Naming confirmed'}]}});
+ await page.goto(base+'/requirements/'+current);
+ await expect(page.getByLabel('共用 Run 版本')).toHaveValue(current);
+ await expect(page.getByText('舊版紀錄：Task 節點、Log、Hop、SQL 與下載',{exact:true})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'讀取舊版產物'})).toHaveCount(0);
+});
+
+test('保存的舊節點與失敗紀錄仍可展開查閱',async({page})=>{
+ await fixture(page,{emptyLegacy:true,legacyTask:{status:'FAILED',nodes:[{key:'executor',label:'Hop Executor',status:'FAILED',duration_ms:12,detail:{reason:'historic failure'}}],logs:[{level:'ERROR',node:'executor',message:'historic failure'}]}});
+ await page.goto(base+'/requirements/'+current);
+ await page.getByText('舊版紀錄：Task 節點、Log、Hop、SQL 與下載',{exact:true}).click();
+ await page.getByRole('button',{name:'Hop Executor · FAILED'}).click();
+ await expect(page.getByRole('region',{name:'舊版節點詳情'})).toContainText('historic failure');
+});
+
+test('舊版產物讀取失敗提供重試，恢復只做讀取',async({page})=>{
+ const f=await fixture(page,{emptyLegacy:true});let fail=true;
+ await page.route('**/history-assets',route=>fail?route.abort():route.fulfill({json:{jobs:[],sql:[],hop_logs:[]}}));
+ await page.goto(base+'/requirements/'+current);
+ await page.getByText('舊版紀錄：Task 節點、Log、Hop、SQL 與下載',{exact:true}).click();
+ fail=false;await page.getByRole('button',{name:'重試讀取舊版紀錄'}).click();
+ await expect(page.getByText('舊版紀錄：Task 節點、Log、Hop、SQL 與下載',{exact:true})).toHaveCount(0);
  expect(f.counts().posts).toBe(0);
 });

@@ -5,18 +5,18 @@ test('跨分類保存不覆寫草稿，失敗保留輸入並可取消（合成 A
   let release!:()=>void;const pending=new Promise<void>(resolve=>{release=resolve});
   const versions:any=Object.fromEntries(Object.keys(values).map(key=>[key,'2026-09-27T00:00:00+00:00']));
   await page.route('**/api/settings/groups',route=>route.fulfill({json:{values,versions}}));
-  await page.route('**/api/settings/groups/validation_release_policy',async route=>{
-    expect(route.request().headers()['x-settings-version']).toBe(versions.validation_release_policy);
-    await pending;values.validation_release_policy=route.request().postDataJSON();versions.validation_release_policy='2026-09-27T00:01:00+00:00';await route.fulfill({json:{ok:true}});
+  await page.route('**/api/settings/groups/ai_provider_model_strategy',async route=>{
+    expect(route.request().headers()['x-settings-version']).toBe(versions.ai_provider_model_strategy);
+    await pending;values.ai_provider_model_strategy=route.request().postDataJSON();versions.ai_provider_model_strategy='2026-09-27T00:01:00+00:00';await route.fulfill({json:{ok:true}});
   });
   await page.route('**/api/settings/groups/data_connections_targets',route=>route.fulfill({status:503,json:{detail:'合成測試：暫時無法儲存'}}));
   await page.goto('/#/system');
   await page.getByRole('button',{name:'資料連線與目標',exact:true}).click();
   await page.getByLabel('Host',{exact:true}).fill('unsaved-host');
-  await page.getByRole('button',{name:'驗證與交付',exact:true}).click();
-  await page.getByLabel('範例資料筆數',{exact:true}).fill('7');
-  await page.getByRole('button',{name:'儲存驗證策略',exact:true}).click();
-  await expect(page.getByLabel('範例資料筆數',{exact:true})).toBeDisabled();release();
+  await page.getByRole('button',{name:'AI 供應商與模型',exact:true}).click();
+  await page.getByLabel('預設 AI Profile',{exact:true}).fill('saved-profile');
+  await page.getByRole('button',{name:'儲存平台 AI 預設',exact:true}).click();
+  await expect(page.getByLabel('預設 AI Profile',{exact:true})).toBeDisabled();release();
   await expect(page.getByText('設定已儲存並重新讀取',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'資料連線與目標',exact:true}).click();
   await expect(page.getByLabel('Host',{exact:true})).toHaveValue('unsaved-host');
@@ -30,6 +30,6 @@ test('跨分類保存不覆寫草稿，失敗保留輸入並可取消（合成 A
   await page.getByRole('button',{name:'取消此分類修改',exact:true}).click();
   await expect(page.getByLabel('Host',{exact:true})).toHaveValue('synthetic-host');
   await expect(page.getByText('有未儲存的平台設定',{exact:true})).toHaveCount(0);
-  await page.getByRole('button',{name:'驗證與交付',exact:true}).click();
-  await expect(page.getByLabel('範例資料筆數',{exact:true})).toHaveValue('7');
+  await page.getByRole('button',{name:'AI 供應商與模型',exact:true}).click();
+  await expect(page.getByLabel('預設 AI Profile',{exact:true})).toHaveValue('saved-profile');
 });

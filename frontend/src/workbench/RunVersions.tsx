@@ -161,7 +161,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun,notice,onNotice}:
       {(!managed||!!message)&&<button disabled={busy} onClick={() => action(async () => {await load(); if (detail) await open(detail.run_id)})}>{managed?'重試讀取版本':'重新載入版本'}</button>}
     </div>
     {message && <p role="status">{message}</p>}
-    {!runs.length && <p>尚無準備版本；既有紀錄可在「產物與流程」與「執行與 QA」查看。</p>}
+    {!runs.length && <p>尚無準備版本；有保存的舊資料時，可展開下方「舊版紀錄」查看。</p>}
     {!onSelectRun&&<div className="run-version-list">{runs.map(run => <button disabled={busy} key={run.run_id} onClick={() => action(() => open(run.run_id))} aria-pressed={detail?.run_id === run.run_id}>
       <b>{states[run.state] || run.state}</b><span>{new Date(run.created_at).toLocaleString()}</span><small>{run.run_id}</small>
     </button>)}</div>}

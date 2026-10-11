@@ -85,7 +85,6 @@ class PostgresRepository:
    target_config={**(data.get('target_config') or {}),'type':target,'schema':data['target_schema'],'table':data['target_table']}
    project_id=data.get('project_id') or '00000000-0000-0000-0000-000000000010'
    c.execute("insert into platform.task(task_id,project_id,task_name,task_type,task_category,requirement_text,status,current_step,source_type,source_config,target_type,target_config,model_provider,progress,error_test_config) values(%s,%s,%s,%s,%s,%s,'CREATED','router',%s,%s,%s,%s,%s,0,%s)",(task_id,project_id,data['name'],operation,data.get('category','STAGE'),data['requirement'],source,json.dumps(source_config),target,json.dumps(target_config),data['model'],json.dumps(data.get('error_test_config') or {})))
-   for i,(key,label) in enumerate(STEPS): c.execute("insert into platform.task_node_run(node_run_id,task_id,node_key,node_label,sequence_no,status) values(%s,%s,%s,%s,%s,'PENDING')",(uuid.uuid4(),task_id,key,label,i+1))
    c.execute("insert into platform.task_event(task_id,level,node_key,message) values(%s,'INFO','router','Task created and persisted in PostgreSQL')",(task_id,))
    if request_key:c.execute('INSERT INTO platform.task_creation_request(project_id,request_key,payload_checksum,task_id) VALUES(%s,%s,%s,%s)',(project_id,request_key,digest,task_id))
   return self.get_task(task_id)

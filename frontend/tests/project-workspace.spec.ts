@@ -82,6 +82,11 @@ test('歷史 Task 保留建立內容、節點、Job 頁面及返回路徑', asyn
   }});
   expect(response.status()).toBe(201);
   const task = await response.json();
+  expect(task.nodes).toEqual([]);
+  // Explicit saved historical UI fixture; new Tasks no longer create legacy placeholders.
+  const nodes=['Rule Router','Source Profiler','Requirement / SA Agent','Developer Agent','Static Validator','Semantic Validator','Hop Executor','Post-write Count'].map((label,i)=>({key:String(i),label,status:'SUCCEEDED',duration_ms:1,detail:{saved_historical_record:true}}));
+  await page.route('**/api/tasks/'+task.id,route=>route.fulfill({json:{...task,status:'SUCCEEDED',nodes}}));
+  await page.route('**/api/tasks/'+task.id+'/history-assets',route=>route.fulfill({json:{jobs:[],sql:[{artifact:'historical',node:'0',sql:'SELECT 1;'}],hop_logs:[{log_type:'saved historical',log_content:'previous execution'}]}}));
   await page.goto(`/#/projects/${project.project_id}/history`);
   await page.getByRole('button', {name: /歷史節點驗收/}).click();
   await expect(page).toHaveURL(new RegExp('/tasks/'+task.id+'/requirements$'));
@@ -106,7 +111,7 @@ test('歷史 Task 保留建立內容、節點、Job 頁面及返回路徑', asyn
   await expect(legacy.getByRole('button', {name: /Rule Router/})).toHaveAttribute('aria-pressed', 'true');
   await expect(legacy.getByRole('region', {name: '舊版節點詳情'})).toContainText('Rule Router');
   await page.screenshot({path: test.info().outputPath('node-details.png'), fullPage: true});
-  await legacy.getByRole('button', {name: '讀取舊版產物', exact: true}).click();
+  await expect(legacy.getByRole('button', {name: '讀取舊版產物', exact: true})).toHaveCount(0);
   await expect(legacy.getByRole('heading', {name: '舊版 SQL', exact: true})).toBeVisible();
   await expect(legacy.getByRole('heading', {name: '舊版 Apache Hop Log', exact: true})).toBeVisible();
   await page.getByRole('tab', {name: /7 · 成果交付/}).click();

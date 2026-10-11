@@ -23,7 +23,7 @@ def test_concurrent_creation_keeps_unique_ids_and_complete_children(context):
         with ThreadPoolExecutor(max_workers=8) as pool:
             results=list(pool.map(create,range(8)))
         assert len({row['id'] for row in results})==8
-        assert all(len(row['nodes'])==8 and len(row['logs'])==1 for row in results)
+        assert all(len(row['nodes'])==0 and len(row['logs'])==1 for row in results)
         assert all(row['status']=='CREATED' and row['project_id']==project for row in results)
     finally:
         # Only this isolated fixture's newly created synthetic tasks; no runs exist.
@@ -51,3 +51,20 @@ def test_same_request_replays_once_and_changed_payload_conflicts(context):
     finally:
         with queue.conn() as conn:
             conn.execute('DELETE FROM platform.task WHERE project_id=%s AND task_id<>%s',(project,existing))
+
+
+def test_new_task_creation_does_not_remove_saved_legacy_nodes(context):
+    queue, existing = context
+    repo = PostgresRepository(queue.url)
+    with queue.conn() as conn:
+        conn.execute("INSERT INTO platform.task_node_run(node_run_id,task_id,node_key,node_label,sequence_no,status,detail) VALUES(%s,%s,'router','Saved legacy router',1,'SUCCEEDED',%s::jsonb)", (uuid4(), existing, '{"historic": true}'))
+    before = repo.get_task(existing)['nodes']
+    created = None
+    try:
+        created = repo.create_task(dict(project_id=repo.get_task(existing)['project_id'], name='New Run workflow', requirement='No legacy placeholders', target_schema='ai_sample', target_table='never_created', model='synthetic'))
+        assert created['nodes'] == []
+        assert repo.get_task(existing)['nodes'] == before
+    finally:
+        if created:
+            with queue.conn() as conn:
+                conn.execute('DELETE FROM platform.task WHERE task_id=%s', (created['id'],))

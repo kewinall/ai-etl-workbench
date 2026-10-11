@@ -14,7 +14,7 @@ test('七階段保留舊產物下載與 Release 閘門（隔離 UI，非 Hop E2E
  await expect(page).toHaveURL(/\/results$/);
  await page.getByText('舊版紀錄：Task 節點、Log、Hop、SQL 與下載',{exact:true}).click();
  await page.getByRole('button',{name:/合成編譯節點/}).click();await expect(page.getByRole('region',{name:'舊版節點詳情'})).toContainText('customer_id');
- await page.getByRole('button',{name:'讀取舊版產物'}).click();
+ await expect(page.getByRole('button',{name:'讀取舊版產物'})).toHaveCount(0);
  await page.getByText('XML／完整定義',{exact:true}).click();await expect(page.getByText(xml,{exact:true})).toBeVisible();
  const downloaded=page.waitForEvent('download');await page.getByRole('link',{name:'下載舊版 synthetic.hpl'}).click();const download=await downloaded;
  expect(download.suggestedFilename()).toBe('synthetic.hpl');expect(await readFile((await download.path())!,'utf8')).toBe(xml);

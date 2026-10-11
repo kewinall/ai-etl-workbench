@@ -54,3 +54,17 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - 相關核准綁定／單次派發／Oracle／交付21項合併54passed；完整最終2123passed／139skip／0failed／1 warning（60.04秒）。新guard仍保留尚未交付時的有效核准、失效拒絕及原idempotency業務斷言。
 - inventory逐項標明Task/Run寫入、純預覽POST、停用入口及非工作流API；不是整個平台全部API安全稽核。正式Release approve對已交付僅允許同binding/checksum的既有交付acknowledgement，不產生新檔／事件／派發，不能當成重新核准。
 - 第一段工程里程碑可階段性通過，進入第二段。真實provider與完整執行證據仍在第三段，WS-0007保持active。準備失敗修訂資格與後端一致，未提供不合資格的直接重試。
+
+
+## 第二段：介面精簡與舊資料邊界
+
+- 新Task不再insert八個停用Task流程的PENDING節點；保留建立事件、request-key重複建立保護、既有task_node_run資料與GET。隔離PG測試確認八次並行建立唯一ID、新Task nodes=[]、舊節點讀回完全不變。
+- LegacyTaskRecords自動讀取history-assets、依Task id綁定回應。只有實際非PENDING節點／錯誤／歷史執行狀態／產物才顯示舊區；普通建立及命名INFO紀錄不觸發空白區。失敗可重試GET；不增加写入或執行。沒有資料的SQL／Hop Log標題也不顯示。
+- 未接入執行流程的validation_release_policy在設定頁改唯讀保存值，隱藏Save、分類取消及差異套用；原保存資料與後端policy限制保留。設定草稿測試移用實際AI預設，保留X-Settings-Version、跨分類草稿、送出鎖定、失敗保留及離開攔截業務斷言；policy API限制仍實测。
+- 操作指南及尚無Run說明改為當時檢查紀錄／目前七階段，不再宣稱後續流程未接通或指向舊頁籤。
+- 新增3項瀏覽器案例：空白舊節點／管理log不顯示、真實形狀的舊失敗節點可展開、history-assets讀取失敗恢復只做GET。保留舊ZIP/XML下载位元組檢查、全部八個歷史節點詳情與返回路径。
+- focused36PASS；第一輪完整瀏覽器98PASS/39skip/3FAIL，其中2個過期手動刷新／空白歷史fixture，1個並行runner共用test-results產生ENOENT。改為明確保存歷史fixture、自動GET，並分離輸出目錄後再完整重跑，不將runner錯誤當成產品完成證据。
+- 後端最終2124PASS/139skip/0FAIL（64.52秒），frontend buildPASS。静態reachability84個有效檔案，unreachable只有vite-env.d.ts型別宣告，無動態import。
+- 隔離API8765重新啟動以讀取最新mounted source，前端5199使用該API；5197／5183未部署或更動。未執行真實模型、Hop、Vertica、QA或Release；既有Join未提交修改hash不變。
+
+- 第二輪完整瀏覽器最終101PASS/39skip/0FAIL（2.7分鐘），獨立輸出runtime-temp/v2-followup-stage2-browser。第二段工程驗證可阶段性收斂，第三段仍未完成；skip不是PASS或真實全鏈驗收。
