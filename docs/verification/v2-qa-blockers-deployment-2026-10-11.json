@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-11",
+  "source_commit": "312e36c",
+  "status": "PASS",
+  "bundle": "index-D6-WBKU9.js",
+  "deploy_scope": "5197 api/web only",
+  "backend_targeted": {
+    "passed": 57,
+    "failed": 0
+  },
+  "browser_isolated": {
+    "passed": 9,
+    "failed": 0
+  },
+  "browser_compiled": {
+    "passed": 9,
+    "failed": 0
+  },
+  "native_release_browser": {
+    "passed": 10,
+    "failed": 0
+  },
+  "protected_containers_unchanged": 8,
+  "preserved_releases": 8,
+  "new_external_writes": 0,
+  "model_calls": 0,
+  "hop_calls": 0,
+  "source_hashes": {
+    "qa_authorization_api.py": "cd31d88f8c6d8e6ca2ff9884e99be83bb73506de5b754010d8ba28f64da0a8e1",
+    "workflow_status.py": "260bed949351571ed11bd3894c87ff20dad0b861502ffac5080ca6fa8f4377f1"
+  },
+  "cases": [
+    {
+      "task_id": "TASK-20261011-0001",
+      "run_id": "f65777ad-8457-49c5-8cb0-8cd0bf0ab84b",
+      "qa_eligible": false,
+      "qa_blocked_reason": "已有 QA 審查紀錄，請查看結果與人工核准狀態；不會再次呼叫模型。",
+      "workflow_write_enabled": false
+    },
+    {
+      "task_id": "TASK-20261011-0002",
+      "run_id": "0db71099-170f-497d-a35f-c2bbb927994b",
+      "qa_eligible": false,
+      "qa_blocked_reason": "已有 QA 審查紀錄，請查看結果與人工核准狀態；不會再次呼叫模型。",
+      "workflow_write_enabled": false
+    },
+    {
+      "task_id": "TASK-20261011-0003",
+      "run_id": "2980c558-ee7b-426a-a57a-fc40d5a18e34",
+      "qa_eligible": false,
+      "qa_blocked_reason": "已有 QA 審查紀錄，請查看結果與人工核准狀態；不會再次呼叫模型。",
+      "workflow_write_enabled": false
+    }
+  ],
+  "limits": [
+    "No new live reassessment was performed. Current-prompt NEEDS_REVIEW cannot be forced into an old-prompt clarification.",
+    "Latest full suite remains historical backend 2134/139 and browser 152/28; this patch was verified by targeted suites, not a new full-suite run.",
+    "Frontend chunk remains above 500KB."
+  ],
+  "rollback": "Private previous-api-image.txt and previous-web-image.txt preserve prior images; retag each original image, then compose up --no-deps -d api web without --build and recheck immutable releases.",
+  "test_corrections": [
+    "New backend mock matched task_run_result_comparison as task_run; fixed exact table matching and actual qualification key.",
+    "Initial UI removed status asserted by existing tests; kept technical status in collapsed details without weakening assertions."
+  ]
+}

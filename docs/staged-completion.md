@@ -2,7 +2,9 @@
 
 ## 最新進度（2026-10-11）
 
-5197 API source `7029156`、前端 source `9860a5c`（`index-H2kR65yM.js`）。新 CSV／Excel／LEFT JOIN 三案真實七階段及正式交付已有證據；最新定位部署 8 PASS、三案三寬度唯讀回歸 10 PASS，八個正式成果與九個受保護服務不變。隔離後端 2134 PASS／139 skip，預設瀏覽器 152 PASS／28 skip／0 FAIL。原規劃、證據與尚未完成的新操作列於 [要求對照](verification/v2-requirements-audit-2026-10-11.md)，整體 v2／WS-0007 維持部分完成。
+QA阻擋原因修正 `312e36c` 已部署5197 API/web（`index-D6-WBKU9.js`）：相關後端57PASS、隔離及compiled瀏覽器各9PASS、新三真實正式成果唯讀10PASS，八Release及八個其他服務不變。原補證資格限制維持，不會因NEEDS_REVIEW任意重新呼叫模型。詳見 [QA部署證據](verification/v2-qa-blockers-deployment-2026-10-11.json)。本輪另準備新失敗目標守門23PASS，尚未執行新的故障寫入。
+
+前一批定位部署API source `7029156`、前端 source `9860a5c`（`index-H2kR65yM.js`）。新 CSV／Excel／LEFT JOIN 三案真實七階段及正式交付已有證據；定位部署 8 PASS、三案三寬度唯讀回歸 10 PASS，八個正式成果與九個受保護服務不變。該批完整隔離後端 2134 PASS／139 skip，預設瀏覽器 152 PASS／28 skip／0 FAIL。原規劃、證據與尚未完成的新操作列於 [要求對照](verification/v2-requirements-audit-2026-10-11.md)，整體 v2／WS-0007 維持部分完成。
 
 ## 先前部署驗收（2026-10-11）
 

@@ -6,6 +6,8 @@
 
 最新：來源定位 `9860a5c` 已部署5197 web（`index-H2kR65yM.js`），API仍為`7029156`。定位8PASS，新三案與前一批三案各10PASS，完整隔離瀏覽器152PASS／28skip／0FAIL；八正式成果與九個其他服務不變。見 [部署證據](v2-field-focus-deployment-2026-10-11.json)。
 
+後續最新：QA阻擋原因 `312e36c` 已部署5197 API/web（`index-D6-WBKU9.js`），相關後端57PASS、隔離及compiled授權瀏覽器各9PASS、新三正式成果唯讀10PASS。八Release與八其他服務不變；完整全套未另重跑。見 [QA部署證據](v2-qa-blockers-deployment-2026-10-11.json)。實際最新指引的新Task不可任意補證複核，不能降級指引或改保存證據制造資格；R19的新真實操作仍需合法前提。
+
 | 編號 | 原要求 | 實作／驗證來源 | 判定與邊界 |
 |---|---|---|---|
 | R01 | 沿用 React／API／核准，不新增框架 | `frontend/package.json`；Run API 與既有 approval stores | 已沿用；此次來源定位修正不增加依賴 |

@@ -15,6 +15,29 @@ def test_only_fixed_synthetic_new_target():
     assert check_scope(current(),'a'*64)=='pilot_missing_column_20260927'
 
 
+def test_acceptance_target_requires_explicit_exact_allowance():
+    data=current();data['specification']['target_table']='ui_accept_revision_20261011_v1'
+    with pytest.raises(ValueError):check_scope(data,'a'*64)
+    with pytest.raises(ValueError):check_scope(data,'a'*64,'ui_accept_revision_20261012_v1')
+    assert check_scope(data,'a'*64,'ui_accept_revision_20261011_v1')=='ui_accept_revision_20261011_v1'
+
+
+@pytest.mark.parametrize('target',['ui_accept_csv_20261011_v2','ui_accept_revision_20261011_v2',
+    'ui_accept_revision_20261011_v1;DROP','business','ui_accept_partial_20261011_v1'])
+def test_explicit_acceptance_allowance_cannot_expand_target_namespace(target):
+    data=current();data['specification']['target_table']=target
+    with pytest.raises(ValueError):check_scope(data,'a'*64,target)
+
+
+@pytest.mark.parametrize('change',['started','child','source','binding'])
+def test_acceptance_allowance_still_rejects_replay_or_changed_input(change):
+    data=current();target='ui_accept_revision_20261011_v1';data['specification']['target_table']=target
+    if change=='started':data['run']['write_started']=True
+    if change=='child':data['run']['parent_run_id']='old'
+    if change=='source':data['run']['input_snapshot']['source_config']['sources'][0]['checksum']='b'*64
+    with pytest.raises(ValueError):check_scope(data,'b'*64 if change=='binding' else 'a'*64,target)
+
+
 @pytest.mark.parametrize('key,value',[('target_schema','business'),('target_table','other'),
     ('target_table','pilot_missing_column_20260927;DROP'),('version',2),('write_mode','REPLACE'),
     ('output_columns',['label']),('filters',[{}]),('aggregation',{})])
