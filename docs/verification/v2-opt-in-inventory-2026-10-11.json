@@ -453,7 +453,7 @@
       "environment_keys": [
         "WORKBENCH_EVIDENCE_TEST"
       ],
-      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "this_followup_execution": "2 PASS 5.4s on deployed 5197 API 7029156; original CSV/Excel seven-stage read-only, 23 non-download qualifications disabled, real download hashes unchanged, write endpoint 405, complete Run unchanged",
       "legacy_selectors_present": false
     },
     {
@@ -1488,5 +1488,11 @@
       "this_followup_execution": "2 real retained UI cases + 1 manifest guard PASS, 5.5s; original records and 9 protected containers unchanged; GET-only gateway 405; temporary service stopped",
       "legacy_selectors_present": false
     }
-  ]
+  ],
+  "deployed_sources": {
+    "api": "7029156",
+    "frontend": "d3a2e4d",
+    "bundle": "index-CQpDjssy.js",
+    "evidence": "docs/verification/v2-evidence-api-deployment-2026-10-11.json"
+  }
 }
