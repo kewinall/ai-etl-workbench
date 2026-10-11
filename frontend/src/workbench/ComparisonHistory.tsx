@@ -1,8 +1,9 @@
 import {useEffect,useState} from 'react';
 import {request} from './api';
-import {useWorkflowRefresh} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useManagedRefresh} from './useWorkflowRefresh';
 
 export function ComparisonHistory({taskId,runId}:{taskId:string;runId:string}) {
+  const managed=useManagedRefresh();
   const [items,setItems]=useState<any[]>([]),[busy,setBusy]=useState(true),[error,setError]=useState(''),[attempt,setAttempt]=useState(0);
   useEffect(()=>{
     let live=true;setItems([]);setBusy(true);setError('');
@@ -13,7 +14,7 @@ export function ComparisonHistory({taskId,runId}:{taskId:string;runId:string}) {
   useWorkflowRefresh(`/api/tasks/${encodeURIComponent(taskId)}/runs/${runId}`,()=>setAttempt(n=>n+1),busy);
   return <section aria-label="結果比對證據" style={{overflowWrap:'anywhere'}}><h3>結果比對證據</h3>
     <p>對應上方選擇的準備版本。請分別檢視結果差異與來源核對狀態；比對一致不等於 QA 通過，也不能據此交付。</p>
-    <button disabled={busy} onClick={()=>setAttempt(n=>n+1)}>重新讀取比對證據</button>
+    {(!managed||error)&&<button disabled={busy} onClick={()=>setAttempt(n=>n+1)}>{managed?'重試讀取比對證據':'重新讀取比對證據'}</button>}
     {busy&&<p role="status">正在讀取比對紀錄…</p>}{error&&<p role="alert">無法讀取比對證據：{error}</p>}
     {!busy&&!error&&!items.length&&<p>此準備版本尚無保存的結果比對；不是零差異或 QA 通過。</p>}
     {items.map(item=>{const e=item.evidence;return <article className="wb-record" key={item.comparison_id}>

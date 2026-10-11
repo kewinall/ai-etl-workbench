@@ -18,7 +18,7 @@ test('七階段保留舊產物下載與 Release 閘門（隔離 UI，非 Hop E2E
  await page.getByText('XML／完整定義',{exact:true}).click();await expect(page.getByText(xml,{exact:true})).toBeVisible();
  const downloaded=page.waitForEvent('download');await page.getByRole('link',{name:'下載舊版 synthetic.hpl'}).click();const download=await downloaded;
  expect(download.suggestedFilename()).toBe('synthetic.hpl');expect(await readFile((await download.path())!,'utf8')).toBe(xml);
- for(const width of [390,768,1440]){await page.setViewportSize({width,height:1000});for(let n=1;n<=7;n++){await page.getByRole('tab',{name:new RegExp(`${n} ·`)}).click();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true)}}
+ for(const width of [390,768,1440]){await page.setViewportSize({width,height:1000});for(let n=1;n<=7;n++){if(width<=600)await page.getByRole('button',{name:/目前查看：第/}).click();await page.getByRole('tab',{name:new RegExp(`${n} ·`)}).click();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true)}}
  expect((await request.post(`/api/tasks/${task.id}/release`)).status()).toBe(409);
  expect((await request.get(`/api/tasks/${task.id}/release/legacy/download`)).status()).toBe(409);
  expect(errors).toEqual([]);expect((await(await request.get(`/api/tasks/${task.id}`)).json()).status).toBe('CREATED');

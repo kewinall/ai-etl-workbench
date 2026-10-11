@@ -12,8 +12,8 @@ test('P0 專案首頁、搜尋、舊入口與返回', async ({page, request}) =>
   await expect(home.getByText('沒有符合搜尋條件的專案。')).toBeVisible();
   await home.getByLabel('搜尋專案').fill(projects[0].project_name);
   await home.getByRole('button', {name: `進入專案 ${projects[0].project_name}`, exact: true}).click();
-  await expect(page).toHaveURL(new RegExp(`/projects/${projects[0].project_id}/settings$`));
-  await expect(page.getByRole('tab', {name: '設定', exact: true})).toHaveAttribute('aria-selected', 'true');
+  await expect(page).toHaveURL(new RegExp(`/projects/${projects[0].project_id}/history$`));
+  await expect(page.getByRole('tab', {name: '工作清單', exact: true})).toHaveAttribute('aria-selected', 'true');
   await page.goBack();
   await expect(home).toBeVisible();
   await page.setViewportSize({width: 390, height: 844});

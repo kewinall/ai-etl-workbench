@@ -1,8 +1,9 @@
 import {useEffect,useState} from 'react';
 import {request,jsonBody} from './api';
-import {useWorkflowRefresh,useWorkflowReadOnly,useOperation} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useWorkflowReadOnly,useOperation,useManagedRefresh} from './useWorkflowRefresh';
 
 export function QAApproval({taskId,runId}:{taskId:string;runId:string}) {
+  const managed=useManagedRefresh();
   const readOnly=useWorkflowReadOnly();
   const op=useOperation('qa_approve');
   const [data,setData]=useState<any>(null),[busy,setBusy]=useState(true),[confirmed,setConfirmed]=useState(false),[error,setError]=useState(''),[reload,setReload]=useState(0);
@@ -35,6 +36,6 @@ export function QAApproval({taskId,runId}:{taskId:string;runId:string}) {
       <label><input type="checkbox" checked={confirmed} disabled={busy} onChange={e=>setConfirmed(e.target.checked)}/>我已檢視本 Run 的規格、執行與 QA 證據，確認此版本</label>
       <button disabled={readOnly||!op.enabled||busy||!confirmed} onClick={approve}>核准此版本 QA</button>
     </>}
-    <button disabled={busy} onClick={()=>setReload(n=>n+1)}>重新讀取核准狀態</button>
+    {(!managed||error)&&<button disabled={busy} onClick={()=>setReload(n=>n+1)}>{managed?'重試讀取核准狀態':'重新讀取核准狀態'}</button>}
   </section>;
 }

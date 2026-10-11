@@ -1,8 +1,9 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {request,sourcePath} from './api';
-import {useWorkflowRefresh} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useManagedRefresh} from './useWorkflowRefresh';
 
 export function SdmHistory({base}:{base:string}) {
+  const managed=useManagedRefresh();
   const [items,setItems]=useState<any[]|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const generation=useRef(0);
   const load=useCallback(async()=>{
@@ -28,7 +29,7 @@ export function SdmHistory({base}:{base:string}) {
   };
   return <section aria-label="SDM 候選文件歷史" style={{overflowWrap:'anywhere'}}>
     <h4>SDM 候選文件歷史</h4><p>保留本次準備版本的文件；歷史核准不代表目前仍有效，所有候選文件均非正式 Release。</p>
-    <button disabled={busy} onClick={load}>{busy?'處理歷史文件中…':'載入／重新整理 SDM 歷史'}</button>
+    {(!managed||error)&&<button disabled={busy} onClick={load}>{busy?'處理歷史文件中…':managed?'重試讀取 SDM 歷史':'載入／重新整理 SDM 歷史'}</button>}
     {error&&<p role="alert">{error}</p>}
     {items?.length===0&&<p>此準備版本尚無已保存的 SDM 候選文件。</p>}
     {items&&<ul>{items.map(row=><li key={row.sdm_id}>

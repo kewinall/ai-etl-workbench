@@ -49,3 +49,9 @@
 .pilot-cohorts button{white-space:normal;max-width:100%;margin:6px 0}
 @media(max-width:768px){.wb-project-home-list article{align-items:stretch;flex-direction:column}.wb-project-home{padding:16px}}
 .wb-summary-counts{display:flex;gap:1rem;flex-wrap:wrap;margin:8px 0}.wb-summary-counts div{min-width:96px}.wb-summary-counts dd{margin:0;font-size:20px;font-weight:600}
+/* Work list first: project switcher collapses above the content */
+.wb-projects{grid-template-columns:minmax(0,1fr)}
+.wb-project-switch>summary{cursor:pointer;padding:12px 16px;font-weight:600}.wb-project-switch[open]>summary{border-bottom:1px solid #e2e8f0}
+.wb-project-switch .wb-project-list{max-height:320px}
+.wb-tabs{flex-wrap:wrap;align-items:center}.wb-tabs-group{margin-left:auto;color:#64748b;font-size:12px;padding:0 4px}
+@media(max-width:600px){.wb-tabs-group{margin-left:0;width:100%}}

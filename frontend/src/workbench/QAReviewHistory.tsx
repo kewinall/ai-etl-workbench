@@ -3,11 +3,12 @@ import {request} from './api';
 import {QAApproval} from './QAApproval';
 import {QAAuthorization} from './QAAuthorization';
 import {QASourceEvidence} from './QASourceEvidence';
-import {useWorkflowRefresh,useWorkflowStatus} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useWorkflowStatus,useManagedRefresh} from './useWorkflowRefresh';
 
 const labels:Record<string,string>={QA_RESERVED:'已保存審查意圖（不代表模型已完成）',QA_OUTCOME_UNKNOWN:'結果不確定，需人工核對',VALIDATED_NOT_APPROVED:'模型建議已通過格式驗證（人工核准另列）',STALE_RESULT_NEEDS_REVIEW:'歷史版本建議，需重新核對'};
 const checks:Record<string,string>={specification:'規格與命名',static_validation:'流程靜態檢查',hop_execution:'Hop 執行',result_comparison:'標準答案比對',result_source:'結果來源'};
 export function QAReviewHistory({taskId,runId}:{taskId:string;runId:string}) {
+  const managed=useManagedRefresh();
   const [data,setData]=useState<any>(null),[busy,setBusy]=useState(true),[error,setError]=useState(''),[attempt,setAttempt]=useState(0);
   useEffect(()=>{
     let live=true;setData(null);setError('');setBusy(true);
@@ -25,7 +26,7 @@ export function QAReviewHistory({taskId,runId}:{taskId:string;runId:string}) {
     {milestones&&<p role="status"><b>目前有效狀態：{milestones.delivered?'人工 QA 已核准，已正式交付':milestones.qa_approved?'人工 QA 已核准':'尚無有效人工 QA 核准'}</b></p>}
     <p>QA 為 AI 角色建議；下列程式證據檢查不等於 AI 審查。模型建議與人工核准分別呈現，Release 仍需獨立驗證。</p>
     <QAAuthorization key={`${taskId}:${runId}`} taskId={taskId} runId={runId}/>
-    <button disabled={busy} onClick={()=>setAttempt(n=>n+1)}>重新讀取 QA 審查</button>
+    {(!managed||error)&&<button disabled={busy} onClick={()=>setAttempt(n=>n+1)}>{managed?'重試讀取 QA 審查':'重新讀取 QA 審查'}</button>}
     {busy&&<p role="status">正在讀取 QA 審查…</p>}{error&&<p role="alert">無法讀取 QA 審查：{error}</p>}
     {!busy&&!error&&data&&!item&&<p>此 Run 尚無 QA 模型審查紀錄；不是 QA 通過。</p>}
     {history.map((item:any,index:number)=><article className="wb-record" key={item.invocation_id}><h4>{index===0?'最新審查':'保留的歷史審查'} · {labels[item.status]||'未知審查狀態'}</h4>

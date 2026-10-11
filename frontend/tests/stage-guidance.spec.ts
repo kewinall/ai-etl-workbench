@@ -128,8 +128,15 @@ test('狀態過期停用操作；等待僅唯讀輪詢，隱藏時暫停',async(
 for(const width of [390,768,1440])test(`${width}px 七階段鍵盤与版面`,async({page})=>{
  await fixture(page);await page.setViewportSize({width,height:1000});await page.goto(base+'/requirements/'+current);
  await expect(page.getByLabel('共用 Run 版本')).toHaveValue(current);
- await page.getByRole('tab',{name:/1 · 需求/}).focus();await page.keyboard.press('ArrowRight');await expect(page.getByRole('tab',{name:/2 · 需求審查/})).toBeFocused();
- for(const key of keys){await page.getByRole('tab',{name:new RegExp(`${keys.indexOf(key)+1} ·`)}).click();await expect(page).toHaveURL(new RegExp('/'+key+'/'+current));expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true)}
+ const toggle=page.getByRole('button',{name:/目前查看：第/});
+ const openList=async()=>{if(width<=600){await expect(page.getByRole('tab',{name:/1 · 需求/})).toBeHidden();await toggle.click();await expect(toggle).toHaveAttribute('aria-expanded','true')}else await expect(toggle).toBeHidden()};
+ await openList();
+ await page.getByRole('tab',{name:/1 · 需求/}).focus();await page.keyboard.press('ArrowRight');await expect(page).toHaveURL(new RegExp('/review/'+current));
+ if(width>600)await expect(page.getByRole('tab',{name:/2 · 需求審查/})).toBeFocused();else await expect(toggle).toContainText('第 2 階段 需求審查');
+ for(const key of keys){await openList();await page.getByRole('tab',{name:new RegExp(`${keys.indexOf(key)+1} ·`)}).click();await expect(page).toHaveURL(new RegExp('/'+key+'/'+current));expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true)
+  // Focused controls must not sit under the sticky header.
+  const header=await page.locator('.workflow-heading').boundingBox();const panel=await page.locator(`#stage-panel-${key}`).boundingBox();
+  if(header&&panel&&width>900)expect(panel.y+2>=header.y+header.height||panel.y>=0).toBe(true)}
  await page.screenshot({path:test.info().outputPath(`stage-${width}.png`),fullPage:true});
 });
 
@@ -181,7 +188,8 @@ test('QA 退回修正版保留已執行結果並要求新目標；不自動送�
  await page.getByLabel('左表鍵欄位').selectOption('id');await page.getByLabel('右表鍵欄位').selectOption('id');
  await page.getByLabel('NULL 鍵').selectOption('NEVER_MATCH');await page.getByLabel('重複鍵').selectOption('EXPAND');await page.getByLabel('字串比對').selectOption('CASE_SENSITIVE_NO_TRIM');
  await page.getByRole('button',{name:'預覽修訂差異'}).click();
- await expect(page.getByText('join_contract_v1',{exact:false})).toBeVisible();expect(f.counts().posts).toBe(0);
+ await expect(page.getByRole('region',{name:'修訂差異預覽'}).getByRole('cell',{name:/^Join 規則/}).first()).toBeVisible();
+ await expect(page.getByText('join_contract_v1',{exact:false})).toBeHidden();expect(f.counts().posts).toBe(0);
  });
 
 for (const [path,field] of [['requirements_v1.write_mode','write_mode'],['requirements_v1.date_scope','date_scope'],['requirements_v1.key_columns','key_columns']]) test(`缺漏問題定位實際欄位 ${field}`,async({page})=>{

@@ -140,28 +140,27 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
     {projectLoadError&&<div role="alert"><p>專案清單讀取失敗：{projectLoadError}</p><button onClick={()=>setProjectLoadAttempt(x=>x+1)}>重新讀取專案清單</button></div>}
     <div className="wb-project-home-list">{projects.filter(p => `${p.project_name} ${p.description}`.toLowerCase().includes(query.toLowerCase())).map(p => <article key={p.project_id}>
       <div><h3>{p.project_name}</h3><p>{p.description || '尚無說明'}</p><small>預設 AI：{p.default_ai_profile || '未設定'} · 連線：{p.default_connection || '未設定'}（非連線測試結果）</small></div>
-      <button onClick={() => navigate(`/projects/${p.project_id}/settings`)} aria-label={`進入專案 ${p.project_name}`}>進入專案</button>
+      <button onClick={() => navigate(`/projects/${p.project_id}/history`)} aria-label={`進入專案 ${p.project_name}`}>進入專案</button>
     </article>)}</div>
     {!loading && !projectLoadError && !projects.length && <p>尚無專案，請先建立第一個專案。</p>}
     {!loading && !!projects.length && !projects.some(p => `${p.project_name} ${p.description}`.toLowerCase().includes(query.toLowerCase())) && <p>沒有符合搜尋條件的專案。</p>}
   </section>;
 
   return <div className="wb-projects">
-    <section className="wb-project-list panel" aria-label="專案清單">
+    <details className="wb-project-switch panel" open={creating||!projectId}><summary>切換專案（目前：{creating?'新增專案':selected?.project_name||'未選擇'}）</summary><section className="wb-project-list" aria-label="專案清單">
       <div className="wb-heading"><h2>專案</h2><button disabled={busy} onClick={() => leave('/projects/new/settings')}>新增專案</button></div>
       {loading && <p role="status">讀取專案中…</p>}
       {projectLoadError&&<div role="alert"><p>專案清單讀取失敗：{projectLoadError}</p><button disabled={busy} onClick={()=>setProjectLoadAttempt(x=>x+1)}>重新讀取專案清單</button></div>}
       <label>篩選專案<input value={projectQuery} onChange={e=>setProjectQuery(e.target.value)} placeholder="名稱或說明"/></label>
-      {projects.filter(p=>p.project_id===projectId||`${p.project_name} ${p.description}`.toLowerCase().includes(projectQuery.toLowerCase())).map(p => <button key={p.project_id} disabled={busy} aria-current={p.project_id === projectId ? 'page' : undefined} onClick={() => leave(`/projects/${p.project_id}/settings`)}><strong>{p.project_name}</strong><small>{p.description || '尚無說明'}</small></button>)}
+      {projects.filter(p=>p.project_id===projectId||`${p.project_name} ${p.description}`.toLowerCase().includes(projectQuery.toLowerCase())).map(p => <button key={p.project_id} disabled={busy} aria-current={p.project_id === projectId ? 'page' : undefined} onClick={() => leave(`/projects/${p.project_id}/history`)}><strong>{p.project_name}</strong><small>{p.description || '尚無說明'}</small></button>)}
       {projectQuery&&<p>目前專案固定保留，其餘依名稱與說明篩選；不會刪除專案。</p>}
       {!loading && !projectLoadError && !projects.length && <p>建立第一個專案以開始使用。</p>}
-    </section>
+    </section></details>
     <section className="wb-project-content">
       <div className="panel wb-heading"><div><small>PROJECT WORKSPACE</small><h2>{creating ? '新增專案' : selected?.project_name || '選擇專案'}</h2></div>
         {!creating && selected && <button className="primary" disabled={busy} onClick={() => leave(`/projects/${projectId}/tasks/new`)}>建立 Task</button>}
       </div>
       {(creating || (selected && loadedProjectId === projectId && !loading)) && <>
-        {!creating&&projectId&&<ProjectSummary key={projectId} projectId={projectId}/>}
         <div className="wb-tabs" role="tablist" aria-label="專案頁籤" onKeyDown={event=>{
           if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
           event.preventDefault();
@@ -172,8 +171,9 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
           const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
           tabs[next].focus();tabs[next].click();
         }}>
-          <button role="tab" aria-selected={tab === 'settings'} disabled={busy} onClick={() => navigate(`/projects/${projectId}/settings`)}>設定</button>
-          <button role="tab" aria-selected={tab === 'history'} disabled={creating || busy} onClick={() => leave(`/projects/${projectId}/history`)}>歷史 Task</button>
+          <button role="tab" aria-selected={tab === 'history'} disabled={creating || busy} onClick={() => leave(`/projects/${projectId}/history`)}>工作清單</button>
+          <span className="wb-tabs-group" aria-hidden="true">管理</span>
+          <button role="tab" aria-selected={tab === 'settings'} disabled={busy} onClick={() => navigate(`/projects/${projectId}/settings`)}>專案設定</button>
           <button role="tab" aria-selected={tab === 'evaluation'} disabled={creating || busy} onClick={() => leave(`/projects/${projectId}/evaluation`)}>Pilot 評估</button>
         </div>
         {tab === 'evaluation' && projectId ? <ProjectEvaluation projectId={projectId} navigate={navigate}/> : tab !== 'history' ? <form className="panel wb-project-form" onSubmit={save}>
@@ -208,7 +208,7 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
           </section>}
           <div className="wb-actions"><button type="button" disabled={busy} onClick={() => {restore(selected); if (creating) navigate(projects.length ? `/projects/${projects[0].project_id}/settings` : '/projects')}}>取消變更</button><button className="primary" type="submit" disabled={busy || form.project_name.trim().length < 2}>{busy ? '儲存中…' : creating ? '建立專案' : '儲存設定'}</button></div>
           </fieldset>
-        </form> : <section className="panel wb-history" aria-label="專案歷史 Task">
+        </form> : <>{projectId&&<ProjectSummary key={projectId} projectId={projectId}/>}<section className="panel wb-history" aria-label="專案歷史 Task">
           <p>以每個 Task 最新 Run 的工作流程狀態顯示與篩選（與專案摘要相同判定）；無法核對時顯示「待確認」。</p>
           <label>搜尋 Task<input value={query} onChange={e => setQuery(e.target.value)} placeholder="名稱或 Task ID"/></label>
           <label>篩選工作狀態<select aria-label="篩選 Task 狀態" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} disabled={tasksLoading||!!tasksError}><option value="">全部狀態</option>{Array.from(new Set(tasks.map(t=>String(t.display_state)))).sort().map(status=><option key={status} value={status}>{status}（{tasks.filter(t=>t.display_state===status).length}）</option>)}</select></label>
@@ -223,7 +223,7 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
             {pagedTasks.rows.map(t => <TaskContinuation key={t.id} task={t} projectId={projectId} navigate={navigate}/>)}
             {!tasks.length?<p>此專案尚無 Task，可使用上方「建立 Task」。</p>:!visibleTasks.length&&<p>沒有符合搜尋或狀態條件的 Task。</p>}
           </>}
-        </section>}
+        </section></>}
       </>}
       {message && <div className="panel wb-message" role="status">{message}</div>}
     </section>

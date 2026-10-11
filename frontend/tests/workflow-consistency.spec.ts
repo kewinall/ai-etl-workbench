@@ -101,25 +101,56 @@ for(const c of cases)test(`${c.name}：七階段顯示已完成，原 Run 沒有
  await expect(next).toContainText('目前查看：第 1 階段（需求與資料規格）');
  await expect(next).toContainText('目前有效狀態：已正式交付');
  await expect(page.getByText('Hop 執行完成，仍待 QA 驗證')).toHaveCount(0);
+ const req=page.getByLabel('需求摘要');
+ for(const title of ['來源','轉換','目標','預期結果'])await expect(req.getByRole('heading',{name:title,exact:true})).toBeVisible();
+ // Full input record is collapsed; opening it shows the immutable execution record beside the current status.
+ await page.getByText('查看完整輸入、版本操作與控制紀錄').click();
  await expect(page.getByRole('status',{name:'執行結果與目前狀態'})).toContainText('目前有效狀態：已正式交付');
  await expect(page.getByRole('button',{name:'建立準備版本'})).toHaveCount(0);
  for(const key of keys){
   await page.getByRole('tab',{name:new RegExp(`${keys.indexOf(key)+1} ·`)}).click();
   await expect(page).toHaveURL(new RegExp(`/${key}/${c.run}`));
-  await expect(page.getByRole('tab',{name:new RegExp(`${keys.indexOf(key)+1} ·`)})).toContainText('已有有效證據');
+  await expect(page.getByRole('tab',{name:new RegExp(`${keys.indexOf(key)+1} ·`)})).toContainText('已完成');
   await page.waitForLoadState('networkidle');
   const enabled=await page.locator('main button:enabled').allTextContents();
   expect(enabled.filter(name=>writeButton.test(name.trim())),key).toEqual([]);
   await expect(page.locator('main input[type=checkbox]:enabled')).toHaveCount(0);
  }
  await page.getByRole('tab',{name:/6 · 品質審查/}).click();
+ await expect(page.getByLabel('品質審查摘要')).toContainText('已核准（目前有效）');
+ await expect(page.getByLabel('品質審查摘要')).toContainText('通過');
+ await page.getByText('查看歷次 QA 模型紀錄與核准詳情').click();
  await expect(page.getByRole('region',{name:'QA 審查紀錄'})).toContainText('目前有效狀態：人工 QA 已核准，已正式交付');
  await expect(page.getByRole('region',{name:'QA 審查紀錄'})).not.toContainText('尚未核准');
+ await expect(page.getByRole('button',{name:'核准此版本 QA'})).toHaveCount(0);
  await page.getByRole('tab',{name:/3 · 流程設計/}).click();
  await expect(page.getByRole('button',{name:'建立規格'})).toHaveCount(0);
  await page.getByRole('tab',{name:/7 · 成果交付/}).click();
  await expect(next.getByRole('button',{name:/前往成果交付/})).toHaveCount(0);
- await expect(page.getByRole('link',{name:/下載正式 Release ZIP/})).toBeVisible();
+ const final=page.getByRole('region',{name:'正式交付成果'});
+ await expect(final.getByRole('link',{name:'下載正式 Release ZIP'})).toBeVisible();
+ await expect(final).toContainText('pipeline.hpl');await expect(final).toContainText('release-manifest.json');
+ await expect(page.getByRole('button',{name:/產生／取得 QA 關聯 SDM/})).toBeHidden();
+ await expect(page.getByRole('button',{name:/重新核對交付條件|重新核對 Release|載入／重新整理 SDM 歷史/})).toHaveCount(0);
  await expect(next).not.toContainText('JSON');
  expect(writes).toEqual([]);
+});
+
+for(const width of [390,768,1440])test(`${width}px 已交付頁面精簡：無橫向溢出、無 console error（合成 API）`,async({page})=>{
+ const errors:string[]=[];page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('ERR_TUNNEL_CONNECTION_FAILED'))errors.push(m.text())});page.on('pageerror',e=>errors.push(e.message));
+ await fixture(page);await page.setViewportSize({width,height:1000});
+ const c=cases[2],base=`/#/projects/${project}/tasks/${c.id}`;const heights:Record<string,number>={};
+ for(const key of keys){
+  await page.goto(`${base}/${key}/${c.run}`);await expect(page.getByRole('region',{name:'目前狀態與下一步'})).toBeVisible();await page.waitForLoadState('networkidle');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),key).toBe(true);
+  heights[key]=await page.evaluate(()=>document.documentElement.scrollHeight);
+  await page.screenshot({path:test.info().outputPath(`delivered-${key}-${width}.png`),fullPage:true});
+ }
+ test.info().annotations.push({type:'page-heights',description:JSON.stringify(heights)});
+ console.log(`HEIGHTS ${width} ${JSON.stringify(heights)}`);
+ expect(heights.requirements).toBeLessThan(width<=390?3200:2200);
+ expect(errors).toEqual([]);
+ await page.goto(`/#/projects/${project}`);await expect(page).toHaveURL(new RegExp(`/projects/${project}$`));
+ await expect(page.getByRole('tab',{name:'工作清單'})).toHaveAttribute('aria-selected','true');
+ await page.screenshot({path:test.info().outputPath(`project-worklist-${width}.png`),fullPage:true});
 });

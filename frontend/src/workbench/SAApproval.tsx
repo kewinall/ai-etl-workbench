@@ -1,8 +1,9 @@
 import {useEffect,useState} from 'react';
 import {request,jsonBody} from './api';
-import {useWorkflowRefresh,useWorkflowReadOnly,useOperation} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useWorkflowReadOnly,useOperation,useManagedRefresh} from './useWorkflowRefresh';
 
 export function SAApproval({base}:{base:string}) {
+  const managed=useManagedRefresh();
   const readOnly=useWorkflowReadOnly();
   const op=useOperation('sa_approve');
   const [data,setData]=useState<any>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[confirmed,setConfirmed]=useState(false);
@@ -27,6 +28,6 @@ export function SAApproval({base}:{base:string}) {
         finally {setBusy(false)}
       }}>確認 SA 建議並交接</button>
     </>}
-    <button disabled={busy} onClick={load}>重新核對 SA 交接</button>
+    {(!managed||error)&&<button disabled={busy} onClick={load}>{managed?'重試讀取 SA 交接':'重新核對 SA 交接'}</button>}
   </section>;
 }

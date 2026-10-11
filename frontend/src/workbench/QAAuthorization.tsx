@@ -1,8 +1,9 @@
 import {useEffect,useState} from 'react';
 import {jsonBody,request} from './api';
-import {useWorkflowRefresh,useWorkflowReadOnly,useServiceBlocker,useOperation} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useWorkflowReadOnly,useServiceBlocker,useOperation,useManagedRefresh} from './useWorkflowRefresh';
 
 export function QAAuthorization({taskId,runId}:{taskId:string;runId:string}) {
+  const managed=useManagedRefresh();
   const readOnly=useWorkflowReadOnly();
   const serviceBlocker=useServiceBlocker('qa');
   const op=useOperation('qa_authorize');
@@ -20,7 +21,7 @@ export function QAAuthorization({taskId,runId}:{taskId:string;runId:string}) {
   useWorkflowRefresh(base,refresh,busy);
   return <section aria-label="QA 模型呼叫授權"><h4>QA 模型呼叫授權</h4>
     <p>模型將對照需求、執行規格、節點與已保存的 Hop／結果證據；此授權不等於 QA 通過或交付核准。</p>
-    <button disabled={busy} onClick={refresh}>重新核對 QA 派發條件</button>
+    {(!managed||error)&&<button disabled={busy} onClick={refresh}>{managed?'重試讀取 QA 派發條件':'重新核對 QA 派發條件'}</button>}
     {serviceBlocker&&<p role="status">{serviceBlocker}</p>}
     {error&&<p role="alert">{error}。未重送模型請求，請重新核對。</p>}
     {data?.invocation&&!data.reassess_invocation_id?<p>已有 QA 呼叫紀錄（{data.invocation.status}），不會重送。請重新讀取下方審查結果。</p>

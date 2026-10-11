@@ -1,11 +1,12 @@
 import {useEffect,useState} from 'react';
 import {request,jsonBody,sourcePath} from './api';
-import {useWorkflowReadOnly,useWorkflowRefresh,useOperation} from './useWorkflowRefresh';
+import {useWorkflowReadOnly,useWorkflowRefresh,useOperation,useManagedRefresh} from './useWorkflowRefresh';
 
 const labels:Record<string,string>={PREREQUISITES_REQUIRED:'需完成真實角色協作、Hop 執行及人工 QA 核准',
  SDM_AND_CANDIDATE_REQUIRED:'待產生 QA 關聯 SDM 與候選 ZIP',PORTABILITY_REQUIRED:'待隔離環境可攜驗證',
  EVIDENCE_CHANGED:'證據有異動，交付已阻擋',AWAITING_RELEASE_APPROVAL:'驗證完成，待人工核准交付',RELEASE_READY:'正式交付已核准'};
 export function FormalRelease({base}:{base:string}){
+  const managed=useManagedRefresh();
  const readOnly=useWorkflowReadOnly();
  const candidateOp=useOperation('release_candidate'),approveOp=useOperation('release_approve');
  const [data,setData]=useState<any>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[confirmed,setConfirmed]=useState(false);
@@ -22,7 +23,7 @@ export function FormalRelease({base}:{base:string}){
   <h4>正式 Release</h4><p>候選 ZIP 不等於交付。可攜驗證會在另設的隔離資料庫執行原始 HWF／HPL／DDL，以核准的標準答案核對；不改寫原目標、不刪表、不自動重試。</p>
   {error&&<p role="alert">{error}</p>}
   {data&&<p role="status">{labels[data.status]||'無法確認交付狀態'}</p>}
-  <button disabled={busy} onClick={load}>重新核對 Release</button>
+  {(!managed||error)&&<button disabled={busy} onClick={load}>{managed?'重試讀取 Release':'重新核對 Release'}</button>}
   {data?.candidate&&<p>候選 ZIP SHA-256：<code>{data.candidate.checksum}</code></p>}
   {data?.portability&&<p>可攜驗證：{data.portability.status}{data.portability.overdue?'（等待過久，需人工核對；禁止自動重跑）':''}</p>}
   {data?.status==='SDM_AND_CANDIDATE_REQUIRED'&&<div><label><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)} disabled={busy}/>確認建立候選包並要求一次隔離可攜驗證</label>

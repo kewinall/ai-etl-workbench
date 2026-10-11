@@ -106,7 +106,7 @@ test('歷史 Task 保留建立內容、節點、Job 頁面及返回路徑', asyn
   await expect(page.getByRole('link', {name: /Release ZIP/})).toHaveCount(0);
   await page.goBack();
   await expect(page.getByRole('tab', {name: '執行與 QA', exact: true})).toHaveAttribute('aria-selected', 'true');
-  await page.getByRole('button', {name: '← 返回此專案歷史 Task', exact: true}).click();
+  await page.getByRole('button', {name: '← 返回工作清單', exact: true}).click();
   await expect(page).toHaveURL(new RegExp(project.project_id+'/history$'));
   await expect(page.getByRole('button', {name: /歷史節點驗收/})).toBeVisible();
 });

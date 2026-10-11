@@ -17,12 +17,35 @@ import {ExcelInputEditor, ExcelInputSummary} from './ExcelInputContract';
 import {JsonInputEditor, JsonInputSummary} from './JsonInputContract';
 import {useDraftGuard} from './useDraftGuard';
 import {OperationLatch} from './operationLatch';
-import {useWorkflowReadOnly,useWorkflowRefresh,useWorkflowCanCancel,useWorkflowCanPrepare,useWorkflowStatus,useOperation} from './useWorkflowRefresh';
+import {useWorkflowReadOnly,useWorkflowRefresh,useWorkflowCanCancel,useWorkflowCanPrepare,useWorkflowStatus,useOperation,useManagedRefresh} from './useWorkflowRefresh';
 import {JoinInputEditor} from './JoinInputEditor';
+
+const sectionNames:Record<string,string>={requirement_text:'需求',target_schema:'目標 Schema',target_table:'目標資料表',requirements_v1:'寫入與資料期間',transformation_contract_v1:'轉換規則',source_fields_v1:'來源欄位',join_contract_v1:'Join 規則',source_order_v1:'來源序號',csv_input_contract_v1:'CSV 輸入契約',excel_input_contract_v1:'Excel 輸入契約',json_input_contract_v1:'JSON 輸入契約',csv_replacement_v1:'來源換檔'};
+const leafNames:Record<string,string>={write_mode:'寫入方式',date_scope:'資料期間',date_column:'日期欄位',start_date:'起日',end_date_exclusive:'迄日（不含）',key_columns:'鍵欄位',filters:'篩選',aggregation:'分組與計算',output_columns:'輸出欄位',joins:'Join',encoding:'編碼',delimiter:'分隔符號',header:'標題列',extra_columns:'額外欄位'};
+const show=(v:any)=>v===undefined||v===null||v===''?'（未提供）':typeof v==='object'?JSON.stringify(v):String(v);
+// Field-level revision diff; precise JSON stays in a collapsed section.
+export function revisionChanges(preview:any,original:any){
+  const rows:{path:string;label:string;before:string;after:string}[]=[];
+  for(const [key,value] of Object.entries(preview||{})){
+    if(['request_key','input_checksum','qa_revision_checksum'].includes(key))continue;
+    const before=original?.[key];
+    if(JSON.stringify(value)===JSON.stringify(before))continue;
+    const section=sectionNames[key]||key;
+    if(value&&typeof value==='object'&&!Array.isArray(value)&&before&&typeof before==='object'&&!Array.isArray(before)){
+      for(const leaf of Array.from(new Set([...Object.keys(value as any),...Object.keys(before)]))){
+        if(['version','contract_status'].includes(leaf))continue;
+        const a=(before as any)[leaf],b=(value as any)[leaf];
+        if(JSON.stringify(a??null)!==JSON.stringify(b??null))rows.push({path:key+'.'+leaf,label:`${section}／${leafNames[leaf]||leaf}`,before:show(a),after:show(b)});
+      }
+    } else rows.push({path:key,label:section,before:show(before),after:show(value)});
+  }
+  return rows;
+}
 
 const states: Record<string, string> = {QUEUED: '待處理（未啟動）', RUNNING: '處理中', NEEDS_REVIEW: '需要人工檢查', SUCCEEDED: '流程已結束', FAILED: '失敗', CANCELLED: '已取消'};
 
 export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string;requestedRunId?:string;onSelectRun?:(id:string)=>void}) {
+  const managed=useManagedRefresh();
   const readOnly=useWorkflowReadOnly();
   const canCancel=useWorkflowCanCancel();
   const canPrepare=useWorkflowCanPrepare();
@@ -133,7 +156,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
     <p>先保存需求與設定快照，再確認此版輸入。啟用控制 Worker 後，只進行初步需求檢查；不會啟動 Hop 或產生 Release。</p>
     <div className="run-actions">
       {!workflow?.delivered&&<button disabled={!canPrepare || !prepareOp.enabled&&prepareOp.known || busy || active} onClick={prepare}>建立準備版本</button>}
-      <button disabled={busy} onClick={() => action(async () => {await load(); if (detail) await open(detail.run_id)})}>重新載入版本</button>
+      {(!managed||!!message)&&<button disabled={busy} onClick={() => action(async () => {await load(); if (detail) await open(detail.run_id)})}>{managed?'重試讀取版本':'重新載入版本'}</button>}
     </div>
     {message && <p role="status">{message}</p>}
     {!runs.length && <p>尚無準備版本；既有紀錄可在「產物與流程」與「執行與 QA」查看。</p>}
@@ -249,12 +272,13 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
           </>}
           <label>鍵欄位（逗號分隔）<input data-field="key_columns" maxLength={2048} value={(conditions.key_columns || []).join(',')} onChange={event => setConditions({...conditions, key_columns: event.target.value.split(',')})}/></label>
           <p>UPSERT 必須提供來源中存在的鍵欄位；日期採起日包含、迄日不包含。不確定可保持「尚未確認」，重新檢查仍會暫停。覆寫意圖不等於核准刪表。</p>
-          {preview&&<section aria-label="修訂差異預覽"><h4>建立新版前確認差異</h4><p>下游 SA、命名／設計、規格、執行與 QA 核准依後端規則重新核對；原版結果保留。</p><table><thead><tr><th>欄位</th><th>原值</th><th>新值</th></tr></thead><tbody>{Object.entries(preview).filter(([key,value])=>!['request_key','input_checksum','qa_revision_checksum'].includes(key)&&JSON.stringify(value)!==JSON.stringify(detail.input_summary[key])).map(([key,value])=><tr key={key}><td>{({requirement_text:'需求',target_schema:'目標 Schema',target_table:'目標資料表',requirements_v1:'寫入與資料期間',transformation_contract_v1:'轉換規則',source_fields_v1:'來源欄位'} as any)[key]||key}</td><td><pre>{JSON.stringify(detail.input_summary[key]??'原版未提供',null,2)}</pre></td><td><pre>{JSON.stringify(value,null,2)}</pre></td></tr>)}</tbody></table><label><input type="checkbox" checked={diffConfirmed} onChange={e=>setDiffConfirmed(e.target.checked)}/>已核對差異，同意建立待需求確認的新版</label></section>}
+          {preview&&<section aria-label="修訂差異預覽"><h4>建立新版前確認差異</h4><p>下游 SA、命名／設計、規格、執行與 QA 核准依後端規則重新核對；原版結果保留。</p><table><thead><tr><th>欄位</th><th>原值</th><th>新值</th></tr></thead><tbody>{revisionChanges(preview,detail.input_summary).map(row=><tr key={row.path}><td>{row.label}</td><td>{row.before}</td><td>{row.after}</td></tr>)}</tbody></table><details><summary>原始 JSON 差異</summary>{Object.entries(preview).filter(([key,value])=>!['request_key','input_checksum','qa_revision_checksum'].includes(key)&&JSON.stringify(value)!==JSON.stringify(detail.input_summary[key])).map(([key,value])=><div key={key}><b>{key}</b><pre>{JSON.stringify(detail.input_summary[key]??'原版未提供',null,2)}</pre><pre>{JSON.stringify(value,null,2)}</pre></div>)}</details><label><input type="checkbox" checked={diffConfirmed} onChange={e=>setDiffConfirmed(e.target.checked)}/>已核對差異，同意建立待需求確認的新版</label></section>}
           {uncertain&&<section role="alert"><p>送出結果待核對，不能再次提交。</p><button type="button" disabled={busy} onClick={()=>action(async()=>{const list=await request(`/api/tasks/${taskId}/runs`);setRuns(list.runs);const child=list.runs.find((r:any)=>r.parent_run_id===detail.run_id);if(child){setEditing(false);await open(child.run_id);setPendingRun(child.run_id)}else{setUncertain(false);setMessage('已重新核對：尚未找到子版本，保留同一 request key；仍需人工確認差異才可再次送出。')}})}>重新讀取新版建立結果</button></section>}
           <div className="run-actions"><button type="submit" disabled={busy || replacementPending || uncertain || !draft.requirement_text.trim() || !!preview&&!diffConfirmed}>{preview?'保存補正並建立新版':'預覽修訂差異'}</button><button type="button" disabled={busy||replacementPending||uncertain} onClick={()=>{savedDrafts.current.set(detail.run_id,{draft,conditions,transformation,sourceOrder,sourceFields,csvContract,excelContract,jsonContract,joinContract,replacement,requestKey:revisionKey.current});setEditing(false);setMessage('草稿已暫存於本頁；尚未建立新版或核准，重新整理會清除本頁草稿。')}}>儲存草稿</button><button type="button" disabled={busy || replacementPending||uncertain} onClick={() => setEditing(false)}>放棄補正</button></div>
         </form>}
       </>}
-      <dl><dt>AI Profile</dt><dd>{detail.settings_summary.ai_profile_id}</dd><dt>資料連線</dt><dd>{detail.settings_summary.connection_id}</dd><dt>輸入 checksum</dt><dd>{detail.input_checksum}</dd><dt>設定 checksum</dt><dd>{detail.settings_checksum}</dd></dl>
+      <dl><dt>AI Profile</dt><dd>{detail.settings_summary.ai_profile_id}</dd><dt>資料連線</dt><dd>{detail.settings_summary.connection_id}</dd></dl>
+      <details><summary>版本指紋</summary><dl><dt>輸入 checksum</dt><dd>{detail.input_checksum}</dd><dt>設定 checksum</dt><dd>{detail.settings_checksum}</dd></dl></details>
       <p>{detail.matches_current ? '與目前 Task／設定一致。' : '內容已變更，舊版確認不可沿用；請取消未執行版本後建立新版本。'}</p>
       {detail.approval && <p>已記錄輸入決定：{detail.approval.decision === 'APPROVE' ? '確認' : '拒絕'}（不等於執行／交付核准）</p>}
       {detail.state === 'QUEUED' && !detail.approval && detail.matches_current && !readOnly && confirmOp.enabled && <>
@@ -262,7 +286,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
         <div className="run-actions"><button disabled={busy || !confirmed} onClick={() => review('APPROVE')}>確認此版輸入</button><button disabled={busy} onClick={() => review('REJECT')}>拒絕此版輸入</button></div>
       </>}
       {['QUEUED','NEEDS_REVIEW'].includes(detail.state) && !detail.write_started && <button disabled={!canCancel||!cancelOp.enabled&&cancelOp.known||busy} onClick={cancel}>取消未執行版本</button>}
-      {!!detail.events?.length && <><h4>控制流程紀錄</h4><ol>{detail.events.map((event: any) => <li key={event.event_id}>{new Date(event.created_at).toLocaleString()} · {event.event_type} · {event.phase}</li>)}</ol></>}
+      {!!detail.events?.length && <details><summary>控制流程紀錄（{detail.events.length} 筆）</summary><ol>{detail.events.map((event: any) => <li key={event.event_id}>{new Date(event.created_at).toLocaleString()} · {event.event_type} · {event.phase}</li>)}</ol></details>}
     </article>}
   </section>;
 }

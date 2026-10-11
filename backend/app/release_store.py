@@ -188,5 +188,15 @@ def status(queue,repo,task_id,run_id,*,root=None):
             except ValueError:
                 result['status']='EVIDENCE_CHANGED';return result
             result.update(status='RELEASE_READY',release_ready=True,release={'release_id':str(saved['release_id']),
-                'checksum':saved['checksum'],'file_size':saved['file_size'],'approved_at':saved['approved_at']})
+                'checksum':saved['checksum'],'file_size':saved['file_size'],'approved_at':saved['approved_at'],
+                'documents':release_documents(saved['manifest'])})
         return result
+
+
+def release_documents(manifest):
+    """Document list from the persisted release manifest only; never inferred from file names."""
+    artifacts = (manifest or {}).get('artifacts') or []
+    documents = [{'name': a.get('name'), 'type': a.get('type'), 'checksum': a.get('checksum'),
+                  'size_bytes': a.get('size_bytes')} for a in artifacts]
+    documents.append({'name': 'release-manifest.json', 'type': 'MANIFEST', 'checksum': None, 'size_bytes': None})
+    return documents

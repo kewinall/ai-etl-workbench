@@ -7,3 +7,15 @@
 .workflow-issues li{margin:12px 0}.workflow-issues button{margin-left:8px}button:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #2563eb;outline-offset:3px}
 @media(max-width:900px){.workflow-stages{grid-template-columns:repeat(4,minmax(0,1fr))}.workflow-heading{position:static}}
 @media(max-width:480px){.workflow-stages{grid-template-columns:repeat(2,minmax(0,1fr))}.workflow-next dl{grid-template-columns:1fr}.workflow-heading{padding:10px}.workflow-panel fieldset{min-width:0}.workflow-panel .run-actions{flex-wrap:wrap}}
+/* v2 stage simplification: compact fixed header, single refresh, summaries first */
+.workflow-heading-row{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}.workflow-heading-row p{margin:0}.workflow-heading h2{font-size:20px}
+.workflow-tech{font-size:12px;color:#64748b}.workflow-tech p{margin:2px 0;overflow-wrap:anywhere}
+html{scroll-padding-top:150px}
+.workflow-nav-toggle{display:none;width:100%;text-align:left;justify-content:space-between;gap:8px;margin-top:12px}.workflow-nav-toggle small{font-size:12px;color:#475569}
+.wb-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:0 0 12px}
+.wb-summary-card{border:1px solid #dce3ed;border-radius:10px;padding:12px;background:#f8fafc;min-width:0;overflow-wrap:anywhere}.wb-summary-card h4{margin:0 0 6px;font-size:14px}.wb-summary-card p,.wb-summary-card ul{margin:4px 0}.wb-summary-card small{display:block;color:#64748b}
+.wb-stage-details{margin-top:8px}.wb-stage-details>summary{cursor:pointer;color:#1d4ed8;padding:6px 0}
+.wb-delivery-final{border:1px solid #bbf7d0;background:#f0fdf4;border-radius:10px;padding:16px;margin-bottom:12px}.wb-delivery-final .primary-link{display:inline-block;padding:8px 14px;border-radius:8px;background:#1d4ed8;color:#fff;text-decoration:none;font-weight:600}
+.wb-op-blocked{color:#64748b;font-size:13px}
+@media(max-width:900px){html{scroll-padding-top:16px}}
+@media(max-width:600px){.workflow-nav-toggle{display:flex;flex-direction:column}.workflow-stages{display:none}.workflow-stages.open{display:grid;grid-template-columns:1fr}.workflow-stages button{min-height:0}}

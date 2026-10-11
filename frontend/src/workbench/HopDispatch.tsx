@@ -2,9 +2,10 @@ import {useEffect,useState} from 'react';
 import {jsonBody,request} from './api';
 import {ExecutionReconciliation} from './ExecutionReconciliation';
 import {ComparisonRecovery} from './ComparisonRecovery';
-import {useWorkflowRefresh,useWorkflowReadOnly,useServiceBlocker,useOperation} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useWorkflowReadOnly,useServiceBlocker,useOperation,useManagedRefresh} from './useWorkflowRefresh';
 
 export function HopDispatch({taskId,runId,onReconciled}:{taskId:string;runId:string;onReconciled?:()=>Promise<void>}) {
+  const managed=useManagedRefresh();
   const readOnly=useWorkflowReadOnly();
   const serviceBlocker=useServiceBlocker('hop');
   const op=useOperation('hop_execute');
@@ -19,7 +20,7 @@ export function HopDispatch({taskId,runId,onReconciled}:{taskId:string;runId:str
   useWorkflowRefresh(base,refresh,busy);
   return <section aria-label="Hop 單次執行"><h4>Hop 單次執行</h4>
     <p>需完成 SA／Developer、規格及標準答案核准。授權後由 Worker 新建專用測試表、執行一次 Hop 並保存結果比對；不是 QA 或交付核准。</p>
-    <button disabled={busy} onClick={refresh}>重新核對 Hop 執行條件</button>
+    {(!managed||error)&&<button disabled={busy} onClick={refresh}>{managed?'重試讀取 Hop 執行條件':'重新核對 Hop 執行條件'}</button>}
     {serviceBlocker&&<p role="status">{serviceBlocker}</p>}
     {error&&<p role="alert">{error}。請核對執行紀錄，不要直接重送。</p>}
     {data?.request?<><p>工作狀態：{data.request.status}；結果：{data.request.outcome_code||'尚未回報'}。不自動重跑。</p>

@@ -10,6 +10,9 @@ export const useWorkflowReadOnly=()=>useContext(WorkflowReadOnly);
 // Shared read-only workflow projection (milestones, effective status). Null outside the stage workspace.
 export const WorkflowStatus=createContext<any>(null);
 export const useWorkflowStatus=()=>useContext(WorkflowStatus);
+// Inside the stage workspace one shared "重新核對狀態" refreshes every reader; component buttons only appear for retry after a failed GET.
+export const WorkflowManagedRefresh=createContext(false);
+export const useManagedRefresh=()=>useContext(WorkflowManagedRefresh);
 
 // Per-operation eligibility from the server projection. Enabled here never bypasses backend validation;
 // outside the stage workspace (no projection) only the read-only flag applies.

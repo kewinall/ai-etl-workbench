@@ -1,9 +1,10 @@
 import {useEffect, useState} from 'react';
 import {request} from './api';
 import {ExecutionDiagnosis} from './ExecutionDiagnosis';
-import {useWorkflowRefresh} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useManagedRefresh} from './useWorkflowRefresh';
 
 export function RunArtifacts({taskId,requestedRunId}:{taskId:string;requestedRunId?:string}) {
+  const managed=useManagedRefresh();
   const [runs,setRuns]=useState<any[]>([]),[selected,setSelected]=useState('');
   const [data,setData]=useState<any>(null),[error,setError]=useState(''),[node,setNode]=useState('');
   const [refresh,setRefresh]=useState(0),[pending,setPending]=useState(true);
@@ -15,7 +16,7 @@ export function RunArtifacts({taskId,requestedRunId}:{taskId:string;requestedRun
   const chosen=runs.find(r=>r.run_id===selected), detail=data?.nodes?.find((n:any)=>n.id===node);
   return <section className="panel" aria-label="版本流程與產物"><h3>版本流程與產物</h3>
     <p>以下是指定 Run 核准時的編譯內容及保存的節點計數，不是舊版 Task 節點。檢視不會重新執行；正式下載請至「交付」。</p>
-    <button onClick={()=>setRefresh(n=>n+1)}>重新讀取版本產物</button>
+    {(!managed||error)&&<button onClick={()=>setRefresh(n=>n+1)}>{managed?'重試讀取版本產物':'重新讀取版本產物'}</button>}
     {!!runs.length&&!requestedRunId&&<label>流程版本<select value={selected} onChange={e=>setSelected(e.target.value)}>{runs.map(r=><option key={r.run_id} value={r.run_id}>{new Date(r.created_at).toLocaleString()} · {r.state} · {r.run_id}</option>)}</select></label>}
     {error&&<p role="alert">無法讀取版本產物：{error}</p>}{pending&&<p role="status">正在讀取版本產物…</p>}
     {!pending&&!error&&!runs.length&&<p>尚無 Run；下方保留舊版產物。</p>}

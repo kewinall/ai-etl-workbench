@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react';
-import {useWorkflowReadOnly,useWorkflowRefresh,useOperation} from './useWorkflowRefresh';
+import {useWorkflowReadOnly,useWorkflowRefresh,useOperation,useManagedRefresh} from './useWorkflowRefresh';
 import {request, jsonBody} from './api';
 import {SpecificationEditor} from './SpecificationEditor';
 import {SdmPreview} from './SdmPreview';
@@ -11,6 +11,7 @@ const operators: Record<string, string> = {EQ: '等於', NE: '不等於', GT: '�
 const functions: Record<string, string> = {SUM: '加總', COUNT_ROWS: '筆數', COUNT_NON_NULL: '非空值筆數', MIN: '最小值', MAX: '最大值'};
 
 export function SpecificationHistory({taskId, runId}: {taskId: string; runId: string}) {
+  const managed=useManagedRefresh();
   const readOnly=useWorkflowReadOnly();
   const createOp=useOperation('specification_create'),approveOp=useOperation('specification_approve');
   const [items, setItems] = useState<any[] | null>(null);
@@ -40,7 +41,7 @@ export function SpecificationHistory({taskId, runId}: {taskId: string; runId: st
   return <section className="specification-history" aria-label="ETL 規格版本">
     <h4>ETL 規格版本</h4>
     <p>查看已保存的規格與核准。規格核准不代表 Hop 已執行、QA 通過或可交付。</p>
-    <button disabled={busy} onClick={() => action(load)}>{items === null ? '載入規格版本' : '重新整理規格版本'}</button>
+    {(!managed||error)&&<button disabled={busy} onClick={() => action(load)}>{managed?'重試讀取規格版本':items === null ? '載入規格版本' : '重新整理規格版本'}</button>}
     {createOp.enabled?<button disabled={busy || editing} onClick={() => {setEditSource(undefined); setEditing(true)}}>建立規格</button>:createOp.known&&<p className="wb-op-blocked">建立規格：{createOp.reason}</p>}
     {editing && <SpecificationEditor base={base} initial={editSource} onCancel={() => setEditing(false)} onSaved={async () => {await load(); setEditing(false); setMessage('已保存待核准規格，沒有執行 ETL。')}}/>}
     {error && <p role="alert">{error}</p>}{message && <p role="status">{message}</p>}

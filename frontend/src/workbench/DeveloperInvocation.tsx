@@ -1,8 +1,9 @@
 import {useEffect, useState} from 'react';
 import {jsonBody, request} from './api';
-import {useWorkflowRefresh,useWorkflowReadOnly,useServiceBlocker,useOperation} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useWorkflowReadOnly,useServiceBlocker,useOperation,useManagedRefresh} from './useWorkflowRefresh';
 
 export function DeveloperInvocation({taskId, runId}: {taskId: string; runId: string}) {
+  const managed=useManagedRefresh();
   const readOnly=useWorkflowReadOnly();
   const serviceBlocker=useServiceBlocker('developer');
   const op=useOperation('developer_authorize');
@@ -35,7 +36,7 @@ export function DeveloperInvocation({taskId, runId}: {taskId: string; runId: str
   return <section aria-label="Developer 設計協作">
     <h4>Developer 設計協作</h4>
     <p>根據已人工確認的 SA 建議與命名契約提出規格。程式驗證及保存後，仍需另行核准規格；不會自動執行 ETL。</p>
-    <button disabled={busy} onClick={load}>重新載入 Developer 狀態</button>
+    {(!managed||error)&&<button disabled={busy} onClick={load}>{managed?'重試讀取 Developer 狀態':'重新載入 Developer 狀態'}</button>}
     {serviceBlocker&&<p role="status">{serviceBlocker}</p>}
     {error && <p role="alert">{error}。未重新送出模型請求，請重新核對。</p>}
     {data && !item && <>

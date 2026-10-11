@@ -2,7 +2,7 @@ import {useEffect, useState} from 'react';
 import {request, jsonBody} from './api';
 import {WorkerStatus} from './WorkerStatus';
 import {SAApproval} from './SAApproval';
-import {useWorkflowRefresh,useWorkflowReadOnly,useServiceBlocker,useOperation} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useWorkflowReadOnly,useServiceBlocker,useOperation,useManagedRefresh} from './useWorkflowRefresh';
 
 const states: Record<string, string> = {
   SA_QUEUED: '已授權並排隊，尚未由 Worker 領取',
@@ -15,6 +15,7 @@ const states: Record<string, string> = {
 };
 
 export function SAInvocation({taskId, runId}: {taskId: string; runId: string}) {
+  const managed=useManagedRefresh();
   const readOnly=useWorkflowReadOnly();
   const serviceBlocker=useServiceBlocker('sa');
   const op=useOperation('sa_authorize');
@@ -63,7 +64,7 @@ export function SAInvocation({taskId, runId}: {taskId: string; runId: string}) {
     <h4>SA 呼叫狀態</h4>
     <p>查閱不會呼叫模型。只有明確授權後才會排隊；SA 建議不等於 ETL 執行或 Release 核准。</p>
     {offer && <WorkerStatus kind={offer.authorization.policy_version === 'copilot-cli-once-v1' ? 'SA_COPILOT' : 'SA_LITELLM'}/>}
-    <button disabled={busy} onClick={load}>重新載入 SA 狀態</button>
+    {(!managed||error)&&<button disabled={busy} onClick={load}>{managed?'重試讀取 SA 狀態':'重新載入 SA 狀態'}</button>}
     {serviceBlocker&&<p role="status">{serviceBlocker}</p>}
     {error && <p role="alert">{error}</p>}
     {offer && !item && <div>

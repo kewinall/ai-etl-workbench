@@ -33,3 +33,13 @@ def test_replay_disabled_by_default(monkeypatch):
     import pytest
     monkeypatch.delenv('WORKBENCH_PORTABILITY_ENABLED',raising=False)
     with pytest.raises(ValueError,match='PORTABILITY_DISABLED'):destination()
+
+
+def test_release_documents_come_from_persisted_manifest_only():
+    from app.release_store import release_documents
+    manifest = {'artifacts': [{'name': 'hop/pipeline.hpl', 'type': 'HPL', 'checksum': 'a' * 64, 'size_bytes': 10, 'extra': 1},
+                              {'name': 'SDM.xlsx', 'type': 'SDM', 'checksum': 'b' * 64, 'size_bytes': 20}]}
+    documents = release_documents(manifest)
+    assert [d['name'] for d in documents] == ['hop/pipeline.hpl', 'SDM.xlsx', 'release-manifest.json']
+    assert documents[0] == {'name': 'hop/pipeline.hpl', 'type': 'HPL', 'checksum': 'a' * 64, 'size_bytes': 10}
+    assert release_documents({}) == [{'name': 'release-manifest.json', 'type': 'MANIFEST', 'checksum': None, 'size_bytes': None}]
