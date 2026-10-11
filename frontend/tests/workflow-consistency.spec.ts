@@ -154,3 +154,14 @@ for(const width of [390,768,1440])test(`${width}px 已交付頁面精簡：無�
  await expect(page.getByRole('tab',{name:'工作清單'})).toHaveAttribute('aria-selected','true');
  await page.screenshot({path:test.info().outputPath(`project-worklist-${width}.png`),fullPage:true});
 });
+
+test.describe('實機手機版面（isMobile）',()=>{
+ test.use({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+ test('手機以裝置寬度排版，不退回 980px 桌面寬度（合成 API）',async({page})=>{
+  await fixture(page);const c=cases[2];
+  await page.goto(`/#/projects/${project}/tasks/${c.id}/requirements/${c.run}`);await expect(page.getByRole('region',{name:'目前狀態與下一步'})).toBeVisible();
+  expect(await page.evaluate(()=>innerWidth)).toBe(390);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true);
+  await expect(page.getByRole('button',{name:/目前查看：第 1 階段/})).toBeVisible();
+ });
+});
