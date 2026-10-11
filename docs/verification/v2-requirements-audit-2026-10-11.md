@@ -38,13 +38,11 @@
 | R28 | 5197 独立設定與實際 Profile，不動 5183 | compose.ui-acceptance、local Worker target config；three-case model proof | 5197 原／可攜資料隔離、真實 LOCAL_COPILOT 模型；一次秘密移轉已完成，不重複使用授权 |
 | R29 | CSV／Excel／LEFT JOIN 三個新正常七階段案例 | native／delivery／portability 2026-10-11 proof | 三案實際通過，原寫入各一次；未將 JSON／資料表來源標示全鏈完成 |
 | R30 | 舊 Release 唯讀回歸，指紋與寫入次數不變 | release-regression helper；API／web deployment proofs | 八個正式成果持續 GET 核對，原 ZIP／完整 Run／Release／updated／WRITE_STARTED 不變；没有重跑 |
-| R31 | 分段提交、WS-0007、證據及下一步 | 本機 commits；CURRENT/tasks/handoff讀回 | 本機與 Workspace 已保存；**本批程式來源尚未推送 GitHub**，不能把 Workspace 推送當程式上版 |
+| R31 | 分段提交、WS-0007、證據及下一步 | 本機 commits；CURRENT/tasks/handoff讀回 | 階段來源與證據已推送 `kewinall/ai-etl-workbench` main `5e63367`，遠端SHA與本機一致；原未提交Join測試與私人runtime證據未納入。WS-0007仍進行中，不把階段上版當整體完成 |
 
 ## 下一個處理順序
 
-1. 完成此次来源定位修正的 full browser/build，以及5197 web-only受控部署與 compiled 定位/既有成果回歸。
-2. 同步最新首頁索引：舊「第一段尚未部署」與 `staged-completion.md` 頂部不能繼續冒充最新狀態；保留它們作為歷史段落。
-3. 依既有更新 repo 要求，核對遠端 main、待推送 commit 範圍／敏感檔案／測試，完成可驗收階段上版；保留未提交 Join 修改。
-4. 對 R19／R20／R21／R27 的新操作證據缺口，先寫明具體案例、獨立 Task/Run/來源/目標、固定答案、需要的模型/引擎呼叫及核准範圍。三個已交付案例的代理授权不擴張為任意新目標寫入；不能重放已交付／已結案案例來補證。
+1. 此次定位full browser/build、5197 web-only部署與既有成果回歸、文件首頁及階段來源上版均已完成。
+2. 對 R19／R20／R21／R27 的新操作證據缺口，依 [下一批範圍](v2-next-native-acceptance-scope-2026-10-11.md) 準備具體獨立案例與固定答案、測試安全前提及需要的模型／引擎核准。三個已交付案例的代理授权不擴張為任意新目標寫入；不能重放已交付／已結案案例來補證。
 
 不重新把上表正常三案、舊文件下載或已通過唯讀查閱當作「新的故障／補證」；整體 v2／WS-0007 維持部分完成。
