@@ -1,5 +1,5 @@
 import {test, expect} from '@playwright/test';
-import {controlOnce, syntheticWritesAllowed} from './fixtures/control';
+import {controlOnce, syntheticSaApproval, syntheticWritesAllowed} from './fixtures/control';
 
 test('JSON 真實上傳確認、换檔失效、欄位式補正及歷史核准保留', async ({page, request}) => {
   test.setTimeout(90000);
@@ -141,19 +141,10 @@ print(json.dumps(result))`;
     await evidence.getByRole('button', {name: '查看 SA 證據清單'}).click();
     await expect(evidence.getByRole('region', {name: 'JSON 讀取契約摘要'})).toContainText('已確認');
     await expect(evidence).not.toContainText('[object Object]');
-    // The seven-stage UI only offers specification creation after SA approval, which needs a model call that this
-    // isolated environment never makes. The backend specification API itself does not require SA approval (known
-    // limitation), so this test overrides only the design-stage SA prerequisite (stage can_operate and specification_create) and keeps every JSON/SDM/compile
-    // assertion against the real API.
-    await page.route(`**/api/tasks/${taskId}/runs/${child.run_id}/workflow-status`, async route => {
-      const response = await route.fetch(); const body = await response.json();
-      const create = body.operation_qualifications?.specification_create;
-      if (create && !body.milestones?.sa_approved && !body.milestones?.specification_approved) {
-        body.operation_qualifications.specification_create = {...create, enabled: true, blocked_reason: null};
-        body.stages = body.stages.map((stage: any) => stage.key === 'design' ? {...stage, can_operate: true, blocked_reason: null} : stage);
-      }
-      await route.fulfill({response, json: body});
-    });
+    // Specification save/approve require a current same-Run SA approval in the backend. This isolated test never
+    // calls a model, so it records a synthetic SA review and the human SA handoff approval directly in the isolated
+    // DB, then uses the real eligibility and API. This is source-contract subsystem evidence, not a seven-stage case.
+    expect(syntheticSaApproval(child.run_id).status).toBe('APPROVED_CURRENT');
     await page.goto(`/#/projects/${project.project_id}/tasks/${taskId}/design`);
     const specs = page.getByRole('region', {name: 'ETL 規格版本', exact: true});
     await specs.getByRole('button', {name: '建立規格', exact: true}).click();
