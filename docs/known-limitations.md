@@ -16,7 +16,7 @@
 
 
 - 前端多代元件與 runtime 覆寫已完成引用稽核並移除；目前入口只保留明確引用的有效元件。見 [UI 收斂紀錄](verification/ui-simplification-2026-10-11.md)。
-- 狀態判定統一由 workflow-status 彙整（逐操作資格、已交付只讀）；專案摘要／篩選／卡片共用同一結果。5197 目前部署 `a7a666f`，另包含舊入口退場、交付守門、空白歷史隱藏、CSV 換檔 null 契約兼容、Oracle 草稿保留、Developer 錯誤保留及失敗診斷去重。八個受保護服務與五個原正式成果不變，見 [本輪部署讀回](verification/v2-followup-5197-deploy-readback-2026-10-11.json)。
+- 狀態判定統一由 workflow-status 彙整（逐操作資格、已交付只讀）；專案摘要／篩選／卡片共用同一結果。5197 API 為 `a7a666f`，前端為 `2530203`（`index-BW7UvHH9.js`），包含舊入口退場、交付守門、空白歷史隱藏、草稿與錯誤保留、失敗診斷去重，以及 Hop／QA／比對恢復／QA核准回應不明時先GET核對、禁止自動重送。九個受保護服務及八個新舊正式成果不變，見 [異常分支部署讀回](verification/v2-followup-closure-deployment-2026-10-11.json)。
 - 受管理工作區在操作資格缺漏或回應版本不符時一律停用寫入（「操作資格尚未確認」）；規格保存／核准 API 在同交易內驗證同 Run 有效 SA 核准；本輪覆蓋 21 項已交付拒絕及 9 種 API × 3 種前置條件拒絕。這是 Task/Run 工作流範圍，不是整個平台全部 API 的安全認證；不以唯讀彙整取代後端檢查。
 - 已交付版本目前不能建立修正版或新準備版本，畫面明示限制；REPLACE／UPSERT 不可選為新版執行方式（僅保留歷史意圖）。
 - 寫入型 live 瀏覽器測試為明確 opt-in（`WORKBENCH_ALLOW_SYNTHETIC_UI=1`、`WORKBENCH_TEST_CONTROL_WORKER=1`），只可在隔離 DB 執行。

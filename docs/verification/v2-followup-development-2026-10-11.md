@@ -160,3 +160,12 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - QA核准成功／409／已保存但回應遺失第一次共8項為6PASS2FAIL（26.0秒）；兩個失敗重現QAApproval在背景useEffect清掉error、重新開放核准。取消背景清error，錯誤時隱藏核准表單，只有明確GET重讀才清除警示；同意勾選中不被背景更新重設。修正後8PASS（16.8秒），一次POST、原binding、reload、390px與非預期寫入攔截均保留。
 - QA歷史未知模型結果、讀取503、失效建議与390px顯示轉用共用更新，讀取失敗才提供局部重試；原摘要、token未提供、不自动重送、旧資料清除與上游異動斷言保留，1PASS（2.0秒）。这些是合成互動證據，不宣稱真實故障或新模型審查。
 - Build PASS（原bundle-size warning保留）；backend沒有變更，2132PASS/139skip沿用。本批完整瀏覽器 **126PASS／27skip／0FAIL（3.6分鐘）**，五個原合成skip改為必跑并新增四個合成分支；不冒稱真實故障處理完成。5197 web-only受控部署驗證完成後補記；部署前先保存八個新舊正式Release與九個保護容器metadata，GET指紋檢查已通過。原未提交Join SHA不變，不納入提交。
+
+## 異常分支前端受控部署
+
+- 本機工程commit2530203含前批c5633eb，Compose只`up --no-deps --build -d web`，exit0。实际5197 bundle `index-BW7UvHH9.js` 与本機build相同；API仍a7a666f，没有migration、DB／Worker／API重啟或5183更動。
+- 九個保護容器ID/image/StartedAt完整不變（既有八個加5197API）；八個新舊正式Release部署前／後／全部瀏覽器回歸後GET相等，ZIP hash/bytes、完整Run hash、完整Release hash、updated_at、WRITE_STARTED=1均不變。無模型、ETL、結案、候選或新交付建立。
+- 實際部署bundle的異常操作合成API回歸 **23PASS（23.6秒）**，全讀寫攔截與非預期寫入assert；驗證compiled UI處理409／回應遺失／單次POST／明確GET核對，不當成真實新故障核准證據。
+- 2026-10-11三新正式案七階段／390/768/1440／鍵盤／ZIP／SDM歷史GET-only **10PASS（26.8秒）**；2026-10-10三原正式案同範圍 **10PASS（25.6秒）**。兩原5183CSV/Excel由固定GET證據入口檢查，未擴大allowlist；全部八個fingerprint regression最終PASS。
+- 證據 `v2-followup-closure-deployment-2026-10-11.json`；私有baseline、原web image ID與browser artifacts位於`runtime-temp/v2-followup-closure-deploy`。本批app沒有GitHub推送，原Join未提交修改仍保留。
+- 下一批：SDM交付純合成測試仍有舊導航依賴；真實失聯／準備中斷／部分提交結案的opt-in案例需先檢查独立DB與Worker環境，不以合成測試代替真實回讀證據。WS-0007維持active，不把27個browser skip／139個backend skip當成PASS。
