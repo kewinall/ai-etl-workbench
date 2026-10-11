@@ -69,3 +69,10 @@ fieldset[aria-label="Task 建立表單"]{min-inline-size:0;max-width:100%;box-si
 .wb-excel-selection button:disabled{opacity:.6;cursor:not-allowed}
 .wb-excel-selection :focus-visible{outline:2px solid #167399;outline-offset:2px}
 @media(max-width:640px){.wb-task-workspace .panel{padding:14px}.wb-task-workspace .nodebutton{width:100%;min-width:0}.wb-task-workspace .nodebutton>div{min-width:0}}
+/* Primary navigation: expandable 管理 group */
+.nav-caret{width:14px!important;margin-left:auto;transition:transform .15s}.nav-manage[aria-expanded=true] .nav-caret{transform:rotate(180deg)}
+.nav-manage-group{display:flex;flex-direction:column;gap:2px;margin:2px 0 4px 14px;padding-left:6px;border-left:1px solid #dbe5ed}.nav-manage-group[hidden]{display:none}
+.nav-note{font-size:11px;color:#64748b;padding:4px 8px;line-height:1.4}
+@media(max-width:1000px){.nav-manage-group{margin-left:0;padding-left:0;border-left:0}.nav-caret,.nav-note{display:none}}
+@media(max-width:600px){.nav-manage-group{position:fixed;top:56px;right:8px;z-index:20;min-width:200px;padding:8px;margin:0;background:#fff;border:1px solid #dbe5ed;border-radius:10px;box-shadow:0 8px 24px #19344e26}
+ .nav-manage-group button{font-size:13px!important;justify-content:flex-start!important}.nav-manage-group .nav-note{display:block}}

@@ -15,6 +15,7 @@ import {TwoCsvTaskForm} from './workbench/TwoCsvTaskForm';
 import {ExcelSourceSelection,ExcelSelectionSummary} from './workbench/ExcelSourceSelection';
 import {JsonSourceConfirmation,JsonProfileSummary} from './workbench/JsonSourceConfirmation';
 import {readRoute} from './workbench/routes';
+import {MainNav} from './workbench/MainNav';
 import {sourcePath} from './workbench/api';
 import {createRoot} from 'react-dom/client';
 import {Activity,BarChart3,BookOpen,Boxes,ChevronRight,CircleGauge,Database,FilePlus2,History,LayoutDashboard,Play,RefreshCw,Settings,ShieldCheck,SlidersHorizontal,Workflow,Zap,CheckCircle2,Clock3,AlertTriangle,TerminalSquare,FileSearch2,GitBranch,Search,Code2} from 'lucide-react';
@@ -22,7 +23,6 @@ import './styles.css';import './theme-light.css';import './node-details.css';imp
 import './workbench/pilot.css';
 type Page='pilot'|'dashboard'|'projects'|'new'|'task'|'history'|'usage'|'models'|'database'|'system'|'guide';
 type Task={id:string;project_id?:string;name:string;status:string;progress:number;source:string;target:string;rows:number;model:string;created_at:string;requirement?:string;source_config?:any;target_config?:any;nodes?:any[];logs?:any[];last_error?:any;error_test_config?:any;error_test_result?:any};
-const nav=[['projects','專案工作區',Boxes],['pilot','Pilot 成果',BarChart3],['system','平台設定中心',Settings],['guide','操作指南',BookOpen]] as const;
 const errorScenarios=[
  {node:'router',scenario:'TC01_ROUTER_NO_MATCH',label:'TC1 · 無法判斷流程類型',code:'ROUTER_NO_MATCH'},
  {node:'profiler',scenario:'TC02_SOURCE_NOT_FOUND',label:'TC2 · 找不到來源資料',code:'CSV_NOT_FOUND'},
@@ -46,7 +46,7 @@ function App(){
  const openTask=(t:Task)=>navigate('/projects/'+(t.project_id||route.projectId||'00000000-0000-0000-0000-000000000010')+'/tasks/'+encodeURIComponent(t.id));
  return <div className="shell">
   <aside><div className="brand"><div className="logo"><Workflow/></div><div><b>AI ETL Workbench</b><span>Project workspace</span></div></div><div className="env"><i/> TEST ENVIRONMENT</div>
-   <nav>{nav.map(([id,label,Icon])=><button key={id} title={label} className={page===id?'active':''} onClick={()=>go(id as Page)}><Icon/>{label}</button>)}</nav>
+   <MainNav route={route} navigate={navigate}/>
    <div className="sidefoot"><div><Activity/> {mode==='POSTGRESQL'?'平台已連線':'連線檢查中／異常'}</div><small>v2 重構測試版</small></div>
   </aside>
   <main><header><div><small>AI ETL WORKBENCH</small><h1>{title(page)}</h1></div><div className="headeractions"><span className="mock">{mode}</span><button onClick={()=>go('projects')}>專案工作區</button></div></header>

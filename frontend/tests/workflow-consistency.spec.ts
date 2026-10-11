@@ -151,7 +151,7 @@ for(const width of [390,768,1440])test(`${width}px 已交付頁面精簡：無�
  expect(heights.requirements).toBeLessThan(width<=390?3200:2200);
  expect(errors).toEqual([]);
  await page.goto(`/#/projects/${project}`);await expect(page).toHaveURL(new RegExp(`/projects/${project}$`));
- await expect(page.getByRole('tab',{name:'工作清單'})).toHaveAttribute('aria-selected','true');
+ await expect(page.getByRole('region',{name:'專案歷史 Task'})).toBeVisible();
  await page.screenshot({path:test.info().outputPath(`project-worklist-${width}.png`),fullPage:true});
 });
 

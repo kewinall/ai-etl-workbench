@@ -161,21 +161,7 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
         {!creating && selected && <button className="primary" disabled={busy} onClick={() => leave(`/projects/${projectId}/tasks/new`)}>建立 Task</button>}
       </div>
       {(creating || (selected && loadedProjectId === projectId && !loading)) && <>
-        <div className="wb-tabs" role="tablist" aria-label="專案頁籤" onKeyDown={event=>{
-          if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
-          event.preventDefault();
-          if(busyRef.current||dirtyRef.current){setMessage('請先完成儲存或取消專案修改，再切換頁籤。');return}
-          const tabs=Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]:not(:disabled)'));
-          const current=tabs.indexOf(event.target as HTMLButtonElement);
-          if(current<0||!tabs.length)return;
-          const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(current+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
-          tabs[next].focus();tabs[next].click();
-        }}>
-          <button role="tab" aria-selected={tab === 'history'} disabled={creating || busy} onClick={() => leave(`/projects/${projectId}/history`)}>工作清單</button>
-          <span className="wb-tabs-group" aria-hidden="true">管理</span>
-          <button role="tab" aria-selected={tab === 'settings'} disabled={busy} onClick={() => navigate(`/projects/${projectId}/settings`)}>專案設定</button>
-          <button role="tab" aria-selected={tab === 'evaluation'} disabled={creating || busy} onClick={() => leave(`/projects/${projectId}/evaluation`)}>Pilot 評估</button>
-        </div>
+        {!creating&&tab!=='history'&&<nav className="wb-actions" aria-label="專案管理位置"><button type="button" disabled={busy} onClick={()=>leave(`/projects/${projectId}/history`)}>← 返回工作清單</button><span>管理／{tab==='evaluation'?'Pilot 評估':'專案設定'}</span></nav>}
         {tab === 'evaluation' && projectId ? <ProjectEvaluation projectId={projectId} navigate={navigate}/> : tab !== 'history' ? <form className="panel wb-project-form" onSubmit={save}>
           <fieldset disabled={busy} aria-label="專案設定欄位" style={{border:0,padding:0,margin:0,minWidth:0}}>
           <h3>基本設定</h3>
