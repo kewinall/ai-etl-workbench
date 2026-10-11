@@ -6,10 +6,10 @@ export function OperatorGuide({navigate}:{navigate:(path:string)=>void}) {
       <div className="wb-actions"><button onClick={()=>navigate('/projects')}>選擇專案開始操作</button><button onClick={()=>navigate('/system')}>開啟平台設定中心</button></div>
     </section>
     <section className="panel"><h3>1. 設定工作範圍</h3>
-      <ol><li>在專案工作區新增或選擇專案；第一頁「設定」維護名稱、說明、預設 AI／資料連線及中英命名字典。</li>
-        <li>設定解析依序為 Task 明確選擇 → 專案預設 → 平台預設。沒有有效設定時停止，不隱含使用開發機連線。</li>
-        <li>第二頁「歷史 Task」可搜尋與篩選最新 Run 狀態。點選 Task 查看完整內容；「建立 Task」前往獨立建立畫面。</li>
-        <li>第三頁「Pilot 評估」保留全部 Run，包括失敗與取消；點選證據入口會選中該 Run，不使用最新成功版本代替。</li></ol>
+      <ol><li>進入專案預設開啟「工作清單」：專案摘要、Task 卡片與狀態篩選使用同一份工作流程判定（含 QA 與交付證據）；讀取失敗顯示「待確認」，不是零筆或完成。</li>
+        <li>「管理」下的「專案設定」維護名稱、說明、預設 AI／資料連線及中英命名字典。設定解析依序為 Task 明確選擇 → 專案預設 → 平台預設；沒有有效設定時停止。</li>
+        <li>「建立 Task」前往獨立建立畫面；點選 Task 卡片直接開啟目前階段。上方「切換專案」可改選其他專案。</li>
+        <li>「管理」下的「Pilot 評估」保留全部 Run，包括失敗與取消；點選證據入口會選中該 Run，不使用最新成功版本代替。</li></ol>
       <p>修改後請儲存並確認結果。離開未儲存表單前會提醒；儲存失敗保留輸入，請先查看原因。</p>
     </section>
     <section className="panel"><h3>2. 設定 AI、連線與執行環境</h3>
@@ -30,9 +30,10 @@ export function OperatorGuide({navigate}:{navigate:(path:string)=>void}) {
       <p>CHECKED／PIPELINE_NOT_READY 表示初步檢查完成但後續流程尚未接通，不是 ETL 成功。MATCH 只表示特定標準答案比對相符，不是 QA 或 Release 核准。</p>
     </section>
     <section className="panel"><h3>4. 查閱歷史與處理失敗</h3>
-      <p>Task 六頁籤：概覽、需求與規格、協作紀錄、產物與流程、執行與 QA、交付。節點、原始設定、Hop／SQL 及既有下載保留；歷史產物不等同新版核准交付。</p>
+      <p>Task 依七階段呈現：需求、需求審查、流程設計審查、執行確認、執行與結果、品質審查、成果交付。每階段先看摘要；已完成階段的完整紀錄與技術詳情收合在「查看…」中。畫面只有一個「重新核對狀態」；某區讀取失敗時才出現該區的重試。窄螢幕以「目前查看」展開七階段清單。</p>
+      <p>已正式交付的版本只能查看與下載；需要變更不可回到原版修改。舊版節點、原始設定、Hop／SQL 及既有下載保留在「舊版紀錄」；歷史產物不等同新版核准交付。</p>
       <p>看到 HOP_RESULT_UNKNOWN 時，先人工核對是否已寫入；不可直接重跑。NEEDS_REVIEW 需要查看具體阻擋原因，不能視為已完成。</p>
-      <p>交付頁分別顯示 QA 關聯 SDM、候選包、隔離可攜驗證與正式交付核准。只有目前證據核對通過的正式 Release 才提供下載；歷史交付數量不保證目前核准有效。</p>
+      <p>已交付時，交付頁先顯示正式 ZIP 與依 Release manifest 列出的包內文件；候選 SDM、候選包與可攜驗證收在歷史區。未交付時依序顯示 QA 關聯 SDM、候選包、隔離可攜驗證與正式交付核准。只有目前證據核對通過的正式 Release 才提供下載。</p>
     </section>
     <section className="panel"><h3>驗收與使用邊界</h3>
       <p>真實模型與 Vertica 驗收需要可用設定及明確測試範圍。測試收集器、模型 mock、單元測試或單獨網站成功，不可替代完整 ETL 驗收。</p>

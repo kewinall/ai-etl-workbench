@@ -46,11 +46,6 @@ fieldset[aria-label="Task 建立表單"]{min-inline-size:0;max-width:100%;box-si
 .stage-enhanced-wrapper,.stage-enhanced-wrapper>div,.wb-two-csv,.wb-two-csv label{min-width:0;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere}
 .wb-two-csv input,.wb-two-csv select,.wb-two-csv textarea{min-width:0;max-width:100%;box-sizing:border-box}
 .wb-task-workspace [hidden]{display:none!important}
-.wb-task-workspace .wb-task-heading{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 0;background:transparent;border:0;height:auto;position:static}
-.wb-task-heading h2{margin:6px 0}.wb-task-heading p{margin:0;color:#52627a}
-.wb-task-tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid #d4dfeb;padding:0 0 12px;margin-bottom:20px}
-.wb-task-tabs button{border:1px solid #d4dfeb;border-radius:9px;background:#fff;color:#42546e;padding:12px 16px;min-height:44px;white-space:normal}
-.wb-task-tabs button[aria-selected="true"]{background:#174e83;color:#fff;border-color:#174e83}
 .wb-task-workspace button:focus-visible,.wb-task-workspace a:focus-visible{outline:3px solid #568bdf;outline-offset:3px}
 .wb-task-workspace .panel{padding:20px;margin-bottom:18px;min-width:0}
 .wb-task-workspace [role="tabpanel"]{min-width:0}
@@ -61,9 +56,6 @@ fieldset[aria-label="Task 建立表單"]{min-inline-size:0;max-width:100%;box-si
 .wb-task-workspace button:not([role="tab"]):not(.nodebutton){min-height:40px;padding:9px 14px;background:#edf4fb;border:1px solid #cad9e8;border-radius:8px;color:#224e72;cursor:pointer}
 .wb-task-workspace button:disabled{opacity:.5;cursor:not-allowed!important}
 .wb-task-workspace select,.wb-task-workspace input:not([type="checkbox"]),.wb-task-workspace textarea{font:inherit;border:1px solid #bdccda;border-radius:8px;padding:10px;background:#fbfdff;color:#243d52;max-width:100%}
-.wb-task-workspace .wb-timeline{list-style:none;padding:0 0 0 18px;border-left:2px solid #c8dced}
-.wb-task-workspace .wb-timeline li{padding:10px 12px;margin:10px 0;background:#f4f8fc;border-radius:8px}
-.wb-task-workspace .wb-timeline small{display:block;color:#526579;margin-top:4px}
 .wb-task-workspace .terminal p,.wb-task-workspace .terminal pre,.wb-task-workspace .terminal b{color:#c3d9e4}
 .wb-task-workspace .hpl-canvas{display:flex;flex-wrap:wrap;overflow:visible;gap:12px}
 .wb-task-workspace .hpl-transform{min-width:0;max-width:100%;flex-wrap:wrap}
@@ -76,4 +68,4 @@ fieldset[aria-label="Task 建立表單"]{min-inline-size:0;max-width:100%;box-si
 .wb-excel-selection button{margin-top:8px;cursor:pointer}
 .wb-excel-selection button:disabled{opacity:.6;cursor:not-allowed}
 .wb-excel-selection :focus-visible{outline:2px solid #167399;outline-offset:2px}
-@media(max-width:640px){.wb-task-workspace .wb-task-heading{align-items:flex-start;flex-direction:column}.wb-task-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.wb-task-workspace .panel{padding:14px}.wb-task-workspace .nodebutton{width:100%;min-width:0}.wb-task-workspace .nodebutton>div{min-width:0}}
+@media(max-width:640px){.wb-task-workspace .panel{padding:14px}.wb-task-workspace .nodebutton{width:100%;min-width:0}.wb-task-workspace .nodebutton>div{min-width:0}}

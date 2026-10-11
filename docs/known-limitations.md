@@ -9,9 +9,16 @@
 - AI 協助語意理解，deterministic code 控制契約、產物與交付。
 - 不要求 Hermes、MCP Server 或多 Agent framework。
 
-## 尚待修正與驗收
+## 最新狀態（2026-10-11）
 
-- 前端仍有多代元件與路由覆寫，需完整驗證專案 CRUD、歷史 Task 與節點詳情。
+- 前端多代元件與 runtime 覆寫已完成引用稽核並移除；目前入口只保留明確引用的有效元件。見 [UI 收斂紀錄](verification/ui-simplification-2026-10-11.md)。
+- 狀態判定統一由 workflow-status 彙整（逐操作資格、已交付只讀）；專案摘要／篩選／卡片共用同一結果。尚未部署 5197。
+- 已交付版本目前不能從原版建立修正版；REPLACE／UPSERT 不可選為新版執行方式（僅保留歷史意圖）。
+- 仍未完成：JSON／資料表完整執行、REPLACE／UPSERT 執行、維運復原、完整列印報告、人工成效基準。
+
+## 尚待修正與驗收（2026-09 前盤點，保留歷史）
+
+- （2026-10-11 已處理）前端多代元件與路由覆寫；專案 CRUD、歷史 Task 與節點詳情仍以各案證據為準。
 - 設定保存與執行讀取、AI profile／secret 使用尚需統一；設定檢查不等於真實模型連線成功。
 - Requirement revision、NamingContract 確認的 UI 流程與 compiler 串接尚未完整。
 - Release DDL 欄位分隔、manifest checksum 與敏感資訊檢查需修正。

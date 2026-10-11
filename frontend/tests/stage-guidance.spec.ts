@@ -328,3 +328,13 @@ for(const hasDocument of [false,true])test(`交付頁自動讀取文件：${hasD
  }
  expect(reads).toBeGreaterThan(0);expect(tracker.counts().posts).toBe(0);
 });
+
+test('補正表單不提供 REPLACE／UPSERT 作為新版執行方式（合成 API）',async({page})=>{
+ const f=await fixture(page);await page.goto(base+'/requirements/'+current);
+ await page.getByRole('button',{name:'補正需求並建立新版'}).click();
+ const mode=page.getByLabel('寫入模式');
+ await expect(mode.locator('option[value="APPEND"]')).not.toHaveAttribute('disabled','');
+ await expect(mode.locator('option[value="REPLACE"]')).toHaveAttribute('disabled','');await expect(mode.locator('option[value="UPSERT"]')).toHaveAttribute('disabled','');
+ await expect(page.getByRole('form',{name:'需求補正'})).toContainText('目前編譯器只執行 APPEND');
+ expect(f.counts().posts).toBe(0);
+});
