@@ -1,0 +1,381 @@
+{
+  "scope": "Three true native cases, official API downloads and all manifest members; no ETL replay",
+  "cases": [
+    {
+      "key": "csv",
+      "task_id": "TASK-20261011-0001",
+      "run_id": "f65777ad-8457-49c5-8cb0-8cd0bf0ab84b",
+      "target": "ai_sample.ui_accept_csv_20261011_v2",
+      "specification_id": "26e3d266-0b9a-4ab6-9902-6cb74d18bd32",
+      "models": {
+        "SA": {
+          "invocation_id": "aae4f408-1e7b-4432-a02d-2250d00b46d1",
+          "provider": "LOCAL_COPILOT",
+          "model": "copilot/gpt-5.4",
+          "duration_ms": 15781,
+          "usage": {
+            "input_tokens": null,
+            "output_tokens": null,
+            "total_tokens": null,
+            "usage_type": "PARTIAL",
+            "ai_credits": 5.702,
+            "premium_requests": 1,
+            "cli_sessions": 1,
+            "automatic_retries": 0,
+            "tool_execution_count": 0
+          }
+        },
+        "Developer": {
+          "invocation_id": "716ec1b3-0f84-4233-999d-62b5040f8829",
+          "provider": "LOCAL_COPILOT",
+          "model": "copilot/gpt-5.4",
+          "duration_ms": 15391,
+          "usage": {
+            "input_tokens": null,
+            "output_tokens": null,
+            "total_tokens": null,
+            "cli_sessions": 1,
+            "automatic_retries": 0,
+            "tool_execution_count": 0,
+            "ai_credits": 4.6349,
+            "premium_requests": 1,
+            "usage_type": "PARTIAL",
+            "usage_source": "copilot_json_events"
+          }
+        },
+        "QA": {
+          "invocation_id": "5388ddef-7576-4803-8700-3ece74f09138",
+          "provider": "LOCAL_COPILOT",
+          "model": "copilot/gpt-5.4",
+          "duration_ms": 29469,
+          "usage": {
+            "input_tokens": null,
+            "output_tokens": null,
+            "total_tokens": null,
+            "attempts": null,
+            "transient_retries": null,
+            "output_corrections": null,
+            "cli_sessions": 1,
+            "automatic_retries": 0,
+            "tool_execution_count": 0,
+            "ai_credits": 6.35365,
+            "premium_requests": 1,
+            "usage_type": "PARTIAL",
+            "usage_source": "copilot_json_events"
+          }
+        }
+      },
+      "qa": "PASS",
+      "release": {
+        "release_id": "fbe12282-d20d-4572-9bf2-7009fed0402a",
+        "checksum": "dfe3ef9f3038a244cd4de2be073bfbfb9397f4f34af378cac05d9bdd967d450d",
+        "file_size": 10425,
+        "approved_at": "2026-10-11T10:09:49.409725+00:00",
+        "documents": [
+          {
+            "name": "hop/pipeline.hpl",
+            "type": "HPL",
+            "checksum": "36009ecc0f95429b871d015448d2764a78b179fb2daa6af1e3e5c86be25b4ab5",
+            "size_bytes": 6910
+          },
+          {
+            "name": "hop/workflow.hwf",
+            "type": "HWF",
+            "checksum": "dc869d905131094a7d68f5b493d01460333af216c35b5f9ed71e95820988f26d",
+            "size_bytes": 1515
+          },
+          {
+            "name": "vertica-ddl.sql",
+            "type": "DDL",
+            "checksum": "c44e046bf47e524aab821ef5d593d6d4c89c7552b90840298a4f854cb003071d",
+            "size_bytes": 135
+          },
+          {
+            "name": "SDM.xlsx",
+            "type": "SDM",
+            "checksum": "dda1c8dda17972106df9c39d9776112743279c0900f2f28c42fbfb23dc4c290d",
+            "size_bytes": 6746
+          },
+          {
+            "name": "parameters.example",
+            "type": "PARAMETERS",
+            "checksum": "dd453939f8f8fe39a1787d0190a60e6362c6e222db5cf4d16a61817cb931e098",
+            "size_bytes": 485
+          },
+          {
+            "name": "release-manifest.json",
+            "type": "MANIFEST",
+            "checksum": null,
+            "size_bytes": null
+          }
+        ]
+      },
+      "portability": {
+        "status": "PASS",
+        "checksum": "2bfc8f7a1db16047909d245eb23f524150f94cd09048aad7ab3e5a777233891a",
+        "started_at": "2026-10-11T10:08:53.701388+00:00",
+        "finished_at": "2026-10-11T10:08:57.558864+00:00",
+        "overdue": false
+      },
+      "manifest_sha256": "6e7a946c343dfb119a143f8db47ebefd11bcf854792217852f4c1ab8d9f52859",
+      "all_five_artifact_hashes_verified": true,
+      "sdm_sheets": [
+        "欄位對照",
+        "規則及版本"
+      ],
+      "workflow_completed_stages": 7,
+      "download_url": "http://127.0.0.1:5197/api/tasks/TASK-20261011-0001/runs/f65777ad-8457-49c5-8cb0-8cd0bf0ab84b/release/fbe12282-d20d-4572-9bf2-7009fed0402a/download"
+    },
+    {
+      "key": "excel",
+      "task_id": "TASK-20261011-0002",
+      "run_id": "0db71099-170f-497d-a35f-c2bbb927994b",
+      "target": "ai_sample.ui_accept_excel_20261011_v2",
+      "specification_id": "e9257711-a6e9-4d89-a01f-55b4a8d720d7",
+      "models": {
+        "SA": {
+          "invocation_id": "a27b839e-ba9f-435e-b65e-ab3b7964aaeb",
+          "provider": "LOCAL_COPILOT",
+          "model": "copilot/gpt-5.4",
+          "duration_ms": 17593,
+          "usage": {
+            "input_tokens": null,
+            "output_tokens": null,
+            "total_tokens": null,
+            "usage_type": "PARTIAL",
+            "ai_credits": 4.6969,
+            "premium_requests": 1,
+            "cli_sessions": 1,
+            "automatic_retries": 0,
+            "tool_execution_count": 0
+          }
+        },
+        "Developer": {
+          "invocation_id": "6cabd647-9695-4cd7-a073-fe1ede950f5a",
+          "provider": "LOCAL_COPILOT",
+          "model": "copilot/gpt-5.4",
+          "duration_ms": 15250,
+          "usage": {
+            "input_tokens": null,
+            "output_tokens": null,
+            "total_tokens": null,
+            "cli_sessions": 1,
+            "automatic_retries": 0,
+            "tool_execution_count": 0,
+            "ai_credits": 4.9454,
+            "premium_requests": 1,
+            "usage_type": "PARTIAL",
+            "usage_source": "copilot_json_events"
+          }
+        },
+        "QA": {
+          "invocation_id": "2fa5f8d6-ab3b-4470-a514-0f6458a743da",
+          "provider": "LOCAL_COPILOT",
+          "model": "copilot/gpt-5.4",
+          "duration_ms": 40437,
+          "usage": {
+            "input_tokens": null,
+            "output_tokens": null,
+            "total_tokens": null,
+            "attempts": null,
+            "transient_retries": null,
+            "output_corrections": null,
+            "cli_sessions": 1,
+            "automatic_retries": 0,
+            "tool_execution_count": 0,
+            "ai_credits": 7.57515,
+            "premium_requests": 1,
+            "usage_type": "PARTIAL",
+            "usage_source": "copilot_json_events"
+          }
+        }
+      },
+      "qa": "PASS",
+      "release": {
+        "release_id": "4349aae6-070c-43e3-84bd-4aaaef56ecb3",
+        "checksum": "1f0c6a1e822a1dd6da877f914930d7d0b6796e6b7228c0458e06d0801ff688cd",
+        "file_size": 11175,
+        "approved_at": "2026-10-11T10:09:50.698375+00:00",
+        "documents": [
+          {
+            "name": "hop/pipeline.hpl",
+            "type": "HPL",
+            "checksum": "5a2b49fa3bd2899aa92f5793242e09598d7b9a5f59eaac9c78e81adcd4942c56",
+            "size_bytes": 7282
+          },
+          {
+            "name": "hop/workflow.hwf",
+            "type": "HWF",
+            "checksum": "4b8b7b47c82ea5bff21f3ef3474b77e65dc70e6f691f5a7d01444f7c95c3215e",
+            "size_bytes": 1517
+          },
+          {
+            "name": "vertica-ddl.sql",
+            "type": "DDL",
+            "checksum": "fadc5ae0e9fae8e63c0d9ecd78581ddb43372560e77867c07837020e426ce713",
+            "size_bytes": 137
+          },
+          {
+            "name": "SDM.xlsx",
+            "type": "SDM",
+            "checksum": "c952ac169a68fc33069bcdb8a0ee55855dcbe99f6624bdcc01aec52bd13a0605",
+            "size_bytes": 7386
+          },
+          {
+            "name": "parameters.example",
+            "type": "PARAMETERS",
+            "checksum": "6852164746012b7d93988110b97268cb1b1db04ec2ea6b55ad5cdd59a121bf62",
+            "size_bytes": 487
+          },
+          {
+            "name": "release-manifest.json",
+            "type": "MANIFEST",
+            "checksum": null,
+            "size_bytes": null
+          }
+        ]
+      },
+      "portability": {
+        "status": "PASS",
+        "checksum": "c527a3b4c5dc068a93c51b20c606b2640294e59a354e3b9eabd6b574884aaa10",
+        "started_at": "2026-10-11T10:08:14.930004+00:00",
+        "finished_at": "2026-10-11T10:08:19.048020+00:00",
+        "overdue": false
+      },
+      "manifest_sha256": "cf35a60ce0b51c3aa8802096ff4802444506fd7b899feb76a0fd1eceafb7202b",
+      "all_five_artifact_hashes_verified": true,
+      "sdm_sheets": [
+        "欄位對照",
+        "規則及版本"
+      ],
+      "workflow_completed_stages": 7,
+      "download_url": "http://127.0.0.1:5197/api/tasks/TASK-20261011-0002/runs/0db71099-170f-497d-a35f-c2bbb927994b/release/4349aae6-070c-43e3-84bd-4aaaef56ecb3/download"
+    },
+    {
+      "key": "join",
+      "task_id": "TASK-20261011-0003",
+      "run_id": "2980c558-ee7b-426a-a57a-fc40d5a18e34",
+      "target": "ai_sample.ui_accept_join_20261011_v2",
+      "specification_id": "f135fa0c-98fc-4116-a652-9de3726fbbf7",
+      "models": {
+        "SA": {
+          "invocation_id": "96f79584-e869-43bd-af4a-eb656ea99f9a",
+          "provider": "LOCAL_COPILOT",
+          "model": "copilot/gpt-5.4",
+          "duration_ms": 16828,
+          "usage": {
+            "input_tokens": null,
+            "output_tokens": null,
+            "total_tokens": null,
+            "usage_type": "PARTIAL",
+            "ai_credits": 5.868,
+            "premium_requests": 1,
+            "cli_sessions": 1,
+            "automatic_retries": 0,
+            "tool_execution_count": 0
+          }
+        },
+        "Developer": {
+          "invocation_id": "f51e45b2-9ace-4a21-933d-f0848d940a19",
+          "provider": "LOCAL_COPILOT",
+          "model": "copilot/gpt-5.4",
+          "duration_ms": 13375,
+          "usage": {
+            "input_tokens": null,
+            "output_tokens": null,
+            "total_tokens": null,
+            "cli_sessions": 1,
+            "automatic_retries": 0,
+            "tool_execution_count": 0,
+            "ai_credits": 4.7659,
+            "premium_requests": 1,
+            "usage_type": "PARTIAL",
+            "usage_source": "copilot_json_events"
+          }
+        },
+        "QA": {
+          "invocation_id": "300c9f9c-e27d-4da0-af02-889d9faaf892",
+          "provider": "LOCAL_COPILOT",
+          "model": "copilot/gpt-5.4",
+          "duration_ms": 33422,
+          "usage": {
+            "input_tokens": null,
+            "output_tokens": null,
+            "total_tokens": null,
+            "attempts": null,
+            "transient_retries": null,
+            "output_corrections": null,
+            "cli_sessions": 1,
+            "automatic_retries": 0,
+            "tool_execution_count": 0,
+            "ai_credits": 6.8424,
+            "premium_requests": 1,
+            "usage_type": "PARTIAL",
+            "usage_source": "copilot_json_events"
+          }
+        }
+      },
+      "qa": "PASS",
+      "release": {
+        "release_id": "90bb1f20-4da4-41dc-b57b-8f1ce0db7f46",
+        "checksum": "4bb14480b57ec362ea20d6ea9a27d57e251f40684a67840fd406795b69419b9f",
+        "file_size": 10588,
+        "approved_at": "2026-10-11T10:09:51.949389+00:00",
+        "documents": [
+          {
+            "name": "hop/pipeline.hpl",
+            "type": "HPL",
+            "checksum": "83ec319f8353e711f931f3868884852ce185fae445d74edf2536fe1e81f6018e",
+            "size_bytes": 8664
+          },
+          {
+            "name": "hop/workflow.hwf",
+            "type": "HWF",
+            "checksum": "08f8642c626618f62a52a24122a2cd3290d6d2f3030e512ae08f8c12a99ebcbd",
+            "size_bytes": 1684
+          },
+          {
+            "name": "vertica-ddl.sql",
+            "type": "DDL",
+            "checksum": "84ce452af3ae5669356e04216c8c010e0c6273cb2c92ee0374e54bb9addf0632",
+            "size_bytes": 147
+          },
+          {
+            "name": "SDM.xlsx",
+            "type": "SDM",
+            "checksum": "92313231e54ce7c3e4e06c7dd75323fb9dd4060fb9a870d5f352e6ef559bead4",
+            "size_bytes": 6920
+          },
+          {
+            "name": "parameters.example",
+            "type": "PARAMETERS",
+            "checksum": "de19fcd25b63c6e0f07b97a1c94870e831b7aa496d12c18c54afce9d397eb457",
+            "size_bytes": 575
+          },
+          {
+            "name": "release-manifest.json",
+            "type": "MANIFEST",
+            "checksum": null,
+            "size_bytes": null
+          }
+        ]
+      },
+      "portability": {
+        "status": "PASS",
+        "checksum": "0268900ad0a12447a4fdb21c8cdfb15d9ead4f62521d7b87a9b5e508e0278538",
+        "started_at": "2026-10-11T10:08:08.333742+00:00",
+        "finished_at": "2026-10-11T10:08:12.864880+00:00",
+        "overdue": false
+      },
+      "manifest_sha256": "4fd436dd6c6583dd87e579169b9979dcc241a1ec276f979e44ed3cead454f870",
+      "all_five_artifact_hashes_verified": true,
+      "sdm_sheets": [
+        "欄位對照",
+        "規則及版本"
+      ],
+      "workflow_completed_stages": 7,
+      "download_url": "http://127.0.0.1:5197/api/tasks/TASK-20261011-0003/runs/2980c558-ee7b-426a-a57a-fc40d5a18e34/release/90bb1f20-4da4-41dc-b57b-8f1ce0db7f46/download"
+    }
+  ],
+  "all_three_formally_delivered": true
+}

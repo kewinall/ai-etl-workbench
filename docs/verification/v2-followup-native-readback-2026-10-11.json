@@ -1,0 +1,442 @@
+{
+  "scope": "Real three-case Vertica SELECT and immutable execution/log/comparison readback; no DDL, ETL replay or approval",
+  "expected_sha256": "c31a5140551ccdab58185fc64609fab77e677a7cae9f4ab587a688340db5b05a",
+  "cases": [
+    {
+      "key": "csv",
+      "task_id": "TASK-20261011-0001",
+      "run_id": "f65777ad-8457-49c5-8cb0-8cd0bf0ab84b",
+      "target": "ai_sample.ui_accept_csv_20261011_v2",
+      "rows": [
+        [
+          "A",
+          "150.2500",
+          1
+        ],
+        [
+          "B",
+          "500.5000",
+          2
+        ]
+      ],
+      "columns": [
+        {
+          "name": "category",
+          "data_type": "VARCHAR(32)"
+        },
+        {
+          "name": "sum_amount",
+          "data_type": "NUMERIC(24,4)"
+        },
+        {
+          "name": "row_count",
+          "data_type": "BIGINT"
+        }
+      ],
+      "sql_checksum": "da4ba9dbd00540db4e17d33db033cd745df013c0c7d6e4570d65ce9778bfaa6b",
+      "hop_log_bytes": 1951,
+      "hop": {
+        "result": {
+          "status": "COMPLETED",
+          "exit_code": 0,
+          "errors": 0,
+          "log_checksum": "a19fdbee62e82684648c577980b630cd018544c4df0eb8f43f061c0ae8378b85"
+        },
+        "nodes": {
+          "source": {
+            "input": 7,
+            "output": 0,
+            "read": 0,
+            "written": 6,
+            "updated": 0,
+            "errors": 0
+          },
+          "filter": {
+            "input": 0,
+            "output": 0,
+            "read": 6,
+            "written": 6,
+            "updated": 0,
+            "errors": 0
+          },
+          "sort": {
+            "input": 0,
+            "output": 0,
+            "read": 3,
+            "written": 3,
+            "updated": 0,
+            "errors": 0
+          },
+          "aggregate": {
+            "input": 0,
+            "output": 0,
+            "read": 3,
+            "written": 2,
+            "updated": 0,
+            "errors": 0
+          },
+          "projection": {
+            "input": 0,
+            "output": 0,
+            "read": 2,
+            "written": 2,
+            "updated": 0,
+            "errors": 0
+          },
+          "target": {
+            "input": 0,
+            "output": 2,
+            "read": 2,
+            "written": 2,
+            "updated": 0,
+            "errors": 0
+          },
+          "discard": {
+            "input": 0,
+            "output": 0,
+            "read": 3,
+            "written": 3,
+            "updated": 0,
+            "errors": 0
+          }
+        },
+        "complete_node_evidence": true,
+        "qa_passed": false
+      },
+      "write_started_count": 1,
+      "comparisons": [
+        {
+          "comparison_id": "63e56da9-a142-4c68-a871-99ef0ca9774d",
+          "checksum": "3a9ac57cf6fc2cface5d24ee7a7142bd8f4c42b4441b8b8011297d6d0bd6e676",
+          "evidence": {
+            "run_id": "f65777ad-8457-49c5-8cb0-8cd0bf0ab84b",
+            "status": "MATCH",
+            "version": 1,
+            "oracle_id": "a60f33f5-3a3d-48bb-bcf8-211e972866eb",
+            "qa_passed": false,
+            "comparison": "EXACT_MULTISET",
+            "actual_count": 2,
+            "hop_event_id": 332,
+            "missing_count": 0,
+            "release_ready": false,
+            "expected_count": 2,
+            "actual_checksum": "66cde297f42076b65832292ef8566ece739863f44643e8ec67b7ed5ac30751a5",
+            "naming_checksum": "e240a868856af82df3328d86d3263d55c0936efd59657594a9da9da93f88ed9d",
+            "hop_log_checksum": "a19fdbee62e82684648c577980b630cd018544c4df0eb8f43f061c0ae8378b85",
+            "unexpected_count": 0,
+            "actual_provenance": "NOT_VERIFIED",
+            "expected_checksum": "66cde297f42076b65832292ef8566ece739863f44643e8ec67b7ed5ac30751a5",
+            "specification_checksum": "5d591f7db4f9f8796d047a31ed1b6342d726ba2327f497077d3ebad18a106c9b",
+            "oracle_document_checksum": "fa012152d3abd180f19124f77db3938f696d71d9e2e825c4198de5a2350a3998",
+            "execution_binding_checksum": "c3d337d75bba363da251031d578091f4bfe82cb1cb7e85e9590b87108f867400"
+          }
+        }
+      ],
+      "independent_fixed_multiset_match": true
+    },
+    {
+      "key": "excel",
+      "task_id": "TASK-20261011-0002",
+      "run_id": "0db71099-170f-497d-a35f-c2bbb927994b",
+      "target": "ai_sample.ui_accept_excel_20261011_v2",
+      "rows": [
+        [
+          "A",
+          "150.2500",
+          1
+        ],
+        [
+          "B",
+          "500.5000",
+          2
+        ]
+      ],
+      "columns": [
+        {
+          "name": "category",
+          "data_type": "VARCHAR(32)"
+        },
+        {
+          "name": "sum_amount",
+          "data_type": "NUMERIC(24,4)"
+        },
+        {
+          "name": "row_count",
+          "data_type": "BIGINT"
+        }
+      ],
+      "sql_checksum": "fd86bcc218d117b539347fb2e72beb855091083299c8fd06ce5920e7840cbdf5",
+      "hop_log_bytes": 1802,
+      "hop": {
+        "result": {
+          "status": "COMPLETED",
+          "exit_code": 0,
+          "errors": 0,
+          "log_checksum": "13025197ef44872823d79eafea0dde28b0ab45a90e82f3d96becac7c77b15cbf"
+        },
+        "nodes": {
+          "source": {
+            "input": 6,
+            "output": 0,
+            "read": 0,
+            "written": 6,
+            "updated": 0,
+            "errors": 0
+          },
+          "filter": {
+            "input": 0,
+            "output": 0,
+            "read": 6,
+            "written": 6,
+            "updated": 0,
+            "errors": 0
+          },
+          "sort": {
+            "input": 0,
+            "output": 0,
+            "read": 3,
+            "written": 3,
+            "updated": 0,
+            "errors": 0
+          },
+          "aggregate": {
+            "input": 0,
+            "output": 0,
+            "read": 3,
+            "written": 2,
+            "updated": 0,
+            "errors": 0
+          },
+          "projection": {
+            "input": 0,
+            "output": 0,
+            "read": 2,
+            "written": 2,
+            "updated": 0,
+            "errors": 0
+          },
+          "target": {
+            "input": 0,
+            "output": 2,
+            "read": 2,
+            "written": 2,
+            "updated": 0,
+            "errors": 0
+          },
+          "discard": {
+            "input": 0,
+            "output": 0,
+            "read": 3,
+            "written": 3,
+            "updated": 0,
+            "errors": 0
+          }
+        },
+        "complete_node_evidence": true,
+        "qa_passed": false
+      },
+      "write_started_count": 1,
+      "comparisons": [
+        {
+          "comparison_id": "7c6d4bcd-2190-4629-b6b0-7c6fb37b57f3",
+          "checksum": "cf6d50154db8a7763f1ddff8e5117e5817eafa2737b3d3742f77b631c2077f34",
+          "evidence": {
+            "run_id": "0db71099-170f-497d-a35f-c2bbb927994b",
+            "status": "MATCH",
+            "version": 1,
+            "oracle_id": "4a82043b-bbc2-47e7-aadc-0dcfa4603a68",
+            "qa_passed": false,
+            "comparison": "EXACT_MULTISET",
+            "actual_count": 2,
+            "hop_event_id": 321,
+            "missing_count": 0,
+            "release_ready": false,
+            "expected_count": 2,
+            "actual_checksum": "66cde297f42076b65832292ef8566ece739863f44643e8ec67b7ed5ac30751a5",
+            "naming_checksum": "5f525227ca20befc62ceac6acecb819fdb51972511350f541f3775eef7c5e40c",
+            "hop_log_checksum": "13025197ef44872823d79eafea0dde28b0ab45a90e82f3d96becac7c77b15cbf",
+            "unexpected_count": 0,
+            "actual_provenance": "NOT_VERIFIED",
+            "expected_checksum": "66cde297f42076b65832292ef8566ece739863f44643e8ec67b7ed5ac30751a5",
+            "specification_checksum": "1618d8856cd45fba9ce758a0ed59eef1a36809e35e3657a0a8f5dadaf419f052",
+            "oracle_document_checksum": "f88d4e59321eb6dde4a44718050f79642cbfa99a8eb62a7681343f8ef2498771",
+            "execution_binding_checksum": "fd1cf93eb5fe4e336dad95cadb6c1ebedbee75ba6be17191dac393e742bb66fa"
+          }
+        }
+      ],
+      "independent_fixed_multiset_match": true
+    },
+    {
+      "key": "join",
+      "task_id": "TASK-20261011-0003",
+      "run_id": "2980c558-ee7b-426a-a57a-fc40d5a18e34",
+      "target": "ai_sample.ui_accept_join_20261011_v2",
+      "rows": [
+        [
+          null,
+          "LNULL",
+          null,
+          null
+        ],
+        [
+          1,
+          "L1",
+          1,
+          "R1a"
+        ],
+        [
+          1,
+          "L1",
+          1,
+          "R1b"
+        ],
+        [
+          2,
+          "L2",
+          2,
+          "R2"
+        ],
+        [
+          3,
+          "L3",
+          null,
+          null
+        ]
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "BIGINT"
+        },
+        {
+          "name": "left_value",
+          "data_type": "VARCHAR(32)"
+        },
+        {
+          "name": "id_2",
+          "data_type": "BIGINT"
+        },
+        {
+          "name": "right_value",
+          "data_type": "VARCHAR(32)"
+        }
+      ],
+      "sql_checksum": "25fe1162e8d3159510b5b79dbb8918e6945941f3be0578cd47209a95873ccb70",
+      "hop_log_bytes": 2358,
+      "hop": {
+        "result": {
+          "status": "COMPLETED",
+          "exit_code": 0,
+          "errors": 0,
+          "log_checksum": "6703836f8f72505552cd9aa0addf0c6e2ec5d51cad84a08429a991fd5e65b25b"
+        },
+        "nodes": {
+          "source_0": {
+            "input": 5,
+            "output": 0,
+            "read": 0,
+            "written": 4,
+            "updated": 0,
+            "errors": 0
+          },
+          "join_left_sort": {
+            "input": 0,
+            "output": 0,
+            "read": 4,
+            "written": 4,
+            "updated": 0,
+            "errors": 0
+          },
+          "source_1": {
+            "input": 4,
+            "output": 0,
+            "read": 0,
+            "written": 3,
+            "updated": 0,
+            "errors": 0
+          },
+          "join_right_filter": {
+            "input": 0,
+            "output": 0,
+            "read": 3,
+            "written": 3,
+            "updated": 0,
+            "errors": 0
+          },
+          "join_right_sort": {
+            "input": 0,
+            "output": 0,
+            "read": 3,
+            "written": 3,
+            "updated": 0,
+            "errors": 0
+          },
+          "join_sources": {
+            "input": 0,
+            "output": 0,
+            "read": 7,
+            "written": 5,
+            "updated": 0,
+            "errors": 0
+          },
+          "projection": {
+            "input": 0,
+            "output": 0,
+            "read": 5,
+            "written": 5,
+            "updated": 0,
+            "errors": 0
+          },
+          "target": {
+            "input": 0,
+            "output": 5,
+            "read": 5,
+            "written": 5,
+            "updated": 0,
+            "errors": 0
+          },
+          "join_discard": {
+            "input": 0,
+            "output": 0,
+            "read": 0,
+            "written": 0,
+            "updated": 0,
+            "errors": 0
+          }
+        },
+        "complete_node_evidence": true,
+        "qa_passed": false
+      },
+      "write_started_count": 1,
+      "comparisons": [
+        {
+          "comparison_id": "a1143d35-7f42-4989-aa0f-35d75479b796",
+          "checksum": "9c9d66010c8ced9c7cd23c520f43735565adcc6094b12fe2ce4024231d955fde",
+          "evidence": {
+            "run_id": "2980c558-ee7b-426a-a57a-fc40d5a18e34",
+            "status": "MATCH",
+            "version": 1,
+            "oracle_id": "0b941313-2869-4090-bff1-37a2e3f6cc44",
+            "qa_passed": false,
+            "comparison": "EXACT_MULTISET",
+            "actual_count": 5,
+            "hop_event_id": 310,
+            "missing_count": 0,
+            "release_ready": false,
+            "expected_count": 5,
+            "actual_checksum": "f3028b03c8348d8dee916d083cf6f334e9b09a87e8cf33eb9c23b9047be8504d",
+            "naming_checksum": "f757fc792c7ef1ac4f1b82ee903038de15cbcbaf10b663acda7d759998220605",
+            "hop_log_checksum": "6703836f8f72505552cd9aa0addf0c6e2ec5d51cad84a08429a991fd5e65b25b",
+            "unexpected_count": 0,
+            "actual_provenance": "NOT_VERIFIED",
+            "expected_checksum": "f3028b03c8348d8dee916d083cf6f334e9b09a87e8cf33eb9c23b9047be8504d",
+            "specification_checksum": "f31341b187b00a4e5a7a5f28757048f65a93b1e17b5b11845e36080b111eaca4",
+            "oracle_document_checksum": "1c6274d3a173fca87fe3dda72a1f3194ec71defc7a7d61fc7132cb9ab953ac4b",
+            "execution_binding_checksum": "cce4b74649cec364693a2a8d88216d0b4903a14207a4e04f5b999d6a0ba952de"
+          }
+        }
+      ],
+      "independent_fixed_multiset_match": true
+    }
+  ]
+}

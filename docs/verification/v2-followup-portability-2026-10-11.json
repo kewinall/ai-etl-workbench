@@ -1,0 +1,359 @@
+{
+  "scope": "Completed receipts, immutable candidate bytes, private HWF logs and independent isolated DB SELECT only; no Hop/DDL rerun",
+  "cases": [
+    {
+      "key": "csv",
+      "run_id": "f65777ad-8457-49c5-8cb0-8cd0bf0ab84b",
+      "check_id": "ad83979b-54de-4f1b-9953-68e9d4825dd9",
+      "status": "PASS",
+      "checksum": "2bfc8f7a1db16047909d245eb23f524150f94cd09048aad7ab3e5a777233891a",
+      "evidence": {
+        "version": 1,
+        "exit_code": 0,
+        "actual_count": 2,
+        "ddl_checksum": "c44e046bf47e524aab821ef5d593d6d4c89c7552b90840298a4f854cb003071d",
+        "hpl_checksum": "36009ecc0f95429b871d015448d2764a78b179fb2daa6af1e3e5c86be25b4ab5",
+        "hwf_checksum": "dc869d905131094a7d68f5b493d01460333af216c35b5f9ed71e95820988f26d",
+        "expected_count": 2,
+        "source_checksum": "aa83b9f0743456477b5fe3381b8835dd18000b4bb0d3b91e8809ffcaccf8e20e",
+        "hop_log_checksum": "d1a9146b61c6a1bd4802078c252cc0a2ee48f9f2e8073668ec91e4f411b52d9d",
+        "candidate_checksum": "0adbe94a9a3b52700c91ff77ce6a129779868b81ed139555d888b1cce5c9d78c",
+        "workflow_completed": true,
+        "result_actual_checksum": "66cde297f42076b65832292ef8566ece739863f44643e8ec67b7ed5ac30751a5",
+        "isolated_target_created": true,
+        "result_expected_checksum": "66cde297f42076b65832292ef8566ece739863f44643e8ec67b7ed5ac30751a5",
+        "original_artifacts_unmodified": true
+      },
+      "log_bytes": 2428,
+      "workflow": {
+        "result": {
+          "status": "COMPLETED",
+          "exit_code": 0,
+          "errors": 0,
+          "log_checksum": "d1a9146b61c6a1bd4802078c252cc0a2ee48f9f2e8073668ec91e4f411b52d9d"
+        },
+        "nodes": {
+          "source": {
+            "input": 7,
+            "output": 0,
+            "read": 0,
+            "written": 6,
+            "updated": 0,
+            "errors": 0
+          },
+          "filter": {
+            "input": 0,
+            "output": 0,
+            "read": 6,
+            "written": 6,
+            "updated": 0,
+            "errors": 0
+          },
+          "sort": {
+            "input": 0,
+            "output": 0,
+            "read": 3,
+            "written": 3,
+            "updated": 0,
+            "errors": 0
+          },
+          "aggregate": {
+            "input": 0,
+            "output": 0,
+            "read": 3,
+            "written": 2,
+            "updated": 0,
+            "errors": 0
+          },
+          "projection": {
+            "input": 0,
+            "output": 0,
+            "read": 2,
+            "written": 2,
+            "updated": 0,
+            "errors": 0
+          },
+          "target": {
+            "input": 0,
+            "output": 2,
+            "read": 2,
+            "written": 2,
+            "updated": 0,
+            "errors": 0
+          },
+          "discard": {
+            "input": 0,
+            "output": 0,
+            "read": 3,
+            "written": 3,
+            "updated": 0,
+            "errors": 0
+          }
+        },
+        "complete_node_evidence": true,
+        "qa_passed": false,
+        "workflow_completed": true
+      },
+      "independent_isolated_read": {
+        "version": 1,
+        "comparison": "EXACT_MULTISET",
+        "status": "MATCH",
+        "expected_count": 2,
+        "actual_count": 2,
+        "missing_count": 0,
+        "unexpected_count": 0,
+        "expected_checksum": "66cde297f42076b65832292ef8566ece739863f44643e8ec67b7ed5ac30751a5",
+        "actual_checksum": "66cde297f42076b65832292ef8566ece739863f44643e8ec67b7ed5ac30751a5",
+        "qa_passed": false,
+        "release_ready": false,
+        "oracle_document_checksum": "fa012152d3abd180f19124f77db3938f696d71d9e2e825c4198de5a2350a3998",
+        "specification_checksum": "5d591f7db4f9f8796d047a31ed1b6342d726ba2327f497077d3ebad18a106c9b",
+        "naming_checksum": "e240a868856af82df3328d86d3263d55c0936efd59657594a9da9da93f88ed9d"
+      },
+      "original_destination_separate": true
+    },
+    {
+      "key": "excel",
+      "run_id": "0db71099-170f-497d-a35f-c2bbb927994b",
+      "check_id": "58ab0447-92f3-4155-992f-582d3d11a507",
+      "status": "PASS",
+      "checksum": "c527a3b4c5dc068a93c51b20c606b2640294e59a354e3b9eabd6b574884aaa10",
+      "evidence": {
+        "version": 4,
+        "exit_code": 0,
+        "actual_count": 2,
+        "ddl_checksum": "fadc5ae0e9fae8e63c0d9ecd78581ddb43372560e77867c07837020e426ce713",
+        "hpl_checksum": "5a2b49fa3bd2899aa92f5793242e09598d7b9a5f59eaac9c78e81adcd4942c56",
+        "hwf_checksum": "4b8b7b47c82ea5bff21f3ef3474b77e65dc70e6f691f5a7d01444f7c95c3215e",
+        "source_format": "XLSX",
+        "expected_count": 2,
+        "source_checksum": "ab88251bef37709b244200867447e489364d05534399bf471ca499adbc9c2fa5",
+        "hop_log_checksum": "2a488e1aad34c84c29541cfb1e2984b708773c392b1191aef325231242a32fce",
+        "candidate_checksum": "5da7bde4c60b233b4c82ef8eadabf30dd00f96e3bd3594fb80f917a01cb21718",
+        "workflow_completed": true,
+        "result_actual_checksum": "66cde297f42076b65832292ef8566ece739863f44643e8ec67b7ed5ac30751a5",
+        "isolated_target_created": true,
+        "result_expected_checksum": "66cde297f42076b65832292ef8566ece739863f44643e8ec67b7ed5ac30751a5",
+        "original_artifacts_unmodified": true
+      },
+      "log_bytes": 2279,
+      "workflow": {
+        "result": {
+          "status": "COMPLETED",
+          "exit_code": 0,
+          "errors": 0,
+          "log_checksum": "2a488e1aad34c84c29541cfb1e2984b708773c392b1191aef325231242a32fce"
+        },
+        "nodes": {
+          "source": {
+            "input": 6,
+            "output": 0,
+            "read": 0,
+            "written": 6,
+            "updated": 0,
+            "errors": 0
+          },
+          "filter": {
+            "input": 0,
+            "output": 0,
+            "read": 6,
+            "written": 6,
+            "updated": 0,
+            "errors": 0
+          },
+          "sort": {
+            "input": 0,
+            "output": 0,
+            "read": 3,
+            "written": 3,
+            "updated": 0,
+            "errors": 0
+          },
+          "aggregate": {
+            "input": 0,
+            "output": 0,
+            "read": 3,
+            "written": 2,
+            "updated": 0,
+            "errors": 0
+          },
+          "projection": {
+            "input": 0,
+            "output": 0,
+            "read": 2,
+            "written": 2,
+            "updated": 0,
+            "errors": 0
+          },
+          "target": {
+            "input": 0,
+            "output": 2,
+            "read": 2,
+            "written": 2,
+            "updated": 0,
+            "errors": 0
+          },
+          "discard": {
+            "input": 0,
+            "output": 0,
+            "read": 3,
+            "written": 3,
+            "updated": 0,
+            "errors": 0
+          }
+        },
+        "complete_node_evidence": true,
+        "qa_passed": false,
+        "workflow_completed": true
+      },
+      "independent_isolated_read": {
+        "version": 1,
+        "comparison": "EXACT_MULTISET",
+        "status": "MATCH",
+        "expected_count": 2,
+        "actual_count": 2,
+        "missing_count": 0,
+        "unexpected_count": 0,
+        "expected_checksum": "66cde297f42076b65832292ef8566ece739863f44643e8ec67b7ed5ac30751a5",
+        "actual_checksum": "66cde297f42076b65832292ef8566ece739863f44643e8ec67b7ed5ac30751a5",
+        "qa_passed": false,
+        "release_ready": false,
+        "oracle_document_checksum": "f88d4e59321eb6dde4a44718050f79642cbfa99a8eb62a7681343f8ef2498771",
+        "specification_checksum": "1618d8856cd45fba9ce758a0ed59eef1a36809e35e3657a0a8f5dadaf419f052",
+        "naming_checksum": "5f525227ca20befc62ceac6acecb819fdb51972511350f541f3775eef7c5e40c"
+      },
+      "original_destination_separate": true
+    },
+    {
+      "key": "join",
+      "run_id": "2980c558-ee7b-426a-a57a-fc40d5a18e34",
+      "check_id": "18af93c4-196b-4984-8f25-4419a4aa0214",
+      "status": "PASS",
+      "checksum": "0268900ad0a12447a4fdb21c8cdfb15d9ead4f62521d7b87a9b5e508e0278538",
+      "evidence": {
+        "version": 2,
+        "exit_code": 0,
+        "actual_count": 5,
+        "ddl_checksum": "84ce452af3ae5669356e04216c8c010e0c6273cb2c92ee0374e54bb9addf0632",
+        "hpl_checksum": "83ec319f8353e711f931f3868884852ce185fae445d74edf2536fe1e81f6018e",
+        "hwf_checksum": "08f8642c626618f62a52a24122a2cd3290d6d2f3030e512ae08f8c12a99ebcbd",
+        "expected_count": 5,
+        "source_checksum": "21282f74f5cc636248f1e6de6b7e27a583b701d138e2d3cea9a147cbf2ee3499",
+        "hop_log_checksum": "9b6f69bf0e550d6ff8968501dc3ac366f4211d65ad8509c213ca2745123b2ec3",
+        "source_checksums": {
+          "source.0": "7b46c751fbae428f30853fe971aa0570e33d395874c16897367dccdf73fa0875",
+          "source.1": "335ad6273351c40479e3e97307a145d4cf1b2e5a10721b30f0189c4dd0b46ca8"
+        },
+        "candidate_checksum": "d4d0904439d33ddb67d6e78cfeea9ce0879727c607efa13c755c5eb0099ab222",
+        "workflow_completed": true,
+        "result_actual_checksum": "f3028b03c8348d8dee916d083cf6f334e9b09a87e8cf33eb9c23b9047be8504d",
+        "isolated_target_created": true,
+        "result_expected_checksum": "f3028b03c8348d8dee916d083cf6f334e9b09a87e8cf33eb9c23b9047be8504d",
+        "original_artifacts_unmodified": true
+      },
+      "log_bytes": 2835,
+      "workflow": {
+        "result": {
+          "status": "COMPLETED",
+          "exit_code": 0,
+          "errors": 0,
+          "log_checksum": "9b6f69bf0e550d6ff8968501dc3ac366f4211d65ad8509c213ca2745123b2ec3"
+        },
+        "nodes": {
+          "source_0": {
+            "input": 5,
+            "output": 0,
+            "read": 0,
+            "written": 4,
+            "updated": 0,
+            "errors": 0
+          },
+          "join_left_sort": {
+            "input": 0,
+            "output": 0,
+            "read": 4,
+            "written": 4,
+            "updated": 0,
+            "errors": 0
+          },
+          "source_1": {
+            "input": 4,
+            "output": 0,
+            "read": 0,
+            "written": 3,
+            "updated": 0,
+            "errors": 0
+          },
+          "join_right_filter": {
+            "input": 0,
+            "output": 0,
+            "read": 3,
+            "written": 3,
+            "updated": 0,
+            "errors": 0
+          },
+          "join_right_sort": {
+            "input": 0,
+            "output": 0,
+            "read": 3,
+            "written": 3,
+            "updated": 0,
+            "errors": 0
+          },
+          "join_sources": {
+            "input": 0,
+            "output": 0,
+            "read": 7,
+            "written": 5,
+            "updated": 0,
+            "errors": 0
+          },
+          "projection": {
+            "input": 0,
+            "output": 0,
+            "read": 5,
+            "written": 5,
+            "updated": 0,
+            "errors": 0
+          },
+          "target": {
+            "input": 0,
+            "output": 5,
+            "read": 5,
+            "written": 5,
+            "updated": 0,
+            "errors": 0
+          },
+          "join_discard": {
+            "input": 0,
+            "output": 0,
+            "read": 0,
+            "written": 0,
+            "updated": 0,
+            "errors": 0
+          }
+        },
+        "complete_node_evidence": true,
+        "qa_passed": false,
+        "workflow_completed": true
+      },
+      "independent_isolated_read": {
+        "version": 1,
+        "comparison": "EXACT_MULTISET",
+        "status": "MATCH",
+        "expected_count": 5,
+        "actual_count": 5,
+        "missing_count": 0,
+        "unexpected_count": 0,
+        "expected_checksum": "f3028b03c8348d8dee916d083cf6f334e9b09a87e8cf33eb9c23b9047be8504d",
+        "actual_checksum": "f3028b03c8348d8dee916d083cf6f334e9b09a87e8cf33eb9c23b9047be8504d",
+        "qa_passed": false,
+        "release_ready": false,
+        "oracle_document_checksum": "1c6274d3a173fca87fe3dda72a1f3194ec71defc7a7d61fc7132cb9ab953ac4b",
+        "specification_checksum": "f31341b187b00a4e5a7a5f28757048f65a93b1e17b5b11845e36080b111eaca4",
+        "naming_checksum": "f757fc792c7ef1ac4f1b82ee903038de15cbcbaf10b663acda7d759998220605"
+      },
+      "original_destination_separate": true
+    }
+  ]
+}

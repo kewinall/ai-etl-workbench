@@ -1,0 +1,52 @@
+[
+  {
+    "case": "csv",
+    "task": "TASK-20261010-0017",
+    "run": "5443ccf1-3386-48ba-b669-8c2dbaecd155",
+    "sha256": "61eb59a6d0e58f5aa5a07b40ddd17eb697e64cdc4e064d29aa7ad1c3a0908e04",
+    "bytes": 10417,
+    "write_started": 1,
+    "updated_at": "2026-10-10T13:48:46.096451+00:00",
+    "run_hash": "4fcc2321f48cf67bb264100caa859a06b9d32594a2dea9ecdb6382bd9cba40e3"
+  },
+  {
+    "case": "excel",
+    "task": "TASK-20261010-0018",
+    "run": "029d55b5-d677-427d-a6c2-7a14511b4de4",
+    "sha256": "e8e38dde9f31cbe0926eeef70a1b090a9e01ff2df4dca8719a9c005e13b063aa",
+    "bytes": 11152,
+    "write_started": 1,
+    "updated_at": "2026-10-10T13:48:40.065562+00:00",
+    "run_hash": "76b60e4468cc0ec630e8f89b1d6fc48cf0f85392e5f2de2399edb512c57b3adf"
+  },
+  {
+    "case": "join",
+    "task": "TASK-20261010-0019",
+    "run": "e0b16950-27db-4847-add5-1ddbeaf78e08",
+    "sha256": "9ba3bfdc8caebf5e589547268791e3abc5b701da4a5446a22cc376038854fd35",
+    "bytes": 10585,
+    "write_started": 1,
+    "updated_at": "2026-10-10T13:55:45.569860+00:00",
+    "run_hash": "56e63e162ff9f54804426bbd2716104d8688bb8582762305c28e2e66299dfeeb"
+  },
+  {
+    "case": "old_csv",
+    "task": "TASK-20260917-0007",
+    "run": "d8abcc97-e5d7-4f83-9d47-b244e03730e7",
+    "sha256": "f32b964c8071d37dd854f653320eb4ce41041ae01e92220a026aa27d9bb8da2d",
+    "bytes": 10452,
+    "write_started": 1,
+    "updated_at": "2026-09-17T13:03:54.877721+00:00",
+    "run_hash": "6cb84140807db256666ed5cbf24a44914814706122f29b8cbb0000b9bbe3ae6c"
+  },
+  {
+    "case": "old_excel",
+    "task": "TASK-20260928-0001",
+    "run": "df438c72-a408-4eef-8a6e-10f2a8445b02",
+    "sha256": "603b9e974338cfe9cd25b13d1a7ef680b7b12bd96ff2ba63992ddcb46eef1c2a",
+    "bytes": 11208,
+    "write_started": 1,
+    "updated_at": "2026-09-28T03:16:09.954819+00:00",
+    "run_hash": "39058e16c87389b1036ecce6a823fa8c0932190654a806ecdea90efd51280bb3"
+  }
+]

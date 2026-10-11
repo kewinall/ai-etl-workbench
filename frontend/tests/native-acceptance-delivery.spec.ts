@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-const proofPath=path.resolve('../docs/verification/ui-accept-auto-delivery-2026-10-10.json');
+const proofPath=path.resolve(process.env.WORKBENCH_NATIVE_ACCEPTANCE_PROOF||'../docs/verification/ui-accept-auto-delivery-2026-10-10.json');
 const enabled=process.env.WORKBENCH_NATIVE_ACCEPTANCE==='1';
 const proof=enabled?JSON.parse(fs.readFileSync(proofPath,'utf8')):{cases:[]};
 for(const c of proof.cases)for(const width of [390,768,1440])test(`${c.key} ${width}px 真實正式交付七階段、鍵盤與下載`,async({page,request})=>{

@@ -120,3 +120,25 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - 前端實際 index-BppNKZAm.js，全部 deployed backend/app Python source 正規化 LF 指紋與本機相同。八個受保護容器 ID/image/StartedAt 完全相等：5197 PostgreSQL/control/evidence/portable DB，5183 api/web/PostgreSQL/control。
 - 部署後五個原 Release checksum、bytes、Run hash、updated_at 及 WRITE_STARTED 完全不變。真正部署的 5197 三案七階段、三種寬度、键盤、下載及 SDM 歷史 GET-only 回歸最終 10 passed（24.6 秒），非 GET 攔截且無寫入。證據 docs/verification/v2-followup-5197-deploy-readback-2026-10-11.json，私有 runtime-temp/v2-followup-5197-deploy。
 - 5197 現在 source a7a666f；此部署回歸僅為既有資料只讀驗證，新的 CSV／Excel／Join 完整執行仍未完成，不能用此回歸替代。下一步以新 Task、新 ui_accept_* 目標及執行前固定答案，經正常網站建立與原核准，逐階段保存新模型、Hop、QA、可攜及 ZIP 證據。
+
+## 新三案七階段真實驗收（2026-10-11）
+
+- 以使用者既有「授權三案例全部自動核准、執行與交付」及本輪開發驗證範圍，正常網站建立三個新 Task；網站是所有需求修訂／核准／模型／Hop／交付意圖的入口，沒有直接寫控制資料庫或覆寫工作流資格。固定 `examples/ui-acceptance/expected.json` SHA-256 `c31a5140551ccdab58185fc64609fab77e677a7cae9f4ab587a688340db5b05a`，執行前保存並核准；沒有從結果反推答案。該固定檔的歷史 `full_chain_accepted=false` 不改寫，新的驗收結果分開保存。
+
+| 案例 | 新 Task／最终 Run | 全新原目標 | 固定／實際 | 節點 | 原写入 |
+|---|---|---|---|---|---|
+| CSV | TASK-20261011-0001 / f65777ad-8457-49c5-8cb0-8cd0bf0ab84b | ai_sample.ui_accept_csv_20261011_v2 | 2 / 2 MATCH | 7 完整 | 1 |
+| Excel | TASK-20261011-0002 / 0db71099-170f-497d-a35f-c2bbb927994b | ai_sample.ui_accept_excel_20261011_v2 | 2 / 2 MATCH | 7 完整 | 1 |
+| LEFT JOIN | TASK-20261011-0003 / 2980c558-ee7b-426a-a57a-fc40d5a18e34 | ai_sample.ui_accept_join_20261011_v2 | 5 / 5 MATCH | 9 完整 | 1 |
+
+- 初步檢查實際走 NEEDS_INPUT → 網站差異預覽 → 新版 → 重新輸入確認；三案都有原版本保存，沒有修改舊 Run。CSV 真實 SA 第一次要求補明聚合目標型別及新表 DDL，保留 NEEDS_INPUT invocation `3a66d148-c65b-4242-a69b-24e9d5406670`；另建新版明定型別／新建表／不 DROP、不 TRUNCATE，再另行授權 SA。修正版 SA READY_FOR_REVIEW，沒有沿用旧 SA 核准。
+- 三案当前 SA／Developer／QA 均为真实 LOCAL_COPILOT `copilot/gpt-5.4`，每次 cli_sessions=1、automatic_retries=0、tool_execution_count=0；QA 均 PASS 並另存人工核准。加上 CSV 退回共 4 次 SA、3 次 Developer、3 次 QA。token 用量不能完整取得，保留 null／PARTIAL，不宣稱精確 token 統計。
+- SELECT-only 原目標預檢證明三個表均不存在；只更新 acceptance-hop/replay 共用 Worker image至当前 source，未重啟既有服務。現有 intent consumer 只消費網站已授權預約，每個子 Worker 明確 task-id/run-id，marker 原子預約不重試；本輪不新增 approval bypass。Hop 2.12.0 原執行全数完成，逐節點原始 Log checksum 和 WRITE_STARTED=1 核對；再透過獨立 Vertica 連線 SELECT 比對固定 multiset（小數／NULL 保留）。
+- 三案依序完成 QA、SDM、候選 ZIP，隔離 UiAcceptPortable 執行原 HWF/HPL/DDL並 PASS。另以 SELECT 核對隔離结果 2／2／5 與候選 receipt checksum；连接與原目標不同，不重跑或清理原目標。
+- 網站保存正式 Release 后實際下載 ZIP，ZIP 位元組／SHA、manifest 綁定及五個產物 hash／size 均一致；SDM 可開啟且有工作表，全部七階段完成。正式交付來源與下载證據：`v2-followup-delivery-2026-10-11.json`；原執行／獨立結果：`v2-followup-native-readback-2026-10-11.json`；隔離可攜：`v2-followup-portability-2026-10-11.json`。
+- 實際部署5197新三案七階段390／768／1440px、鍵盤、正式ZIP下載、SDM歷史、Run重载回歸 **10 PASS（25.0秒）**。每個画面維持已正式交付及同Run，無水平溢位／pageerror；測試攔截非GET且Run/Release before-after完全相等。這一輪窄版驗證是完成後的七階段查閱及下載，不宣稱窄版重新操作全部真實寫入。正常寫入驗收使用1440px；表單窄版与異常分支另有工程測試。
+- 五個既有正式 Release 再次 GET-only 回歸 PASS，指紋、bytes、Run hash、updated_at與WRITE_STARTED仍等於部署前基準。5183没有部署、既有已交付目標沒有重跑。原 `test_join_replay_worker.py` 未提交内容SHA仍為 `cc1f19bd4e2da5bf311ed3d3f89802f65e497d5fa40e7cc954d32b6a553e9777`。
+- 驗收脚本早期失败如實保留在私有 `runtime-temp/v2-followup-live-state.json`：native fetch ok 型別、Excel exact label、Task/context切換及等待 naming/developer API路径。兩次等待超時時寫入已成功，先GET確認，沒有重送成功意圖；修正腳本後續從保存狀態接續。兩份額外上傳保留，沒有刪除旧資料。這些不是首次全通过，也沒有將腳本失败冒稱產品通过。
+- 本批没有修改 application source，backend2132 PASS/139skip及默认browser105 PASS/36skip沿用前批当前source，不重複冒算。native readonly test新增可選proof路径，新三案真实回归已實跑；其余条件测试並未因三案通过而视为全部完成。
+
+本輪三案正常七階段可階段性驗收；WS-0007整體仍進行中。尚待独立里程碑：已交付版本修正版能力、JSON／資料表完整執行、REPLACE／UPSERT、維運復原、完整列印報告及人工成效基準。QA補證、執行失聯、網路回應遺失等保護有工程或保留歷史證據，未在这三案刻意另作新的真實故障／模型成本案例。下一步依 opt-in inventory 的證據層次選定尚未實測分支，補隔離回歸及清楚交接，不重跑這三個已交付目標。
