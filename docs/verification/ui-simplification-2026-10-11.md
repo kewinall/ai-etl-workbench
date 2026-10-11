@@ -174,3 +174,68 @@ opt-in 執行前置：
 部署回復（僅在已部署新版且需回復時；需使用者授權）：checkout 目標內容後重跑
 `docker compose -f deploy/compose.stage-guidance.yml -f deploy/compose.ui-acceptance.yml up -d --no-deps --build api web`
 （`UI_ACCEPT_PROJECT_ID=346e9419-4b0e-4ba7-ad29-1756ca7da833`，即 `deploy-5197.cmd`）。只重建 api／web；control、postgres、Hop／可攜驗證服務、volumes、5183 不動；完成後以 GET-only 讀回三案 ZIP SHA-256、`updated_at`、WRITE_STARTED 次數確認不變。
+
+## 第三輪：Codex 第二輪核查補正（2026-10-11）
+
+起點 `400b95b`（Codex 驗證結果：規格 V1／V2／V4 19 passed／3 failed、時間軸舊文案、規格 API 不要求 SA）。本輪仍 **未部署、未推送**；5197 仍為 `146e963`；5183 未動；未執行模型、Hop、Vertica 或 Release 寫入。既有未提交的 `backend/tests/test_join_replay_worker.py` 修改保留、未納入任何 commit。
+
+| Commit | 內容 |
+|---|---|
+| `d68755b` | 後端：規格保存／核准需要同一 Run 目前有效的 SA 人工核准 |
+| `d44d92d` | 前端：規格頁背景讀取不清除操作回饋；忽略過期回應；編譯預覽依內容指紋保留 |
+| `7ac2222` | 前端：時間軸文案改為當時事件事實；接入共用刷新，正常隱藏刷新按鈕、失敗才提供重試 |
+| `edc0985` | 測試：JSON live（opt-in）改用合成 SA 核准，不再覆寫畫面資格 |
+
+### 1. 規格操作回饋與編譯預覽（`d44d92d`）
+
+- 背景讀取（共用「重新核對狀態」、寫入後重讀）與使用者操作分開：背景讀取不清除成功訊息、操作錯誤或仍有效的編譯預覽；背景讀取失敗只顯示錯誤與「重試讀取規格版本」，保留上次內容。
+- 只套用最新一次規格清單讀取；較早的讀取或前一個 Run 的回應晚到時忽略。
+- 編譯預覽以「Run＋規格 ID＋內容指紋＋可核准狀態」為鍵：不變時保留；切換版本／Run 或內容改變才清除；預覽請求回來時若顯示內容已不同則丟棄。
+- 保存或核准成功後先顯示成功訊息，再重讀；重讀失敗不會掩蓋已成功的寫入。
+- 新增 `specification-refresh-race.spec.ts`（6 項）：以 gate 控制回應順序，不用固定等待；涵蓋背景重讀晚於／早於 onSaved、較早讀取晚到、預覽保留與清除、切換 Run、背景讀取失敗。**對 `400b95b` 的元件執行為 1 passed／5 failed**（僅切換 Run 一項舊版也通過），新版 6 passed。原 V1／V2／V4 測試斷言未修改。
+
+### 2. 時間軸（`7ac2222`）
+
+- `PIPELINE_NOT_READY` 顯示「當時初步需求檢查完成，等待後續審查」；原事件代碼仍在技術行，不由舊代碼推論目前服務狀態。
+- 時間軸原本位於共用刷新 context 之外，固定顯示自己的按鈕。現包入 managed context，隨「重新核對狀態」重讀（只套用最新讀取，重讀期間保留舊紀錄）；正常狀態不顯示按鈕，讀取失敗才出現「重試讀取此版本紀錄」（可鍵盤操作）。工作區外仍保留手動按鈕。
+- 新增 `collaboration-timeline.spec.ts`（已交付／未交付各 1）：文案、原代碼、正常無按鈕、共用刷新、失敗保留紀錄＋鍵盤重試、390px。對 `400b95b` 執行 2 failed，新版 2 passed。
+
+### 3. SA 前置條件（`d68755b`）
+
+- `POST /specifications` 與 `POST /specifications/{id}/approve` 在既有 Task 鎖、同一交易內，於任何寫入前（含語意拒絕證據）檢查：本 Run 有 `sa_handoff_approval`，且其 binding 等於以目前輸入、設定、SA context 與 review 重新計算的 binding。沿用既有核准資料，不新增工作流狀態。
+- 拒絕：HTTP 409，`detail.code` 為 `SPEC_SA_APPROVAL_MISSING`（無核准，含他 Run 核准）或 `SPEC_SA_APPROVAL_STALE`（已失效），`detail.message` 為中文原因；不新增規格、核准或事件。
+- `validate`／`compile-preview` 與歷史 GET 不變（未加 SA 條件）。
+- `workflow-status`：`specification_approve` 同步要求 `sa_ok`（`specification_create` 原已要求）。
+- Developer journal 內部保存（`developer_journal.finish`）未加此檢查：Developer 預約時已要求 SA 核准；若之後 SA 失效，規格核准 API 仍會拒絕。
+- 測試：新增 `test_specification_sa_prerequisite_integration.py`（缺 SA 含語意錯誤提案不留證據、有效 SA 冪等保存與核准、SA 失效拒絕核准與保存且保留歷史、他 Run 核准不適用、已寫入仍拒絕）與 `test_workflow_status.py` 參數化 3 項。
+- 既有測試調整（因新規則，非放寬）：共用 fixture `prepared()` 預設以合成 SA review＋既有人工 SA 核准（無模型呼叫）取得前置條件，自行測 SA 流程的測試改為 `sa_approved=False`；`test_upstream_change_invalidates...` 的最後一次保存改斷言 409 `SPEC_SA_APPROVAL_STALE`（原為語意 INVALID）；`test_source_order_api...` 的 invocation 計數排除 fixture 的合成 SA；fixture teardown 以 `session_replication_role=replica` 刪除自己建立、受不可變 trigger 保護的合成 SA 核准列（僅測試清理）。
+
+### 測試結果（雲端隔離環境；非 5197）
+
+環境：本地 PostgreSQL 16（compose 為 17）、Python 3.12 依 `constraints-linux-py312.txt`、隔離 API（獨立 DB、模型／Hop／QA 派發關閉、`WORKBENCH_ARTIFACT_ROOT` 指向暫存目錄）、Vite 5199 代理、預裝 Chromium。skip 數與 Docker compose 環境不同，不宣稱與 Codex 數量相等。
+
+| 類型 | 起點 `400b95b` | 本輪 HEAD |
+|---|---|---|
+| 後端 `pytest backend/tests` | 2061 passed／128 skipped | **2069 passed／128 skipped**（+8 新測試，0 failed） |
+| Playwright 預設 | 未在本環境重跑（Codex：選定 22 項 19／3） | **97 passed／0 failed／39 skipped**（第二輪 89＋新增 8） |
+| Playwright opt-in：控制單次＋合成寫入 | — | json-confirmation-live、excel-contract-live **2 passed，連續 3 次** |
+| Node 單元 `node --test tests/*.test.mjs` | — | 6 passed |
+| `npm run build`、`git diff --check` | — | PASS |
+
+類型界線：全部為合成 API 或隔離本地 API／PostgreSQL；沒有真實模型、Hop／Vertica 或 Release；不等於 5197 Runtime 驗收。
+
+### 第三輪仍未完成
+
+1. 未部署 5197、未推送；待 Codex 獨立驗證後由使用者決定。
+2. `specification-live.spec.ts`（opt-in）仍使用已移除的舊入口，且未取得 SA 核准；新規則下需改用 `syntheticSaApproval()` 並改走七階段頁，本輪未處理。
+3. 其他寫入 API（例：已交付 Run 的直接寫入）仍未逐一實測後端拒絕；本輪僅處理規格保存／核准。
+4. 已交付版本不能建立修正版（維持）；JSON／資料表完整執行等仍為獨立里程碑。
+
+### 第三輪：回復步驟
+
+| 目標 | 指令（Windows 端加 `-c core.autocrlf=true`） |
+|---|---|
+| 撤銷第三輪全部 | `git revert --no-edit <本文件 commit> edc0985 7ac2222 d44d92d d68755b`（結果等同 `400b95b`） |
+| 只撤銷後端 SA 規則 | `git revert --no-edit edc0985 d68755b`（JSON live 測試須同時撤回，否則仍會建立合成 SA） |
+
+不涉及 migration 或資料修改。部署回復沿用第二輪的 api／web 重建命令（需使用者授權）。
