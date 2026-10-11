@@ -48,6 +48,9 @@ export function OracleHistory({taskId,requestedRunId,onSelectRun,stage}:{taskId:
     return()=>{live=false};
   },[taskId,run,spec]);
   const selectedRun=runs.find(item=>item.run_id===run);
+  const editorKey=run+'/'+spec;
+  const [retainedEditor,setRetainedEditor]=useState('');
+  useEffect(()=>{if(spec&&specs.find(s=>s.specification_id===spec)?.approval_effective&&(saveOp.enabled||!saveOp.known))setRetainedEditor(editorKey)},[editorKey,spec,specs,saveOp.enabled,saveOp.known]);
   return <section className="panel" aria-label="標準答案版本紀錄" style={{overflowWrap:'anywhere'}}>
     <h3>標準答案版本紀錄</h3><p>核准紀錄僅代表當時的人工確認，不表示目前仍有效、已執行或 QA 通過。可按「查看答案內容」讀取指定歷史版本。</p>
     {(!managed||error)&&<button disabled={loading} onClick={()=>{if(canLeave())setRefresh(n=>n+1)}}>{managed?'重試讀取標準答案':'重新讀取標準答案'}</button>}
@@ -59,7 +62,7 @@ export function OracleHistory({taskId,requestedRunId,onSelectRun,stage}:{taskId:
     {error&&<p role="alert">無法讀取標準答案：{error}。請重新讀取。</p>}
     {!loading&&!error&&!items.length&&<p>{!runs.length?'尚無準備版本。':!specs.length?'此準備版本尚無已保存規格。':'此規格尚未保存標準答案。'}</p>}
     {items.map(item=><article className="wb-record" key={item.oracle_id}><h4>答案第 {item.version} 版</h4><p>{item.approval_recorded?'曾人工核准；目前資格尚未評估':'尚無人工核准紀錄'}</p><p>保存時間：{new Date(item.created_at).toLocaleString()}</p>{item.approved_at&&<p>核准時間：{new Date(item.approved_at).toLocaleString()}</p>}<details><summary>版本指紋</summary><p>{item.document_checksum}</p></details><p>尚不能據此判定 QA 通過或可交付。</p><OracleReview url={`/api/tasks/${encodeURIComponent(taskId)}/runs/${run}/specifications/${spec}/oracles/${item.oracle_id}/review`} checksum={item.document_checksum}/></article>)}
-    {specs.find(s=>s.specification_id===spec)?.approval_effective&&(saveOp.enabled||!saveOp.known)&&<OracleEditor key={run+'/'+spec} base={`/api/tasks/${encodeURIComponent(taskId)}/runs/${run}/specifications/${spec}`} onHistory={setItems}/>}
+    {specs.find(s=>s.specification_id===spec)?.approval_effective&&(saveOp.enabled||!saveOp.known||retainedEditor===editorKey)&&<OracleEditor key={run+'/'+spec} base={`/api/tasks/${encodeURIComponent(taskId)}/runs/${run}/specifications/${spec}`} onHistory={setItems}/>}
     {spec&&!specs.find(s=>s.specification_id===spec)?.approval_effective&&<p>請先至需求與規格核准有效規格，才能輸入答案。</p>}
     {run&&!stage&&<ComparisonHistory key={run} taskId={taskId} runId={run}/>}
     {run&&!stage&&<QAReviewHistory key={'qa-'+run} taskId={taskId} runId={run}/>}

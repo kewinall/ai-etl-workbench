@@ -381,3 +381,20 @@ test('舊版產物讀取失敗提供重試，恢復只做讀取',async({page})=>
  await expect(page.getByText('舊版紀錄：Task 節點、Log、Hop、SQL 與下載',{exact:true})).toHaveCount(0);
  expect(f.counts().posts).toBe(0);
 });
+
+
+test('標準答案送出失敗或共用讀取期間仍保留已輸入草稿',async({page})=>{
+ await fixture(page,{stage:'confirm'});let posts=0;
+ await page.route('**/specifications',r=>r.fulfill({json:{items:[{specification_id:'spec',version:1,approval_effective:true}]}}));
+ await page.route('**/oracle-editor-context',r=>r.fulfill({json:{version:1,columns:[{name:'id',kind:'INTEGER',nullable:false}],max_rows:10000}}));
+ await page.route('**/oracles',route=>{if(route.request().method()==='POST'){posts++;return route.fulfill({status:503,json:{detail:'合成保存失敗'}})}return route.fulfill({json:{items:[]}})});
+ await page.goto(base+'/confirm/'+current);const panel=page.getByRole('region',{name:'標準答案輸入'});
+ await panel.getByRole('button',{name:'新增答案資料列'}).click();
+ await panel.getByLabel('第 1 筆 id',{exact:true}).fill('123');
+ await panel.getByRole('button',{name:'保存答案版本',exact:true}).click();
+ await expect(panel.getByRole('alert')).toContainText('保存或回讀未完成');
+ await expect(panel.getByLabel('第 1 筆 id',{exact:true})).toHaveValue('123');
+ await page.getByRole('button',{name:'重新核對狀態',exact:true}).click();
+ await expect(panel.getByRole('button',{name:'保存答案版本',exact:true})).toBeEnabled();
+ await expect(panel.getByLabel('第 1 筆 id',{exact:true})).toHaveValue('123');expect(posts).toBe(1);
+});

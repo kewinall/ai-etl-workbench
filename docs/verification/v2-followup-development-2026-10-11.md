@@ -68,3 +68,16 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - 隔離API8765重新啟動以讀取最新mounted source，前端5199使用該API；5197／5183未部署或更動。未執行真實模型、Hop、Vertica、QA或Release；既有Join未提交修改hash不變。
 
 - 第二輪完整瀏覽器最終101PASS/39skip/0FAIL（2.7分鐘），獨立輸出runtime-temp/v2-followup-stage2-browser。第二段工程驗證可阶段性收斂，第三段仍未完成；skip不是PASS或真實全鏈驗收。
+
+
+## 第三段第一批：opt-in規格流程與標準答案草稿
+
+- specification-live改走共用版本／目前設計、執行確認、交付階段及收合時間軸；保留規格常數、核准、SDM指紋、候選下載、編譯checksum、答案版本／精度、失敗保留、事件計數與390px斷言。SDM歷史檢查搬到交付頁；不覆寫workflow資格。
+- 使用既有syntheticSaApproval fixture建立同Run有效SA人工核准，CONTROL一次執行限定新測試Project，其他待核准／排隊Run不消費。API部署false且全部model/Hop派發關閉；這不是模型驗收。
+- 首次失敗證明輕量隔離API未配置WORKBENCH_ARTIFACT_ROOT。只重新建立ai-etl-retirement-20261011-api，增加獨立named artifact volume並保留原停止容器；讀取原env於記憶體，不輸出值，未動5197/5183。fixture新增前置assert，避免晚到文件步驟才失敗。
+- 實跑發現OracleHistory依saveOp.enabled決定是否mount答案表單；failed POST也觸發唯讀刷新，loading短暫資格false導致表單unmount，清空已填資料。保留同Run/spec已啟用editor key，資格不明時仍停用表單，版本切換不沿用草稿。新增mock回歸確認503和共用GET刷新仍保留123，只有一次POST。
+- 新規格live最終PASS14.2秒，Task TASK-20261011-0067 / Run d3884cd0-2d98-4eaf-a8b2-02e5449db763 / specification3056e573-7700-4e85-a100-74727c5f11bf。artifact為候選SDM XLSX，非QA／正式Release；未寫Vertica，write_started=false。finally取消該合成Run並還原測試改寫設定。
+- 新增v2-opt-in-inventory-2026-10-11.json：靜態條件與environment keys、未實測界線；93個有conditional gate的測試檔不是93個skip instance。預設backend139／browser39 skipped仍需按證據類型分段實測。另標示Copilot/upload/QA-Hopf授權/復原歷史中的舊selector，未宣稱全數補正。
+- 第三段仍partial：新的CSV／Excel／Join真實七階段、其他opt-in舊入口與原正式Release只讀回歸未在本批執行。5197維持原source，app commits只在本機，未推送。
+
+- 第三段第一批最終預設瀏覽器102PASS/39skip/0FAIL（2.8分鐘）；新增草稿測試回放dfa6a00旧OracleHistory必FAIL（清空成0筆），修正後PASS。新增artifact-root前置後規格live再PASS15.6秒，TASK-20261011-0096 / Run143b9570-6988-4f82-82ea-99b9ebaf7e30，全部合成case finally取消且設定還原。Build PASS。

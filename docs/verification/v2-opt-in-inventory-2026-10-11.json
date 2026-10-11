@@ -1,0 +1,1463 @@
+{
+  "date": "2026-10-11",
+  "scope": "Static conditional test gates; entries are files, not the number of skipped parameter instances.",
+  "default_regression": {
+    "backend": {
+      "passed": 2124,
+      "skipped": 139
+    },
+    "browser": {
+      "passed": 102,
+      "skipped": 39
+    },
+    "scope": "Isolated deterministic engineering including oracle draft regression; real execution cases are separate."
+  },
+  "rules": [
+    "Skip is not PASS.",
+    "True provider/ETL/recovery tests require explicitly scoped new runs or retained read-only evidence.",
+    "Do not run synthetic setting rewrites on 5183 or 5197.",
+    "Old selector references must be migrated without dropping business assertions."
+  ],
+  "entries": [
+    {
+      "file": "frontend/tests/bound-comparison-live.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 7,
+          "condition": "test.skip(!task||!run||!project,'Requires explicitly selected real Hop evidence; never creates or executes a Run');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_BOUND_RESULT_TASK",
+        "WORKBENCH_BOUND_RESULT_RUN",
+        "WORKBENCH_BOUND_RESULT_PROJECT"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/comparison-recovery-live.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 5,
+          "condition": "test.skip(!task||!run||!project,'Explicit existing synthetic Pilot run required');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_BOUND_RESULT_TASK",
+        "WORKBENCH_BOUND_RESULT_RUN",
+        "WORKBENCH_BOUND_RESULT_PROJECT",
+        "WORKBENCH_RECOVERY_WRITE_CONSENT"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/comparison-recovery.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 4,
+          "condition": "test.skip(!process.env.WORKBENCH_TEST_URL?.includes(':5195'),'Isolated UI API required');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_TEST_URL"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/copilot-live.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 9,
+          "condition": "test.skip(process.env.WORKBENCH_REAL_COPILOT_SINGLE_CALL !== '1', 'Requires explicit operator authorization for one real Copilot session');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_REAL_COPILOT_SINGLE_CALL"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": true
+    },
+    {
+      "file": "frontend/tests/developer-invocation.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 5,
+          "condition": "test.skip(!task||!run||!project, 'Requires existing navigation');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_BOUND_RESULT_TASK",
+        "WORKBENCH_BOUND_RESULT_RUN",
+        "WORKBENCH_BOUND_RESULT_PROJECT"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/excel-contract-live.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 7,
+          "condition": "test.skip(!syntheticWritesAllowed(), 'Explicit isolated write permission required (rewrites platform settings; WORKBENCH_ALLOW_SYNTHETIC_UI=1)');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_SYNTHETIC_UI",
+        "WORKBENCH_EXECUTION_ENABLED"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/excel-release-live.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 7,
+          "condition": "test.skip(!task||!run||!project,'Explicit existing synthetic Excel Pilot run required');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_BOUND_RESULT_TASK",
+        "WORKBENCH_BOUND_RESULT_RUN",
+        "WORKBENCH_BOUND_RESULT_PROJECT",
+        "WORKBENCH_RELEASE_WRITE_CONSENT"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/execution-reconciliation-live.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 5,
+          "condition": "test.skip(process.env.WORKBENCH_REAL_RECONCILIATION!=='1','Explicit approval for the dedicated crashed test run required');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_REAL_RECONCILIATION",
+        "WORKBENCH_CRASH_TASK",
+        "WORKBENCH_CRASH_RUN",
+        "WORKBENCH_CRASH_PROJECT",
+        "WORKBENCH_CRASH_EVIDENCE"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/execution-reconciliation.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 5,
+          "condition": "test.skip(!task||!run||!project,'Requires existing navigation');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_BOUND_RESULT_TASK",
+        "WORKBENCH_BOUND_RESULT_RUN",
+        "WORKBENCH_BOUND_RESULT_PROJECT",
+        "WORKBENCH_READONLY_REFERENCE_ORIGIN"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/failed-revision.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 5,
+          "condition": "test.skip(!task||!run||!project,'Requires existing navigation');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_BOUND_RESULT_TASK",
+        "WORKBENCH_BOUND_RESULT_RUN",
+        "WORKBENCH_BOUND_RESULT_PROJECT"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/hop-preparation-reconciliation-live.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 4,
+          "condition": "test.skip(process.env.WORKBENCH_CLAIM_REVIEW_TEST!=='dedicated-disposable-database','Explicit retained synthetic DB required');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_CLAIM_REVIEW_TEST"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/hop-preparation-reconciliation.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 5,
+          "condition": "test.skip(!task||!run||!project,'Requires readonly navigation reference');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_BOUND_RESULT_TASK",
+        "WORKBENCH_BOUND_RESULT_RUN",
+        "WORKBENCH_BOUND_RESULT_PROJECT"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/json-confirmation-live.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 6,
+          "condition": "test.skip(!syntheticWritesAllowed(), 'Explicit isolated write permission required (rewrites platform settings; WORKBENCH_ALLOW_SYNTHETIC_UI=1)');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_SYNTHETIC_UI",
+        "WORKBENCH_EXECUTION_ENABLED"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/main-navigation.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 4,
+          "condition": "const projects=await(await request.get('/api/projects')).json();test.skip(!projects.length,'需要至少一個專案');"
+        }
+      ],
+      "environment_keys": [],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/native-acceptance-delivery.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 37,
+          "condition": "test('native acceptance proof opt-in',()=>test.skip(!enabled,'Requires three saved formal real-case releases; no synthetic substitute.'));"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_ACCEPTANCE"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/partial-write-reconciliation-live.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 5,
+          "condition": "test.skip(process.env.WORKBENCH_PARTIAL_REVIEW_TEST!=='retained-real-partial-write','Explicit retained isolated case required');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_PARTIAL_REVIEW_TEST",
+        "WORKBENCH_PARTIAL_EVIDENCE_PATH"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/pilot-effort-live.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 4,
+          "condition": "test.skip(process.env.WORKBENCH_ALLOW_SYNTHETIC_UI!=='1','Explicit isolated write permission required');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_SYNTHETIC_UI"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/pilot-effort-readonly.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 5,
+          "condition": "test.skip(!project,'Requires explicit existing project for read-only navigation');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_MEASUREMENT_PROJECT"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/pilot-measurements-readonly.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 5,
+          "condition": "test.skip(!project,'Requires a real enrolled cohort');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_MEASUREMENT_PROJECT"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/pilot-report-live.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 4,
+          "condition": "test.skip(process.env.WORKBENCH_ALLOW_SYNTHETIC_UI!=='1','Explicit isolated write permission required');"
+        },
+        {
+          "line": 33,
+          "condition": "test.skip(process.env.WORKBENCH_ALLOW_SYNTHETIC_UI!=='1','Explicit isolated environment required');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_SYNTHETIC_UI"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/pilot-report-readonly.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 5,
+          "condition": "test.skip(!project,'Requires a real enrolled cohort');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_MEASUREMENT_PROJECT"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/qa-approval.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 4,
+          "condition": "test.skip(!task||!run||!project,'Requires existing navigation');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_BOUND_RESULT_TASK",
+        "WORKBENCH_BOUND_RESULT_RUN",
+        "WORKBENCH_BOUND_RESULT_PROJECT"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/qa-hop-authorization.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 5,
+          "condition": "test.skip(!task||!run||!project,'Requires existing navigation');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_BOUND_RESULT_TASK",
+        "WORKBENCH_BOUND_RESULT_RUN",
+        "WORKBENCH_BOUND_RESULT_PROJECT"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": true
+    },
+    {
+      "file": "frontend/tests/qa-review-history.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 5,
+          "condition": "test.skip(!task||!run||!project,'Requires existing task navigation only');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_BOUND_RESULT_TASK",
+        "WORKBENCH_BOUND_RESULT_RUN",
+        "WORKBENCH_BOUND_RESULT_PROJECT"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/qa-revision-readonly.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 5,
+          "condition": "test.skip(!task||!run,'Requires real persisted QA NEEDS_REVIEW execution');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_QA_REVISION_TASK",
+        "WORKBENCH_QA_REVISION_RUN"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/qa-source-formats.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 6,
+          "condition": "test.skip((await (await request.get('/api/ready')).json()).execution_enabled, '真實執行環境不建立合成 Task');"
+        }
+      ],
+      "environment_keys": [],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/real-evidence-readonly.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 9,
+          "condition": "test.skip(process.env.WORKBENCH_EVIDENCE_TEST!=='1','Explicit fixed original GET-only regression required');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_EVIDENCE_TEST"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/recovery-history-readonly.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 7,
+          "condition": "test.skip(!task || !failed || !corrected, '需指定既有真實復原證據，不自建或偽造結果');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_RECOVERY_TASK",
+        "WORKBENCH_RECOVERY_FAILED_RUN",
+        "WORKBENCH_RECOVERY_CORRECTED_RUN"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": true
+    },
+    {
+      "file": "frontend/tests/sdm-delivery.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 4,
+          "condition": "test.skip(!task||!run||!project,'Requires existing navigation');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_BOUND_RESULT_TASK",
+        "WORKBENCH_BOUND_RESULT_RUN",
+        "WORKBENCH_BOUND_RESULT_PROJECT"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/semantic-evidence-readonly.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 7,
+          "condition": "test.skip(!taskId || !runId, '需指定已保存語意攔截的 Task 與 Run；不自建或偽造證據');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_SEMANTIC_TASK",
+        "WORKBENCH_SEMANTIC_REJECTED_RUN"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/source-order-editor.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 5,
+          "condition": "test.skip(!task||!run||!project,'Explicit existing navigation required');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ORDER_TASK",
+        "WORKBENCH_ORDER_RUN",
+        "WORKBENCH_ORDER_PROJECT"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/specification-live.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 6,
+          "condition": "test.skip(process.env.WORKBENCH_TEST_CONTROL_WORKER !== '1', 'Requires isolated deterministic CONTROL worker');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_TEST_CONTROL_WORKER",
+        "WORKBENCH_EXECUTION_ENABLED"
+      ],
+      "this_followup_execution": "PASS_ISOLATED_CONTROL_AND_SYNTHETIC_SA_NO_PROVIDER_NO_ETL",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/stage-guidance.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 59,
+          "condition": "test.skip((await (await request.get('/api/ready')).json()).execution_enabled,'真實執行環境不安裝 synthetic Profile 或改寫資料連線');"
+        }
+      ],
+      "environment_keys": [],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/task-workspace.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 5,
+          "condition": "test.skip((await(await request.get('/api/ready')).json()).execution_enabled,'真實驗收環境不建立合成歷史資料');"
+        }
+      ],
+      "environment_keys": [],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/transformation-intent.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 7,
+          "condition": "test.skip(process.env.WORKBENCH_TEST_CONTROL_WORKER !== '1', 'Requires isolated CONTROL worker (WORKBENCH_TEST_CONTROL_WORKER=1)');"
+        },
+        {
+          "line": 8,
+          "condition": "test.skip(!syntheticWritesAllowed(), 'Explicit isolated write permission required (rewrites platform settings; WORKBENCH_ALLOW_SYNTHETIC_UI=1)');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_TEST_CONTROL_WORKER",
+        "WORKBENCH_ALLOW_SYNTHETIC_UI"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/upload-live.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 5,
+          "condition": "test.skip(process.env.WORKBENCH_TEST_CONTROL_WORKER !== '1', 'Requires isolated CONTROL worker');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_TEST_CONTROL_WORKER"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": true
+    },
+    {
+      "file": "frontend/tests/worker-lifecycle.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "line": 7,
+          "condition": "test.skip(process.env.WORKBENCH_TEST_NATIVE_WORKER_LIFECYCLE !== '1', 'Opt-in local Windows/WSL lifecycle test; never dispatches a model');"
+        },
+        {
+          "line": 10,
+          "condition": "test.skip((await status()).active_instances > 0, 'Do not interrupt a pre-existing native worker');"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_TEST_NATIVE_WORKER_LIFECYCLE"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_csv_contract_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 13,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1', reason='Isolated Compose DB required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_csv_runtime_native.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 12,
+          "condition": "pytestmark=pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_JOIN_TEST')!='1',"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_JOIN_TEST"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_date_range_native.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 13,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_HOP_ADAPTER_TEST') != '1',"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_HOP_ADAPTER_TEST",
+        "WORKBENCH_EXECUTION_ENABLED"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_dependency_constraints.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 38,
+          "condition": "@pytest.mark.skipif(os.getenv('WORKBENCH_VERIFY_DEPENDENCY_LOCK') != '1',"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_VERIFY_DEPENDENCY_LOCK"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_excel_csv_compatibility.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 16,
+          "condition": "pytestmark = pytest.mark.skipif(not (ROOT / '.git').exists(), reason='Git checkout required for immutable baseline comparison')"
+        }
+      ],
+      "environment_keys": [],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_excel_hop_cli_native.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 15,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_HOP_STAGING_TEST') != '1',"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_HOP_STAGING_TEST",
+        "WORKBENCH_VERTICA_PASSWORD",
+        "WORKBENCH_METRICS_END_V1"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_excel_input_native.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 18,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_EXCEL_TEST') != '1',"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_EXCEL_TEST"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_execution_reconciliation_live.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 13,
+          "condition": "pytestmark=pytest.mark.skipif(not os.getenv('WORKBENCH_QA_CONTEXT_RUN'),reason='Explicit existing evidence required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_QA_CONTEXT_RUN",
+        "WORKBENCH_QA_CONTEXT_TASK"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_hop_adapter_native.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 13,
+          "condition": "pytestmark=pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_HOP_ADAPTER_TEST')!='1',reason='Isolated native worker image required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_HOP_ADAPTER_TEST",
+        "WORKBENCH_EXECUTION_ENABLED"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_hop_claim_process_loss.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 13,
+          "condition": "pytestmark = pytest.mark.skipif("
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_HOP_CLAIM_DEATH_TEST",
+        "WORKBENCH_EXECUTION_ENABLED"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_hop_cli_native.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 15,
+          "condition": "pytestmark=pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_HOP_STAGING_TEST')!='1',reason='Explicit native Hop verification required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_HOP_STAGING_TEST"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_hop_final_metrics_native.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 17,
+          "condition": "pytestmark=pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_JOIN_TEST')!='1',reason='Explicit native launcher test required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_JOIN_TEST",
+        "WORKBENCH_VERTICA_PASSWORD",
+        "WORKBENCH_METRICS_END_V1"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_hop_interruption_native.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 11,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_INTERRUPTION_TEST') != '1',"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_INTERRUPTION_TEST"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_hop_metadata_native.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 9,
+          "condition": "pytestmark=pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_HOP_STAGING_TEST')!='1',reason='Explicit native Hop verification required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_HOP_STAGING_TEST"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_hop_worker_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 19,
+          "condition": "@pytest.mark.parametrize('failure', [False, True, 'TAMPER', pytest.param('NATIVE_NO_CONNECTION',marks=pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_HOP_ADAPTER_TEST')!='1',reason='Native worker image required'))])"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_HOP_ADAPTER_TEST",
+        "WORKBENCH_EXECUTION_ENABLED"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_hwf_native.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 16,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_HOP_STAGING_TEST') != '1', reason='Opt-in native Hop')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_HOP_STAGING_TEST"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_join_hwf_native.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 13,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_HOP_STAGING_TEST') != '1', reason='Opt-in native Hop')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_HOP_STAGING_TEST"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_join_native.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 8,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_JOIN_TEST') != '1',"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_JOIN_TEST"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_json_hop_cli_native.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 17,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_JSON_TEST') != '1',"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_JSON_TEST",
+        "WORKBENCH_VERTICA_PASSWORD",
+        "WORKBENCH_METRICS_END_V1"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_json_input_native.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 16,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_JSON_TEST') != '1',"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_JSON_TEST"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_json_specification.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 65,
+          "condition": "pytest.skip('Git checkout required for immutable Excel baseline')"
+        }
+      ],
+      "environment_keys": [],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_legacy_lifecycle_guards.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 12,
+          "condition": "pytest.skip('Source checkout required for PowerShell entrypoint check')"
+        }
+      ],
+      "environment_keys": [],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_managed_process.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 10,
+          "condition": "pytestmark=pytest.mark.skipif(os.name!='posix',reason='Docker POSIX process lifecycle')"
+        }
+      ],
+      "environment_keys": [],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_migrations_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 10,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1', reason='Isolated Compose DB required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_multi_hop_cli_native.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 16,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_HOP_ADAPTER_TEST') != '1',"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_HOP_ADAPTER_TEST",
+        "WORKBENCH_EXECUTION_ENABLED"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_naming_concurrency_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 13,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1', reason='Isolated Compose DB required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_pilot_backup_script.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 15,
+          "condition": "pytest.skip('PowerShell and source checkout required')"
+        }
+      ],
+      "environment_keys": [],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_pilot_binding_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 12,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1',"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_pilot_cohort_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 11,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1',"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_pilot_effort_concurrency.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 21,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1', reason='Isolated PostgreSQL required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_pilot_effort_http_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 16,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1', reason='Isolated PostgreSQL required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_pilot_effort_store_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 12,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1', reason='Isolated PostgreSQL required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_pilot_prepare_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 15,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1',"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_pilot_start_script.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 15,
+          "condition": "pytest.skip('PowerShell and source checkout required')"
+        }
+      ],
+      "environment_keys": [],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_pilot_stop_script.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 20,
+          "condition": "pytest.skip('PowerShell and source checkout required')"
+        }
+      ],
+      "environment_keys": [],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_project_evaluation_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 7,
+          "condition": "pytestmark=pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS')!='1',reason='Isolated PostgreSQL required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_project_summary_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 7,
+          "condition": "pytestmark=pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS')!='1',reason='Isolated PostgreSQL required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_qa_context_live.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 9,
+          "condition": "pytestmark=pytest.mark.skipif(not os.getenv('WORKBENCH_QA_CONTEXT_RUN'),reason='Explicit persisted execution required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_QA_CONTEXT_RUN",
+        "WORKBENCH_QA_CONTEXT_TASK",
+        "WORKBENCH_QA_CONTEXT_COMPARISON"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_qa_dispatch_live.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 19,
+          "condition": "pytestmark=pytest.mark.skipif(not os.getenv('WORKBENCH_QA_CONTEXT_RUN'),reason='Explicit real evidence required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_QA_CONTEXT_RUN",
+        "WORKBENCH_QA_DISPATCH_ENABLED",
+        "WORKBENCH_QA_CONTEXT_TASK",
+        "WORKBENCH_QA_CONTEXT_COMPARISON",
+        "WORKBENCH_SDM_VERIFY_OUTPUT"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_qa_journal_live.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 13,
+          "condition": "pytestmark=pytest.mark.skipif(not os.getenv('WORKBENCH_QA_CONTEXT_RUN'),reason='Explicit persisted execution required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_QA_CONTEXT_RUN",
+        "WORKBENCH_QA_CONTEXT_TASK",
+        "WORKBENCH_QA_CONTEXT_COMPARISON"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_recovery_files.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 33,
+          "condition": "pytest.skip('Host does not allow creating symlinks')"
+        }
+      ],
+      "environment_keys": [],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_run_queue_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 11,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1', reason='Isolated Compose DB required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_run_queue_process_loss.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 12,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1',"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_sa_async_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 20,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1', reason='Isolated Compose DB required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS",
+        "WORKBENCH_SA_DISPATCH_ENABLED"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_sdm_files.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 41,
+          "condition": "except OSError:pytest.skip('Creating symlinks requires platform permission')"
+        }
+      ],
+      "environment_keys": [],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_settings_conflict_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 10,
+          "condition": "pytestmark=pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS')!='1',reason='Isolated PostgreSQL required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_source_distribution.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 50,
+          "condition": "pytest.skip('Git checkout required for distribution visibility check')"
+        }
+      ],
+      "environment_keys": [],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_source_order_native.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 15,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_SOURCE_ORDER_TEST') != '1',"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_SOURCE_ORDER_TEST"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_source_staging_hop.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 18,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_NATIVE_HOP_STAGING_TEST') != '1',"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_NATIVE_HOP_STAGING_TEST"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_specification_api_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 14,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1', reason='Isolated Compose DB required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_target_ownership_db.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 8,
+          "condition": "pytestmark=pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS')!='1',reason='Isolated PostgreSQL required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_task_creation_concurrency.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 10,
+          "condition": "pytestmark=pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS')!='1',reason='Isolated PostgreSQL required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_upload_profile_http.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 11,
+          "condition": "pytestmark = pytest.mark.skipif("
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_UPLOAD_HTTP_TEST"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_worker_build_contract.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 8,
+          "condition": "pytestmark = pytest.mark.skipif(not (ROOT / 'deploy/compose.yml').is_file(),"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_JDBC_DIR"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_worker_presence_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 7,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1', reason='Isolated Compose DB required')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "backend/tests/test_workflow_status_integration.py",
+      "kind": "backend",
+      "gates": [
+        {
+          "line": 10,
+          "condition": "pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1', reason='Isolated PostgreSQL only')"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_ALLOW_DATABASE_TESTS"
+      ],
+      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
 import {writeFile} from 'node:fs/promises';
+import {controlOnce,syntheticSaApproval} from './fixtures/control';
 
 test('真實規格：UI 建立保存核准 → PostgreSQL API 回讀 → 時間線（無模型／ETL）', async ({page, request}) => {
   test.skip(process.env.WORKBENCH_TEST_CONTROL_WORKER !== '1', 'Requires isolated deterministic CONTROL worker');
@@ -8,6 +9,7 @@ test('真實規格：UI 建立保存核准 → PostgreSQL API 回讀 → 時間�
     return response.ok() ? (await response.json()).status : `HTTP_${response.status()}`;
   }, {timeout:15000}).toBe('ready');
   expect((await (await request.get('/api/ready')).json()).execution_enabled).toBe(false);
+  controlOnce("import os; from pathlib import Path; assert os.environ['WORKBENCH_EXECUTION_ENABLED']=='false'; assert os.getenv('WORKBENCH_ARTIFACT_ROOT'), 'Isolated API requires a writable artifact root'; assert Path(os.environ['WORKBENCH_ARTIFACT_ROOT']).is_dir()",'preflight');
   const original = (await (await request.get('/api/settings/groups')).json()).values.data_connections_targets;
   const suffix = Date.now();
   const profileId = `spec-live-${suffix}`;
@@ -34,8 +36,19 @@ test('真實規格：UI 建立保存核准 → PostgreSQL API 回讀 → 時間�
     await versions.getByRole('button',{name:'確認此版輸入',exact:true}).click();
     const run = (await (await request.get(`/api/tasks/${taskId}/runs`)).json()).runs[0];
     const base = `/api/tasks/${taskId}/runs/${run.run_id}`;
+    const result=controlOnce(`import os,sys,json
+from app.run_queue import RunQueue
+from app.control_worker import run_once
+assert os.environ['WORKBENCH_EXECUTION_ENABLED']=='false'
+q=RunQueue(os.environ['DATABASE_URL'])
+with q.conn() as c:
+ project=c.execute('SELECT t.project_id FROM platform.task_run r JOIN platform.task t USING(task_id) WHERE r.run_id=%s',(sys.argv[1],)).fetchone()['project_id']
+print(json.dumps(run_once(q,project_id=str(project))))`,run.run_id);
+    expect(JSON.parse(result.trim().split('\n').pop()!).status).toBe('CHECKED');
+    expect(syntheticSaApproval(run.run_id).status).toBe('APPROVED_CURRENT');
     await expect.poll(async () => (await (await request.get(base)).json()).gate_result?.status, {timeout:20000}).toBe('CHECKED');
-    await versions.getByRole('button',{name:'重新載入版本',exact:true}).click();
+    await page.getByRole('button',{name:'重新核對狀態',exact:true}).click();
+    await page.getByRole('tab',{name:/3 · 流程設計審查/}).click();
     const panel = page.getByRole('region',{name:'ETL 規格版本',exact:true});
     await panel.getByRole('button',{name:'建立規格',exact:true}).click();
     const editor = panel.getByRole('region',{name:'編輯 ETL 規格'});
@@ -60,11 +73,11 @@ test('真實規格：UI 建立保存核准 → PostgreSQL API 回讀 → 時間�
     expect(rows).toHaveLength(1);
     expect(rows[0].spec_json.filters[0].constant).toEqual({type:'DECIMAL',value:'100.00'});
     expect(rows[0].approval_id).toBeNull();
-    await panel.getByLabel('我已檢查目標、篩選、分組與輸出，確認此規格；這不是執行授權。').check();
+    await panel.getByLabel('我已檢查來源、目標、篩選、分組與輸出，確認此規格；這不是執行授權。').check();
     await panel.getByRole('button',{name:'核准此版規格'}).click();
     await expect(panel).toContainText('此規格核准目前有效');
     await page.reload();
-    await panel.getByRole('button',{name:'載入規格版本'}).click();
+    await page.getByText('查看此階段完整紀錄、操作歷史與技術詳情',{exact:true}).click();
     await expect(panel).toContainText('此規格核准目前有效');
     rows = (await (await request.get(`${base}/specifications`)).json()).items;
     expect(rows[0].approval_effective).toBe(true);
@@ -91,16 +104,6 @@ test('真實規格：UI 建立保存核准 → PostgreSQL API 回讀 → 時間�
     expect(bytes.status()).toBe(200);
     expect((await bytes.body()).subarray(0,2).toString()).toBe('PK');
     expect(bytes.headers()['x-content-sha256']).toBe(sdmCandidate.checksum);
-    const sdmHistory=panel.getByRole('region',{name:'SDM 候選文件歷史',exact:true});
-    await sdmHistory.getByRole('button',{name:'載入／重新整理 SDM 歷史'}).click();
-    await expect(sdmHistory.getByRole('button',{name:'下載歷史候選 Excel（非 Release）'})).toHaveCount(1);
-    const historicalDownload=page.waitForEvent('download');
-    await sdmHistory.getByRole('button',{name:'下載歷史候選 Excel（非 Release）'}).click();
-    const historicalFile=await historicalDownload;
-    expect(await historicalFile.failure()).toBeNull();
-    expect(historicalFile.suggestedFilename()).toBe(candidateFile.suggestedFilename());
-    await sdmHistory.getByRole('button',{name:'載入／重新整理 SDM 歷史'}).click();
-    await expect(sdmHistory.getByRole('button',{name:'下載歷史候選 Excel（非 Release）'})).toHaveCount(1);
     const rules=sdm.getByRole('region',{name:'SDM 轉換規則'});
     await expect(rules).toContainText('目標表：ai_sample.spec_ui_only');
     await expect(rules).toContainText('附加資料（APPEND）');
@@ -177,14 +180,14 @@ test('真實規格：UI 建立保存核准 → PostgreSQL API 回讀 → 時間�
     await page.setViewportSize({width:390,height:1000});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2)).toBe(true);
     await page.setViewportSize({width:1440,height:1000});
-    await page.getByRole('tab',{name:'執行與 QA',exact:true}).click();
+    await page.getByRole('tab',{name:/4 · 執行確認/}).click();
     const answer=page.getByRole('region',{name:'標準答案輸入',exact:true});
     await answer.getByRole('button',{name:'新增答案資料列'}).click();
     await answer.getByLabel('第 1 筆 category',{exact:true}).fill('A');
     await answer.getByLabel('第 1 筆 total_amount',{exact:true}).fill('301.35');
     await answer.getByLabel('第 1 筆 row_count',{exact:true}).fill('2');
     page.once('dialog',dialog=>dialog.dismiss());
-    await page.getByRole('tab',{name:'概覽',exact:true}).click();
+    await page.getByRole('tab',{name:/1 · 需求與資料規格/}).click();
     await expect(answer.getByLabel('第 1 筆 total_amount',{exact:true})).toHaveValue('301.35');
     const failSave=`**${base}/specifications/${rows[0].specification_id}/oracles`;
     await page.route(failSave,route=>route.request().method()==='POST'?route.fulfill({status:503,json:{detail:'合成保存失敗'}}):route.continue());
@@ -229,7 +232,7 @@ test('真實規格：UI 建立保存核准 → PostgreSQL API 回讀 → 時間�
     await oldAnswer.getByRole('button',{name:'關閉答案內容'}).click();
     await expect(oldAnswer.getByRole('cell',{name:'301.35',exact:true})).toHaveCount(0);
     await page.setViewportSize({width:1440,height:1000});
-    await page.getByRole('tab',{name:'協作紀錄',exact:true}).click();
+    await page.getByText('審查／修訂時間軸與技術詳情',{exact:true}).click();
     const timeline = page.getByRole('region',{name:'版本協作紀錄'});
     await expect(timeline).toContainText('程式驗證後保存規格');
     await expect(timeline).toContainText('人工核准規格（非執行授權）');
@@ -241,19 +244,29 @@ test('真實規格：UI 建立保存核准 → PostgreSQL API 回讀 → 時間�
     expect(sdmEvents).toHaveLength(1);
     expect(sdmEvents[0].event_context.sdm_id).toBe(sdmCandidate.sdm_id);
     expect(sdmEvents[0].event_context.checksum).toBe(sdmCandidate.checksum);
-    expect((await (await request.get(`${base}/sa-invocation`)).json()).invocation).toBeNull();
+    expect((await (await request.get(`${base}/sa-invocation`)).json()).invocation).not.toBeNull(); // Explicit synthetic persisted review, no provider call.
     await page.screenshot({path:test.info().outputPath('real-specification-timeline.png'),fullPage:true});
-    await page.getByRole('tab',{name:'交付',exact:true}).click();
-    const delivery=page.getByRole('tabpanel',{name:'交付',exact:true});
-    await expect(delivery.getByLabel('選擇 SDM 準備版本')).toHaveValue(run.run_id);
+    await page.getByRole('tab',{name:/7 · 成果交付/}).click();
+    const delivery=page.getByRole('tabpanel',{name:/7 · 成果交付/});
+    await expect(page.getByLabel('共用 Run 版本')).toHaveValue(run.run_id);
+    const sdmHistory=delivery.getByRole('region',{name:'SDM 候選文件歷史',exact:true});
+    await page.getByRole('button',{name:'重新核對狀態',exact:true}).click();
+    await expect(sdmHistory.getByRole('button',{name:'下載歷史候選 Excel（非 Release）'})).toHaveCount(1);
+    const historicalDownload=page.waitForEvent('download');
+    await sdmHistory.getByRole('button',{name:'下載歷史候選 Excel（非 Release）'}).click();
+    const historicalFile=await historicalDownload;
+    expect(await historicalFile.failure()).toBeNull();
+    expect(historicalFile.suggestedFilename()).toBe(candidateFile.suggestedFilename());
+    await page.getByRole('button',{name:'重新核對狀態',exact:true}).click();
+    await expect(sdmHistory.getByRole('button',{name:'下載歷史候選 Excel（非 Release）'})).toHaveCount(1);
     const deliveryHistory=delivery.getByRole('region',{name:'SDM 候選文件歷史',exact:true});
-    await deliveryHistory.getByRole('button',{name:'載入／重新整理 SDM 歷史'}).click();
+    await page.getByRole('button',{name:'重新核對狀態',exact:true}).click();
     await expect(deliveryHistory.getByRole('button',{name:'下載歷史候選 Excel（非 Release）'})).toHaveCount(1);
     const deliveryDownload=page.waitForEvent('download');
     await deliveryHistory.getByRole('button',{name:'下載歷史候選 Excel（非 Release）'}).click();
     expect((await deliveryDownload).suggestedFilename()).toContain(sdmCandidate.sdm_id);
-    await expect(delivery).toContainText('不提供正式 Release ZIP 下載');
-    await expect(delivery.getByRole('heading',{name:'既有成果下載'})).toBeVisible();
+    await expect(delivery.getByRole('link',{name:/Release ZIP/})).toHaveCount(0);
+    await expect(delivery.getByRole('region',{name:'正式 Release'})).toBeVisible();
     await page.setViewportSize({width:390,height:1000});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2)).toBe(true);
     const evidence = {project_id:project.project_id,task_id:taskId,run_id:run.run_id,specification:rows[0],oracles:answers,events:detail.events,write_started:detail.write_started,scope:'REAL_UI_API_POSTGRES_CONTROL_ONLY_NO_MODEL_NO_ETL'};
