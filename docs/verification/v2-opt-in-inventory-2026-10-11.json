@@ -12,7 +12,7 @@
       "skipped": 27,
       "failed": 0
     },
-    "scope": "Isolated deterministic engineering including oracle draft regression; real execution cases are separate."
+    "scope": "Latest full results remain backend 2134/139 and browser 147/27; this round added only an opt-in test, separately checked as 1 skip by default. No full-suite rerun claimed."
   },
   "rules": [
     "Skip is not PASS.",
@@ -1472,6 +1472,20 @@
         "WORKBENCH_PARTIAL_HISTORY_RUN"
       ],
       "this_followup_execution": "1 PASS 6.8s; retained original real partial-write records, GET-only, no replay",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/retained-history-readonly.spec.ts",
+      "kind": "browser",
+      "gates": [
+        {
+          "condition": "Fixed retained QA/crash proof required; default test explicitly skips without it"
+        }
+      ],
+      "environment_keys": [
+        "WORKBENCH_RETAINED_HISTORY_PROOF"
+      ],
+      "this_followup_execution": "2 real retained UI cases + 1 manifest guard PASS, 5.5s; original records and 9 protected containers unchanged; GET-only gateway 405; temporary service stopped",
       "legacy_selectors_present": false
     }
   ]

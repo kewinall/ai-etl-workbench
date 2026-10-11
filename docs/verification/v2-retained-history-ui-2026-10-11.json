@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-11",
+  "source_repository_head": "1b87b88",
+  "frontend_bundle": "index-CQpDjssy.js",
+  "api_projection_source": "7029156",
+  "scope": "Current compiled UI with original 5183 persisted QA/native-crash evidence via fixed GET-only temporary reader; not a new current-version model or engine execution",
+  "browser": {
+    "passed": 3,
+    "real_history_ui_cases": 2,
+    "manifest_identity_guard_cases": 1,
+    "seconds": 5.5,
+    "widths": [
+      390,
+      768,
+      1440
+    ],
+    "keyboard_and_reload": true
+  },
+  "original_qa_statuses": [
+    "NEEDS_REVIEW",
+    "PASS"
+  ],
+  "qa_reassessment_link_verified": true,
+  "native_crash_closed_rows": 1,
+  "file_input_or_retry": false,
+  "non_get_gateway_status": 405,
+  "unlisted_task_status": 404,
+  "complete_run_and_record_unchanged": true,
+  "new_model_hop_vertica_approval_calls": 0,
+  "limits": [
+    "Original records are real retained evidence, not a new 5197 QA reassessment or interruption.",
+    "Temporary fixed reader uses current source summarizer; official evidence allowlist and 5183 deployment unchanged.",
+    "First browser pass: 2 PASS/1 FAIL because fold count was checked before page loaded; final waits for actual fold. No assertion or timeout relaxed.",
+    "Backend 7029156 is not deployed to 5197 API."
+  ],
+  "temporary_service_stopped": true,
+  "records": [
+    {
+      "case": "qa_reassessment",
+      "before_sha256": "36d27b349b8717cbf84d09ec8e993a5f1c5575cc40bac3816a95ef5842799cfc",
+      "after_sha256": "36d27b349b8717cbf84d09ec8e993a5f1c5575cc40bac3816a95ef5842799cfc",
+      "write_started_count": 1
+    },
+    {
+      "case": "native_crash",
+      "before_sha256": "fdf57a90d47f4af27062a41f9ad704d9709467c08ed2165ebea5c617e5a5fced",
+      "after_sha256": "fdf57a90d47f4af27062a41f9ad704d9709467c08ed2165ebea5c617e5a5fced",
+      "write_started_count": 1
+    }
+  ],
+  "reader_source_sha256": "e86820be2f5b5c3d5ba790547665dba139c74b78c8d9182e5853fd39d1d343d2",
+  "protected_containers_unchanged": 9,
+  "metadata_initial_command_error": "Pipe delimiter interpreted by WSL shell; no inspect succeeded. Rechecked with comma delimiter and strict exit handling: 9 services verified unchanged."
+}

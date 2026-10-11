@@ -213,3 +213,12 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - 後端完整PG17隔離回歸2134 PASS／139skip／0FAIL（60.97秒），Applied migrations=0；四dispatch false，未連5183/5197工作DB。測試容器ai-etl-readonly-qualification-tests-20261011已自然退出，log留runtime-temp/v2-profile-deploy/backend-regression.log。唯讀資格修正只本機提交，尚未部署5197 API，不宣稱runtime API已套用。
 - 真實QA補證歷史實際GET核對：原Join Run保存2次copilot/gpt-5.4 QA，prompt v4 NEEDS_REVIEW → v5 PASS，1筆reassesses_invocation_id確實指回保留的前次紀錄；原Run僅1次WRITE_STARTED、已正式Release，GET前後完整Run/Release不變。同時核對保留native-pilot失聯結案：FAILED/HOP_RESULT_UNKNOWN、目標保存1筆、CLOSED_WITHOUT_RETRY、retry/QA/release皆false，原Run/receipt前後不變。證據v2-retained-reassessment-2026-10-11.json，private原值只留runtime-temp。不將原保存真實QA複核冒稱新版5197另作新補證，也沒有新模型或ETL呼叫。
 - 目前5197 web已納入本輪AI Profile修正；API仍a7a666f，新的唯讀资格補正待受控API部署。下一步先為原QA補證/失聯Run建立固定GET-only網站唯讀回歸（目前來源allowlist不擴大），验证当前品质历史及结果阶段显示，不能重送旧核准或执行。若另作当前版新的真实故障写入/QA补证，须先准备具体独立案例与核准，不重用已交付/已结案目标。WS-0007保持active，27browser/139backend skip不算PASS。
+
+## 原真實 QA 補證／失聯紀錄新版 UI 唯讀驗收
+
+- 当前HEAD1b87b88與compiled index-CQpDjssy.js，臨時固定loopback5204 reader只允許原Join QA同次補證及native-pilot已結案Run的GET，使用current7029156 source的workflow投影，沒有改正式evidence allowlist、5183或5197API。未知Task實際404、POST結案實際405，所有瀏覽器非GET攔截；來源不可用時原503，不提供合成替代。
+- 原Join QA有2筆真實copilot/gpt-5.4模型審查：promptv4 NEEDS_REVIEW及v5 PASS，複核指回原invocation；目前品質階段可展開兩紀錄、顯示有效人工核准／正式交付，不能再次核准或授權。原native-pilot結果階段顯示CLOSED_WITHOUT_RETRY、保存1筆、沒有file input或重試/結案按鈕。兩案都跨390/768/1440無水平溢位、共用Run一致，鍵盤Enter刷新及reload后紀錄保留，無pageerror/寫入；完整Run與QA/closure record前後精確相等、各WRITE_STARTED1。
+- 新retained-history-readonly opt-in：首次2PASS1FAIL（11.5秒）是測試在頁面讀取前立即count展開入口，漏點fold，非紀錄遺失；改等待實際fold可見後才點，所有業務断言保留。再補Task/Run身份與明確manifest2案例断言，最終3PASS（5.5秒），其中2為真實保存紀錄UI、1為manifest守門，沒有聲稱3個新執行案。未指定私有proof時實測1skip，不建立或執行Task。
+- 臨時reader已停止exit0、私有原始GET/source/trace保留runtime-temp/v2-retained-history-ui；九保護容器不變，原Join未提交hash仍cc1f19bd4e2da5bf311ed3d3f89802f65e497d5fa40e7cc954d32b6a553e9777。metadata首次pipe分隔被WSL解析為shell管線而失敗，未取得有效inspect；改comma並強制檢查exitcode，真正核對9服務全不變，未將前次錯誤輸出當PASS。
+- 證據v2-retained-history-ui-2026-10-11.json保存去識別before/after完整紀錄hash、reader source hash與限制。原真實保存案例不是新版另作QA補證或新Hop中斷；沒有模型/引擎/Vertica/核准/交付呼叫，也沒有重跑舊目標。本輪production source未修改；backend2134/139及full browser147/27沿用上輪，不重複算重跑或把新增條件測試當成default PASS。
+- 下一步仍須為已完成全回歸的唯讀資格後端7029156安排5197 API受控部署及原證據GET-only回歸；当前API仍a7a666f。新版真實補證／新故障寫入如需驗收，先準備新的独立案例/目標与具体核准，不重放已交付或已結案資料。WS0007保持active，JSON/資料表、REPLACE/UPSERT、已交付修正版、維運/乾淨機器等獨立未完成項目不因本批歷史查閱通過而完成。
