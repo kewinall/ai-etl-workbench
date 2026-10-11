@@ -61,4 +61,3 @@ for c in records:
 proof={'scope':'Real three-case Vertica SELECT and immutable execution/log/comparison readback; no DDL, ETL replay or approval','expected_sha256':hashlib.sha256((ROOT/'examples/ui-acceptance/expected.json').read_bytes()).hexdigest(),'cases':records}
 (ROOT/'docs/verification/v2-followup-native-readback-2026-10-11.json').write_text(json.dumps(proof,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
 print(json.dumps([{'key':c['key'],'actual_rows':len(c['rows']),'match':True,'nodes':len(c['hop']['nodes']),'write_count':1} for c in records]))
-
