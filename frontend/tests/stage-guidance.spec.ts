@@ -32,6 +32,8 @@ async function fixture(page:Page,options:{stage?:string;waiting?:boolean;issues?
   if(path==='/api/tasks')return route.fulfill({json:[]});
   if(path==='/api/health')return route.fulfill({json:{mode:'postgres'}});
   if(path==='/api/ready')return route.fulfill({json:{execution_enabled:false}});
+  // Requirements stage shows the Pilot readiness panel again; give it a complete synthetic answer.
+  if(path.endsWith('/execution-settings'))return route.fulfill({json:{status:'CONFIGURED_NOT_TESTED',issues:[],execution_enabled:false,runtime_integration:'PENDING',credentials_and_connectivity:'NOT_TESTED'}});
   if(path===`/api/tasks/${taskId}`)return route.fulfill({json:{id:taskId,project_id:project,name:'階段導引合成測試',source:'CSV',target:'VERTICA',source_config:{sources:[]},target_config:{},nodes:[],logs:[]}});
   if(path.endsWith('/runs'))return route.fulfill({json:{runs:records}});
   if(path.match(/\/runs\/[^/]+$/)){const selected=records.find(r=>r.run_id===path.split('/').at(-1));return route.fulfill({json:selected||{detail:'missing'},status:selected?200:404})}

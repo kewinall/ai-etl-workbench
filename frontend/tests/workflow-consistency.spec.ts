@@ -9,7 +9,7 @@ const cases=[
  {id:'TASK-DELIVERED-JOIN',run:'11111111-1111-4111-8111-1111111111d3',name:'Join 已交付',source:'CSV'},
 ];
 const ops=['prepare_run','input_confirm','input_cancel','requirement_revision','sa_authorize','sa_approve','naming_confirm','developer_authorize','specification_create','specification_approve','oracle_save','oracle_approve','hop_execute','execution_close','comparison_recovery','qa_authorize','qa_approve','sdm_prepare','release_candidate','release_approve'];
-const blocked='此版已正式交付；只能查看與下載。需要變更時請另建修正版本，不回到原版本修改。';
+const blocked='此版已正式交付；只能查看與下載。目前不能從已交付版本建立修正版或新的準備版本，也不會回到原版本修改。';
 const milestones={input_confirmed:true,sa_approved:true,specification_approved:true,executed:true,execution_started:true,qa_approved:true,delivered:true};
 function workflow(c:any){return {task_id:c.id,run_id:c.run,current_stage:'delivery',updated_at:'2026-10-10T13:52:32Z',historical:false,matches_current:true,
  category:'可交付',effective_status:'已正式交付',delivered:true,milestones,owner:'你',completed:labels,waiting:false,issues:[],
@@ -107,6 +107,9 @@ for(const c of cases)test(`${c.name}：七階段顯示已完成，原 Run 沒有
  await page.getByText('查看完整輸入、版本操作與控制紀錄').click();
  await expect(page.getByRole('status',{name:'執行結果與目前狀態'})).toContainText('目前有效狀態：已正式交付');
  await expect(page.getByRole('button',{name:'建立準備版本'})).toHaveCount(0);
+ // Delivered versions state the limitation instead of pointing at a revision path that does not exist.
+ await expect(page.getByRole('note',{name:'已交付版本限制'})).toContainText('目前不能直接從已交付版本建立修正版');
+ await expect(page.getByRole('button',{name:/修正版/})).toHaveCount(0);
  for(const key of keys){
   await page.getByRole('tab',{name:new RegExp(`${keys.indexOf(key)+1} ·`)}).click();
   await expect(page).toHaveURL(new RegExp(`/${key}/${c.run}`));

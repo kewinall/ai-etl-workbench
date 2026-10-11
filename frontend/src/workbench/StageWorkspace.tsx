@@ -17,6 +17,8 @@ import {ComparisonHistory} from './ComparisonHistory';
 import './workflow.css';
 import {WorkflowReadOnly,WorkflowQualifications,WorkflowCanCancel,WorkflowCanPrepare,WorkflowStatus,WorkflowManagedRefresh} from './useWorkflowRefresh';
 import {LegacyTaskRecords} from './LegacyTaskRecords';
+import {ExecutionReadiness} from './ExecutionReadiness';
+import {CollaborationTimeline} from './CollaborationTimeline';
 import {RequirementSummary,ReviewSummary,DesignSummary,ConfirmSummary,ResultsSummary,QualitySummary,DeliverySummary,label as refLabel} from './StageSummary';
 
 // The server run list is empty: the only eligible write is creating the first preparation snapshot.
@@ -33,7 +35,7 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
   const [error,setError]=useState(''),[loading,setLoading]=useState(true),[epoch,setEpoch]=useState(0);
   const [noRun,setNoRun]=useState(false);
   const [history,setHistory]=useState<any>(null),[historyError,setHistoryError]=useState('');
-  const [pendingField,setPendingField]=useState('');
+  const [pendingField,setPendingField]=useState(''),[timelineOpen,setTimelineOpen]=useState(false),[runNotice,setRunNotice]=useState('');
   const [projectName,setProjectName]=useState(''),[navOpen,setNavOpen]=useState(false),[expanded,setExpanded]=useState<Record<string,boolean>>({});
   useEffect(()=>{let live=true;request(`/api/projects/${encodeURIComponent(task.project_id)}`).then((p:any)=>{if(live&&p?.project_id===task.project_id)setProjectName(p.project_name)}).catch(()=>{});return()=>{live=false}},[task.project_id]);
   const generation=useRef(0), refreshRunning=useRef(false), refreshQueued=useRef(false);
@@ -124,7 +126,7 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
   const where=(issue:any)=>{const path=issue.field_path||issue.evidence_ids?.join('、')||'';const labels=detail?.input_summary?.source_labels||{};const columns=(path.match(/source\.\d+\.[A-Za-z0-9_]+/g)||[]).map((ref:string)=>refLabel(ref,labels));return columns.length?columns.join('、'):fields[fieldOf(path)]||'需求說明'};
   const stageIndex=keys.indexOf(stage),overall=workflow?keys.indexOf(workflow.current_stage):-1;
   const complete=(key:string)=>workflow?.stages.find((s:any)=>s.key===key)?.status==='complete';
-  const forceOpen=stage==='requirements'&&(!!pendingField||!!detail?.failed_revision_available||!!detail?.qa_revision);
+  const forceOpen=stage==='requirements'&&(!!pendingField||!!detail?.failed_revision_available||!!detail?.qa_revision||!!workflow?.stale_latest||!!workflow?.cancelled_latest);
   const open=(key:string)=>!complete(key)||forceOpen||!!expanded[key];
   const fold=(key:string,content:ReactNode,summaryText='查看此階段完整紀錄、操作歷史與技術詳情')=>complete(key)&&!forceOpen
     ?<details className="wb-stage-details" open={!!expanded[key]} onToggle={e=>{const now=(e.currentTarget as HTMLDetailsElement).open;setExpanded(x=>x[key]===now?x:{...x,[key]:now})}}><summary>{summaryText}</summary>{open(key)&&content}</details>:content;
@@ -137,6 +139,7 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
           {runs.map((r,i)=><option key={r.run_id} value={r.run_id}>{shortRun(r,i)}</option>)}
         </select></label>
         <p className="workflow-status-line"><b>{workflow?.effective_status||workflow?.category||'狀態待核對'}</b>{workflow?.delivered?' · 只能查看與下載':''}{workflow?.historical?' · 歷史版本，只讀':''}{workflow?.read_only_source?' · 既有真實案例，來源只讀':''} · 更新：{time(workflow?.updated_at)}</p>
+        {workflow?.delivered&&!workflow?.historical&&<p className="wb-op-blocked" role="note" aria-label="已交付版本限制">目前不能直接從已交付版本建立修正版；平台尚未開放此操作，只能查看與下載正式交付。</p>}
         <button disabled={loading} onClick={()=>setEpoch(n=>n+1)}>{loading?'讀取中…':'重新核對狀態'}</button>
       </div>
       <details className="workflow-tech"><summary>技術識別</summary><p>專案 ID：{task.project_id}</p><p>Run ID：{selected||'尚無'}</p>{detail&&<><p>輸入 checksum：{detail.input_checksum}</p><p>設定 checksum：{detail.settings_checksum}</p></>}</details>
@@ -164,9 +167,10 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
     <WorkflowManagedRefresh.Provider value={true}><WorkflowCanPrepare.Provider value={!loading&&!error&&!workflow?.historical&&!workflow?.read_only_source&&!runs.some(r=>['QUEUED','RUNNING','NEEDS_REVIEW'].includes(r.state))}><WorkflowCanCancel.Provider value={valid&&!loading&&!error&&!workflow.historical&&!workflow.read_only_source&&!detail.write_started&&['QUEUED','NEEDS_REVIEW'].includes(detail.state)}><WorkflowStatus.Provider value={valid?workflow:noRun&&!loading&&!error?NO_RUN:null}><WorkflowQualifications.Provider value={valid?workflow.operation_qualifications||{}:noRun&&!loading&&!error?NO_RUN.operation_qualifications:{}}><WorkflowReadOnly.Provider value={!!readonly}>
     <section className="panel" hidden={stage!=='requirements'} role="tabpanel" id="stage-panel-requirements" aria-labelledby="stage-requirements">
       {valid&&complete('requirements')&&<RequirementSummary detail={detail}/>}
-      {fold('requirements',<>{(!runId||valid)&&<fieldset className="workflow-controls" disabled={loading||!!error}><RunVersions taskId={task.id} requestedRunId={selected||undefined} onSelectRun={id=>select('requirements',id)}/></fieldset>}
+      {fold('requirements',<><ExecutionReadiness taskId={task.id}/>{(!runId||valid)&&<fieldset className="workflow-controls" disabled={loading||!!error}><RunVersions taskId={task.id} requestedRunId={selected||undefined} onSelectRun={id=>select('requirements',id)} notice={runNotice} onNotice={setRunNotice}/></fieldset>}
       <details><summary>Task 保存設定（目前內容；版本輸入以上方不可變快照為準）</summary>{renderSetup(task)}</details></>,'查看完整輸入、版本操作與控制紀錄')}
     </section>
+    {noRun&&!loading&&!error&&stage!=='requirements'&&<section className="panel" role="tabpanel" id={`stage-panel-${stage}`} aria-labelledby={`stage-${stage}`}><p>尚無準備版本。請先到需求與規格建立版本並確認規格。</p><button type="button" onClick={()=>select('requirements')}>前往需求與資料規格</button></section>}
     {valid&&stage!=='requirements'&&<section className="panel" role="tabpanel" id={`stage-panel-${stage}`} aria-labelledby={`stage-${stage}`}>
       {stage==='review'&&<ReviewSummary base={runBase}/>}
       {stage==='design'&&<DesignSummary base={runBase} labels={detail.input_summary?.source_labels||{}}/>}
@@ -184,7 +188,7 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
       {stage==='delivery'&&<>{detail.failed_revision_available&&<section aria-label="交付阻擋原因"><h3>此版尚無交付文件</h3><p>此版的結果比對未通過，已結案並保留原執行。結案不代表 QA 核准；目前不能產生 QA 關聯 SDM 或正式交付包。</p><p>下一步：按上方「建立修正版」，沿用原需求，使用新目標與正確標準答案重新確認。</p><button type="button" onClick={()=>select('results')}>查看此版流程與執行結果</button></section>}{workflow.delivered?<details className="wb-stage-details"><summary>候選文件、可攜驗證與交付歷史</summary><SdmDelivery key={selected} base={runBase}/></details>:<SdmDelivery key={selected} base={runBase}/>}</>}
     </section>}
     </WorkflowReadOnly.Provider></WorkflowQualifications.Provider></WorkflowStatus.Provider></WorkflowCanCancel.Provider></WorkflowCanPrepare.Provider></WorkflowManagedRefresh.Provider>
-    <details className="panel"><summary>審查／修訂時間軸與技術詳情</summary><button onClick={inspectHistory}>讀取此版本完整紀錄</button>{historyError&&<p role="alert">{historyError}</p>}{history&&<><ol>{history.run.events?.map((event:any)=><li key={event.event_id}>{time(event.created_at)} · {event.event_type}{renderValue(event.event_context)}</li>)}</ol><details><summary>SA／Developer／QA 模型紀錄與用量</summary>{renderValue({sa:history.sa,developer:history.dev,qa:history.qa})}</details></>}</details>
+    <details className="panel" onToggle={e=>setTimelineOpen((e.currentTarget as HTMLDetailsElement).open)}><summary>審查／修訂時間軸與技術詳情</summary>{timelineOpen&&valid&&<CollaborationTimeline key={selected} taskId={task.id} runId={selected}/>}<details><summary>原始事件與模型紀錄（JSON）</summary><button onClick={inspectHistory}>讀取此版本完整紀錄</button>{historyError&&<p role="alert">{historyError}</p>}{history&&<><ol>{history.run.events?.map((event:any)=><li key={event.event_id}>{time(event.created_at)} · {event.event_type}{renderValue(event.event_context)}</li>)}</ol><details><summary>SA／Developer／QA 模型紀錄與用量</summary>{renderValue({sa:history.sa,developer:history.dev,qa:history.qa})}</details></>}</details></details>
     <LegacyTaskRecords task={task} renderValue={renderValue}/>
   </div>;
 }

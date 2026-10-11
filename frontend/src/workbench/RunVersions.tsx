@@ -44,7 +44,7 @@ export function revisionChanges(preview:any,original:any){
 
 const states: Record<string, string> = {QUEUED: '待處理（未啟動）', RUNNING: '處理中', NEEDS_REVIEW: '需要人工檢查', SUCCEEDED: '流程已結束', FAILED: '失敗', CANCELLED: '已取消'};
 
-export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string;requestedRunId?:string;onSelectRun?:(id:string)=>void}) {
+export function RunVersions({taskId,requestedRunId,onSelectRun,notice,onNotice}: {taskId: string;requestedRunId?:string;onSelectRun?:(id:string)=>void;notice?:string;onNotice?:(message:string)=>void}) {
   const managed=useManagedRefresh();
   const readOnly=useWorkflowReadOnly();
   const canCancel=useWorkflowCanCancel();
@@ -55,7 +55,9 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
   const [detail, setDetail] = useState<any>(null);
   const [busy, setBusy] = useState(false);
   const [mutating,setMutating]=useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(notice||'');
+  // Success notices are reported to the stage workspace so they survive the remount when it switches Runs.
+  const report = (text: string) => {setMessage(text); onNotice?.(text)};
   const [confirmed, setConfirmed] = useState(false);
   const [editing, setEditing] = useState(false);
   const [conditions, setConditions] = useState<any>({});
@@ -96,7 +98,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
   }, [taskId,requestedRunId]);
   const action = async (operation: () => Promise<void>) => {
     if(!latch.current.acquire())return;
-    setBusy(true);setMutating(true); setMessage('');
+    setBusy(true);setMutating(true); setMessage(''); onNotice?.('');
     try {await operation()} catch (error: any) {setMessage(error.message)} finally {setBusy(false);setMutating(false);latch.current.release()}
   };
   const open = async (id: string) => {
@@ -126,7 +128,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
       setEditing(false);setPreview(null);setDiffConfirmed(false);savedDrafts.current.delete(detail.run_id);
       revisionKey.current=crypto.randomUUID();
       await load();await open(child.run_id);
-      setMessage('已建立新版，下一步是需求確認；舊版与核准紀錄保留，不自動執行。');
+      report('已建立新版，下一步是需求確認；舊版与核准紀錄保留，不自動執行。');
       if(onSelectRun)setPendingRun(child.run_id);else window.location.reload();
     } catch(e:any) {
       setUncertain(true);
@@ -138,17 +140,17 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
     requestKey.current = crypto.randomUUID();
     await load(); await open(run.run_id);
     setPendingRun(run.run_id);
-    setMessage('已保存本次輸入與設定快照；沒有啟動 ETL。');
+    report('已保存本次輸入與設定快照；沒有啟動 ETL。');
   });
   const review = (decision: 'APPROVE' | 'REJECT') => action(async () => {
     await request(`/api/tasks/${taskId}/approvals`, jsonBody('POST', {run_id: detail.run_id, kind: 'INPUT_REVIEW', decision, input_checksum: detail.input_checksum, settings_checksum: detail.settings_checksum}));
     await load(); await open(detail.run_id);
-    setMessage(decision === 'APPROVE' ? '此版輸入已確認；尚未授權 Hop 執行或交付。' : '此版輸入已拒絕，準備版本已取消。');
+    report(decision === 'APPROVE' ? '此版輸入已確認；尚未授權 Hop 執行或交付。' : '此版輸入已拒絕，準備版本已取消。');
   });
   const cancel = () => action(async () => {
     await request(`/api/tasks/${taskId}/runs/${detail.run_id}/cancel`, {method: 'POST'});
     await load(); await open(detail.run_id);
-    setMessage('已取消未執行的版本，歷史紀錄仍保留。');
+    report('已取消未執行的版本，歷史紀錄仍保留。');
   });
   const active = runs.some(run => ['QUEUED','RUNNING','NEEDS_REVIEW'].includes(run.state));
   return <section className="panel run-versions" aria-label="執行準備版本">
