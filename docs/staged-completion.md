@@ -1,5 +1,9 @@
 # 七階段完成與上版追蹤
 
+## 最新部署驗收（2026-10-11）
+
+[新版 5197 部署驗收](verification/5197-deployment-acceptance-2026-10-11.md)通過：基準 3f1a312，只重建 api/web；三真實交付案例 63 個階段頁、9 次鍵盤 ZIP 下載、手機與歷史回歸 PASS，五個正式 ZIP／Run／寫入次數不變，5183 及八個受保護容器不變。剩餘 opt-in、其他寫入 API 與整體 v2 仍未完成。
+
 ## 最新工程（2026-10-11）
 
 [七階段介面收斂的階段性工程驗收](verification/v2-ui-stage-acceptance-2026-10-11.md)通過：`7d88985` 獨立後端 2056 passed、預設瀏覽器 97 passed，SA 守門與三 ZIP 唯讀回歸通過；本輪授權階段性上版。5197 仍為先前部署 `146e963`，新版部署驗收、剩餘 opt-in／API 覆蓋及整體 v2 尚未完成。詳見 [各輪工程紀錄](verification/ui-simplification-2026-10-11.md) 與 [Codex 獨立驗證](verification/codex-round3-review-2026-10-11.md)。

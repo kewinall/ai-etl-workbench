@@ -1,0 +1,611 @@
+{
+  "source_commit": "3f1a31200cc5b5439d25cd0eba450800b76e3b5d",
+  "status": "PASS",
+  "baseline": [
+    {
+      "case": "csv",
+      "task": "TASK-20261010-0017",
+      "run": "5443ccf1-3386-48ba-b669-8c2dbaecd155",
+      "sha256": "61eb59a6d0e58f5aa5a07b40ddd17eb697e64cdc4e064d29aa7ad1c3a0908e04",
+      "bytes": 10417,
+      "write_started": 1,
+      "updated_at": "2026-10-10T13:48:46.096451+00:00",
+      "run_hash": "4fcc2321f48cf67bb264100caa859a06b9d32594a2dea9ecdb6382bd9cba40e3"
+    },
+    {
+      "case": "excel",
+      "task": "TASK-20261010-0018",
+      "run": "029d55b5-d677-427d-a6c2-7a14511b4de4",
+      "sha256": "e8e38dde9f31cbe0926eeef70a1b090a9e01ff2df4dca8719a9c005e13b063aa",
+      "bytes": 11152,
+      "write_started": 1,
+      "updated_at": "2026-10-10T13:48:40.065562+00:00",
+      "run_hash": "76b60e4468cc0ec630e8f89b1d6fc48cf0f85392e5f2de2399edb512c57b3adf"
+    },
+    {
+      "case": "join",
+      "task": "TASK-20261010-0019",
+      "run": "e0b16950-27db-4847-add5-1ddbeaf78e08",
+      "sha256": "9ba3bfdc8caebf5e589547268791e3abc5b701da4a5446a22cc376038854fd35",
+      "bytes": 10585,
+      "write_started": 1,
+      "updated_at": "2026-10-10T13:55:45.569860+00:00",
+      "run_hash": "56e63e162ff9f54804426bbd2716104d8688bb8582762305c28e2e66299dfeeb"
+    },
+    {
+      "case": "old_csv",
+      "task": "TASK-20260917-0007",
+      "run": "d8abcc97-e5d7-4f83-9d47-b244e03730e7",
+      "sha256": "f32b964c8071d37dd854f653320eb4ce41041ae01e92220a026aa27d9bb8da2d",
+      "bytes": 10452,
+      "write_started": 1,
+      "updated_at": "2026-09-17T13:03:54.877721+00:00",
+      "run_hash": "6cb84140807db256666ed5cbf24a44914814706122f29b8cbb0000b9bbe3ae6c"
+    },
+    {
+      "case": "old_excel",
+      "task": "TASK-20260928-0001",
+      "run": "df438c72-a408-4eef-8a6e-10f2a8445b02",
+      "sha256": "603b9e974338cfe9cd25b13d1a7ef680b7b12bd96ff2ba63992ddcb46eef1c2a",
+      "bytes": 11208,
+      "write_started": 1,
+      "updated_at": "2026-09-28T03:16:09.954819+00:00",
+      "run_hash": "39058e16c87389b1036ecce6a823fa8c0932190654a806ecdea90efd51280bb3"
+    }
+  ],
+  "after": [
+    {
+      "case": "csv",
+      "task": "TASK-20261010-0017",
+      "run": "5443ccf1-3386-48ba-b669-8c2dbaecd155",
+      "sha256": "61eb59a6d0e58f5aa5a07b40ddd17eb697e64cdc4e064d29aa7ad1c3a0908e04",
+      "bytes": 10417,
+      "write_started": 1,
+      "updated_at": "2026-10-10T13:48:46.096451+00:00",
+      "run_hash": "4fcc2321f48cf67bb264100caa859a06b9d32594a2dea9ecdb6382bd9cba40e3"
+    },
+    {
+      "case": "excel",
+      "task": "TASK-20261010-0018",
+      "run": "029d55b5-d677-427d-a6c2-7a14511b4de4",
+      "sha256": "e8e38dde9f31cbe0926eeef70a1b090a9e01ff2df4dca8719a9c005e13b063aa",
+      "bytes": 11152,
+      "write_started": 1,
+      "updated_at": "2026-10-10T13:48:40.065562+00:00",
+      "run_hash": "76b60e4468cc0ec630e8f89b1d6fc48cf0f85392e5f2de2399edb512c57b3adf"
+    },
+    {
+      "case": "join",
+      "task": "TASK-20261010-0019",
+      "run": "e0b16950-27db-4847-add5-1ddbeaf78e08",
+      "sha256": "9ba3bfdc8caebf5e589547268791e3abc5b701da4a5446a22cc376038854fd35",
+      "bytes": 10585,
+      "write_started": 1,
+      "updated_at": "2026-10-10T13:55:45.569860+00:00",
+      "run_hash": "56e63e162ff9f54804426bbd2716104d8688bb8582762305c28e2e66299dfeeb"
+    },
+    {
+      "case": "old_csv",
+      "task": "TASK-20260917-0007",
+      "run": "d8abcc97-e5d7-4f83-9d47-b244e03730e7",
+      "sha256": "f32b964c8071d37dd854f653320eb4ce41041ae01e92220a026aa27d9bb8da2d",
+      "bytes": 10452,
+      "write_started": 1,
+      "updated_at": "2026-09-17T13:03:54.877721+00:00",
+      "run_hash": "6cb84140807db256666ed5cbf24a44914814706122f29b8cbb0000b9bbe3ae6c"
+    },
+    {
+      "case": "old_excel",
+      "task": "TASK-20260928-0001",
+      "run": "df438c72-a408-4eef-8a6e-10f2a8445b02",
+      "sha256": "603b9e974338cfe9cd25b13d1a7ef680b7b12bd96ff2ba63992ddcb46eef1c2a",
+      "bytes": 11208,
+      "write_started": 1,
+      "updated_at": "2026-09-28T03:16:09.954819+00:00",
+      "run_hash": "39058e16c87389b1036ecce6a823fa8c0932190654a806ecdea90efd51280bb3"
+    }
+  ],
+  "browser": {
+    "summary": {
+      "project_id": "346e9419-4b0e-4ba7-ad29-1756ca7da833",
+      "basis": "LATEST_RUN_PER_TASK",
+      "task_count": 3,
+      "states": [
+        {
+          "state": "NEEDS_REVIEW",
+          "count": 3
+        }
+      ],
+      "qa_evaluated": false,
+      "release_evaluated": false,
+      "workflow_basis": "WORKFLOW_STATUS_LATEST_RUN",
+      "workflow_counts": {
+        "可交付": 3
+      },
+      "workflow_unverified": 0,
+      "tasks": [
+        {
+          "task_id": "TASK-20261010-0017",
+          "run_id": "5443ccf1-3386-48ba-b669-8c2dbaecd155",
+          "category": "可交付",
+          "current_stage": "delivery",
+          "next_action": "下載正式交付",
+          "effective_status": "已正式交付",
+          "delivered": true,
+          "waiting": false,
+          "stale": false
+        },
+        {
+          "task_id": "TASK-20261010-0018",
+          "run_id": "029d55b5-d677-427d-a6c2-7a14511b4de4",
+          "category": "可交付",
+          "current_stage": "delivery",
+          "next_action": "下載正式交付",
+          "effective_status": "已正式交付",
+          "delivered": true,
+          "waiting": false,
+          "stale": false
+        },
+        {
+          "task_id": "TASK-20261010-0019",
+          "run_id": "e0b16950-27db-4847-add5-1ddbeaf78e08",
+          "category": "可交付",
+          "current_stage": "delivery",
+          "next_action": "下載正式交付",
+          "effective_status": "已正式交付",
+          "delivered": true,
+          "waiting": false,
+          "stale": false
+        }
+      ],
+      "workflow_evaluated": true
+    },
+    "views": [
+      {
+        "case": "csv",
+        "width": 390,
+        "stage": "requirements",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 390,
+        "stage": "review",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 390,
+        "stage": "design",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 390,
+        "stage": "confirm",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 390,
+        "stage": "results",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 390,
+        "stage": "quality",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 390,
+        "stage": "delivery",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 768,
+        "stage": "requirements",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 768,
+        "stage": "review",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 768,
+        "stage": "design",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 768,
+        "stage": "confirm",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 768,
+        "stage": "results",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 768,
+        "stage": "quality",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 768,
+        "stage": "delivery",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 1440,
+        "stage": "requirements",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 1440,
+        "stage": "review",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 1440,
+        "stage": "design",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 1440,
+        "stage": "confirm",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 1440,
+        "stage": "results",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 1440,
+        "stage": "quality",
+        "status": "PASS"
+      },
+      {
+        "case": "csv",
+        "width": 1440,
+        "stage": "delivery",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 390,
+        "stage": "requirements",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 390,
+        "stage": "review",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 390,
+        "stage": "design",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 390,
+        "stage": "confirm",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 390,
+        "stage": "results",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 390,
+        "stage": "quality",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 390,
+        "stage": "delivery",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 768,
+        "stage": "requirements",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 768,
+        "stage": "review",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 768,
+        "stage": "design",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 768,
+        "stage": "confirm",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 768,
+        "stage": "results",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 768,
+        "stage": "quality",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 768,
+        "stage": "delivery",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 1440,
+        "stage": "requirements",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 1440,
+        "stage": "review",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 1440,
+        "stage": "design",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 1440,
+        "stage": "confirm",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 1440,
+        "stage": "results",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 1440,
+        "stage": "quality",
+        "status": "PASS"
+      },
+      {
+        "case": "excel",
+        "width": 1440,
+        "stage": "delivery",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 390,
+        "stage": "requirements",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 390,
+        "stage": "review",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 390,
+        "stage": "design",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 390,
+        "stage": "confirm",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 390,
+        "stage": "results",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 390,
+        "stage": "quality",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 390,
+        "stage": "delivery",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 768,
+        "stage": "requirements",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 768,
+        "stage": "review",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 768,
+        "stage": "design",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 768,
+        "stage": "confirm",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 768,
+        "stage": "results",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 768,
+        "stage": "quality",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 768,
+        "stage": "delivery",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 1440,
+        "stage": "requirements",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 1440,
+        "stage": "review",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 1440,
+        "stage": "design",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 1440,
+        "stage": "confirm",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 1440,
+        "stage": "results",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 1440,
+        "stage": "quality",
+        "status": "PASS"
+      },
+      {
+        "case": "join",
+        "width": 1440,
+        "stage": "delivery",
+        "status": "PASS"
+      }
+    ],
+    "writes": [],
+    "errors": [],
+    "failures": [],
+    "historical_run": "5bedf37f-4b60-4201-8d6e-4ea682f4e8fc",
+    "downloads": 9,
+    "status": "PASS"
+  },
+  "mobile": {
+    "innerWidth": 390,
+    "stageKeyboard": "PASS",
+    "sameRun": "e0b16950-27db-4847-add5-1ddbeaf78e08",
+    "writes": [],
+    "status": "PASS"
+  },
+  "manifest_members": [
+    {
+      "case": "csv",
+      "members_verified": 6
+    },
+    {
+      "case": "excel",
+      "members_verified": 6
+    },
+    {
+      "case": "join",
+      "members_verified": 6
+    }
+  ],
+  "containers_before": [
+    "/ai-etl-stage-guidance-ui-api-1 0aa726e134187daedd4de4791b937667efbbfd7c10e9002ff353f64c0d7d4ac4 sha256:826a0daa6e815b352ed1d3693c083cf9351f697fe6f52b2972adabcb939011ea 2026-10-11T02:41:58.619339167Z",
+    "/ai-etl-stage-guidance-ui-web-1 4324a92ec29340b431e64ab8caed2620835de7b0b83a1d870af97276a1bfc679 sha256:e6eff646ac5cd409cc855ead4b4a1132bd85268f499b29dff9e3e91193e4cf47 2026-10-11T02:42:02.332688252Z",
+    "/ai-etl-stage-guidance-ui-postgres-1 100d045d770b8c9dda4f74a7712a5f1dac3b5a021d646a8fc3b5a47b2939def6 sha256:7958605b474b3d264a969cb3a123d6aa00ad1e1fe9da8a69984dabb704d93317 2026-10-10T10:28:50.103892232Z",
+    "/ai-etl-stage-guidance-ui-acceptance-control-1 0972f97e7d6290fa98f21588ac7e13ab822d1f0470cff02bfa4b8df95847edfd sha256:187effe2eee6aaa31db3647a6f2478140b9e7811958b711543f5b00b0a6996a0 2026-10-10T13:23:53.859371864Z",
+    "/ai-etl-stage-guidance-ui-evidence-bridge-1 d9e320a46ca9aacc607f498c2155f7a63280d4882beeb949379433300b4a1158 sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236 2026-10-10T11:35:36.379443456Z",
+    "/ai-etl-stage-guidance-ui-acceptance-portability-db-1 044478caa21e3911c5739b298fec43d4a5c238c9a3955b3c5377ffa2fc460b35 sha256:5519984a378929928ca6910b8b2637dcc4855a921d77e8793b5714658566079c 2026-10-10T11:31:05.692053732Z",
+    "/ai-etl-workbench-api-1 7d8c6017e4d73814f83c1719d54cd2f43e5c0a8c9e35756ec45c5a185e8dd3f2 sha256:e27398d0d217b0c8741fa4b9f2fdf8a212c5dbeac126d43699959346a0b8b0a1 2026-10-10T06:09:33.204903056Z",
+    "/ai-etl-workbench-web-1 b5780277649853492d63fecc8f6f99eb274749c3b803475f3b0961e84cd7ad6b sha256:0b7511b392bd08c08bcf29588aafb41f922baacc4cc56edfab0e73b1fe9f8439 2026-10-10T06:09:33.196556444Z",
+    "/ai-etl-workbench-postgres-1 e253023757b002a0934bf6e07ae44cd211a7da4c1ade380177828be0893d4420 sha256:7958605b474b3d264a969cb3a123d6aa00ad1e1fe9da8a69984dabb704d93317 2026-10-10T06:09:33.206591336Z",
+    "/ai-etl-workbench-control-worker-1 76c2910a680c5c8dc56344499934a97a0a0bb6e8614b8cfc128bbef2ced5f149 sha256:e27398d0d217b0c8741fa4b9f2fdf8a212c5dbeac126d43699959346a0b8b0a1 2026-10-10T06:09:33.20326688Z"
+  ],
+  "containers_after": [
+    "/ai-etl-stage-guidance-ui-api-1 8e69dda2db2b79b998a70c1dd91f105d33aaac57118b2917ee5c69bdf2a47d9a sha256:3e30204cf8a25fd41b9e9411b1f9f962372f85ae0f1e8c53c798c831312d38c4 2026-10-11T07:13:32.51326629Z",
+    "/ai-etl-stage-guidance-ui-web-1 000c36b1124ada7c8f7ec3830825cfd2853fe72ddf262b242533954a43fef2e9 sha256:2b4e1f950a923fa72b3ce62bc3e574345d382ac4726913d21f26885ab95910ce 2026-10-11T07:13:36.23429835Z",
+    "/ai-etl-stage-guidance-ui-postgres-1 100d045d770b8c9dda4f74a7712a5f1dac3b5a021d646a8fc3b5a47b2939def6 sha256:7958605b474b3d264a969cb3a123d6aa00ad1e1fe9da8a69984dabb704d93317 2026-10-10T10:28:50.103892232Z",
+    "/ai-etl-stage-guidance-ui-acceptance-control-1 0972f97e7d6290fa98f21588ac7e13ab822d1f0470cff02bfa4b8df95847edfd sha256:187effe2eee6aaa31db3647a6f2478140b9e7811958b711543f5b00b0a6996a0 2026-10-10T13:23:53.859371864Z",
+    "/ai-etl-stage-guidance-ui-evidence-bridge-1 d9e320a46ca9aacc607f498c2155f7a63280d4882beeb949379433300b4a1158 sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236 2026-10-10T11:35:36.379443456Z",
+    "/ai-etl-stage-guidance-ui-acceptance-portability-db-1 044478caa21e3911c5739b298fec43d4a5c238c9a3955b3c5377ffa2fc460b35 sha256:5519984a378929928ca6910b8b2637dcc4855a921d77e8793b5714658566079c 2026-10-10T11:31:05.692053732Z",
+    "/ai-etl-workbench-api-1 7d8c6017e4d73814f83c1719d54cd2f43e5c0a8c9e35756ec45c5a185e8dd3f2 sha256:e27398d0d217b0c8741fa4b9f2fdf8a212c5dbeac126d43699959346a0b8b0a1 2026-10-10T06:09:33.204903056Z",
+    "/ai-etl-workbench-web-1 b5780277649853492d63fecc8f6f99eb274749c3b803475f3b0961e84cd7ad6b sha256:0b7511b392bd08c08bcf29588aafb41f922baacc4cc56edfab0e73b1fe9f8439 2026-10-10T06:09:33.196556444Z",
+    "/ai-etl-workbench-postgres-1 e253023757b002a0934bf6e07ae44cd211a7da4c1ade380177828be0893d4420 sha256:7958605b474b3d264a969cb3a123d6aa00ad1e1fe9da8a69984dabb704d93317 2026-10-10T06:09:33.206591336Z",
+    "/ai-etl-workbench-control-worker-1 76c2910a680c5c8dc56344499934a97a0a0bb6e8614b8cfc128bbef2ced5f149 sha256:e27398d0d217b0c8741fa4b9f2fdf8a212c5dbeac126d43699959346a0b8b0a1 2026-10-10T06:09:33.20326688Z"
+  ],
+  "protected_containers_unchanged": 8,
+  "backend_source_sha256": {
+    "specification_store.py": "ac7d8589936cbf2af561d77f65abe36a7e57076fde37ab6943e1e3a51e90f30a",
+    "workflow_status.py": "dde670f4dd1db57799ea78295efef04cf08588a88ec320cf61877b500f6c4407",
+    "developer_journal.py": "bfba008a69d9aea379c423e755cccb8cf71815a3d3ec9a2030a9d5c4b89976d3"
+  },
+  "frontend_assets": [
+    "index-szNnDKAI.js",
+    "index-L6lnu_sw.css"
+  ],
+  "boundaries": [
+    "GET-only browser regression",
+    "No model/Hop/Vertica/QA/Release execution",
+    "No5197 write-API probes",
+    "5183 and workers unchanged"
+  ]
+}
