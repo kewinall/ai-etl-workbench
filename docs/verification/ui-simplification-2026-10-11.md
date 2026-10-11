@@ -2,8 +2,10 @@
 
 ## 最新結論
 
-三段工程修改已在隔離環境完成並驗證；**尚未部署 5197、未推送 GitHub**。
-狀態一致性已用 5197 真實讀回值離線重放驗證（不是部署驗收）。
+三段工程修改已完成，並經使用者授權以 `--no-deps` 只重建 5197 的 api／web（`84c0fc5`）；**未推送 GitHub**。
+5197 GET-only 讀回：專案摘要 `可交付 3`、三案七階段 `can_operate` 全 false、只剩 `release_download`；
+21 個階段頁無可用寫入按鈕或勾選框；部署前後 ZIP SHA-256、`updated_at`、WRITE_STARTED 次數均不變。
+證據：[5197 讀回](ui-simplification-5197-readback-2026-10-11.json)。
 5183 未升級，已交付三案（TASK-20261010-0017／0018／0019）未重跑、未寫入。
 
 | 分段 | Commit | 內容 |
@@ -77,7 +79,7 @@ REPLACE／UPSERT 在補正表單中不可選為新版執行方式，只保留既
 
 ## 尚未完成
 
-1. 部署至 5197（需保留 `compose.stage-guidance.yml`＋`compose.ui-acceptance.yml`、`UI_ACCEPT_PROJECT_ID` 與保管庫掛載），部署後以 GET-only 對三案逐階段讀回、截圖與 ZIP 指紋比對。
+1. （已完成）5197 api／web 部署與 GET-only 讀回；control、Hop／可攜驗證服務、volumes 與 5183 未重建。新操作（退回、補證、修正版、失聯結案）尚未在 5197 實測。
 2. 已交付版本「建立修正版」：後端目前只允許需求缺口、QA 退回、失敗結案三種修正版；已交付 Run 無法從原版建立修正版，畫面明示「只能查看與下載」。是否開放需另行決策。
 3. Codex 獨立驗證清單（見交接文件），包含退回／補證／修正版／失聯結案與 GET 下載回歸。
 4. JSON／資料表完整執行、REPLACE／UPSERT、維運復原、完整列印報告、人工成效基準：另列里程碑，不因本輪宣稱 v2 完成。
