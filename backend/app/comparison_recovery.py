@@ -61,6 +61,8 @@ def enqueue(queue, task_id, run_id, binding_checksum, confirmed):
     if confirmed is not True: raise ValueError('COMPARISON_RECOVERY_CONFIRMATION_REQUIRED')
     if os.getenv('WORKBENCH_EXECUTION_ENABLED') != 'true': raise ValueError('EXECUTION_DISABLED')
     with queue.conn() as conn:
+        from .run_mutability import require_undelivered
+        require_undelivered(queue,conn,task_id,run_id)
         queue.locked_task(conn, task_id)
         if not conn.execute('SELECT 1 FROM platform.task_run WHERE task_id=%s AND run_id=%s', (task_id,run_id)).fetchone():
             raise ValueError('RUN_NOT_FOUND')

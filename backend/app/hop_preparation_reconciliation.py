@@ -50,6 +50,8 @@ def close(queue, task_id, run_id, data):
             or (data.get('evidence_sha256') is not None and (not isinstance(data['evidence_sha256'],str) or not re.fullmatch('[a-f0-9]{64}', data['evidence_sha256'])))):
         raise ValueError('PREPARATION_EVIDENCE_REQUIRED')
     with queue.conn() as conn:
+        from .run_mutability import require_undelivered
+        require_undelivered(queue,conn,task_id,run_id)
         run, request, saved = load(queue, conn, task_id, run_id)
         if saved:
             if any(saved[key] != data.get(key) for key in ('binding_checksum', 'evidence_sha256', 'target_exists', 'observed_row_count')):

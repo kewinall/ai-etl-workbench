@@ -1,47 +1,65 @@
 {
-  "scope": "Static route inventory; no claim of complete direct-call rejection coverage",
+  "scope": "Stage1 engineering audit of Task/Run workflow writes. Platform settings/uploads/analyzer are separate non-workflow APIs. Real provider/ETL/release acceptance remains stage3.",
   "items": [
     {
       "file": "backend/app/ai_profile_api.py",
       "line": 79,
       "method": "PUT",
       "path": "/{profile_id}",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/ai_profile_api.py",
       "line": 97,
       "method": "POST",
       "path": "/{profile_id}/secret",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/ai_profile_api.py",
       "line": 111,
       "method": "POST",
       "path": "/{profile_id}/test",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/connection_test_api.py",
       "line": 42,
       "method": "POST",
       "path": "/{connection_id}/test",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/developer_api.py",
       "line": 84,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/developer/authorize",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     },
     {
       "file": "backend/app/excel_profile.py",
       "line": 86,
       "method": "POST",
       "path": "/api/task-sources/{upload_id}/excel-profile",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/formal_release_api.py",
@@ -65,7 +83,20 @@
         "evidence": "backend/tests/test_delivered_write_guards.py",
         "verified": "SYNTHETIC_DATABASE_DELIVERY_RECORD_AND_REPEATED_REFUSAL",
         "not_proven": "REAL_MODEL_QA_PORTABILITY_ZIP_CHAIN"
-      }
+      },
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     },
     {
       "file": "backend/app/formal_release_api.py",
@@ -84,6 +115,19 @@
         "valid_binding",
         "stale_binding",
         "duplicate_valid_submission"
+      ],
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Rechecks QA/lineage/portability binding; after delivery only same-checksum immutable acknowledgement returns existing release without insert/replay",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
       ]
     },
     {
@@ -103,6 +147,19 @@
         "valid_binding",
         "stale_binding",
         "duplicate_valid_submission"
+      ],
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
       ]
     },
     {
@@ -122,6 +179,19 @@
         "valid_binding",
         "stale_binding",
         "duplicate_valid_submission"
+      ],
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
       ]
     },
     {
@@ -141,6 +211,19 @@
         "valid_binding",
         "stale_binding",
         "duplicate_valid_submission"
+      ],
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
       ]
     },
     {
@@ -148,49 +231,56 @@
       "line": 45,
       "method": "POST",
       "path": "/api/task-sources/{upload_id}/json-profile",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/main.py",
       "line": 230,
       "method": "POST",
       "path": "/api/analyzer/analyze-batch-async",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/main.py",
       "line": 237,
       "method": "POST",
       "path": "/api/analyzer/upload",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/main.py",
       "line": 261,
       "method": "POST",
       "path": "/api/analyzer/analyze",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/main.py",
       "line": 269,
       "method": "POST",
       "path": "/api/analyzer/analyze-batch",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/main.py",
       "line": 299,
       "method": "POST",
       "path": "/api/projects/{project_id}/tasks",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/main.py",
       "line": 306,
       "method": "POST",
       "path": "/api/tasks",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/main.py",
@@ -213,14 +303,29 @@
       "line": 343,
       "method": "POST",
       "path": "/api/tasks/{task_id}/naming-contract/suggest",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "READ_ONLY_POST",
+      "guard": "Preview only; no provider dispatch or persisted artifact"
     },
     {
       "file": "backend/app/main.py",
       "line": 356,
       "method": "POST",
       "path": "/api/tasks/{task_id}/naming-contract/confirm",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Task lock; latest write_started or any persisted delivery prohibits naming change",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     },
     {
       "file": "backend/app/main.py",
@@ -235,14 +340,28 @@
       "line": 371,
       "method": "POST",
       "path": "/api/task-sources/upload",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/main.py",
       "line": 434,
       "method": "PUT",
       "path": "/api/tasks/{task_id}",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Task lock; any Run prohibits direct Task rewrite",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     },
     {
       "file": "backend/app/main.py",
@@ -273,112 +392,193 @@
       "line": 458,
       "method": "POST",
       "path": "/api/models/{provider}/health",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/main.py",
       "line": 475,
       "method": "POST",
       "path": "/api/database/test",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/main.py",
       "line": 490,
       "method": "PUT",
       "path": "/api/settings/groups/{group_key}",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/main.py",
       "line": 504,
       "method": "POST",
       "path": "/api/settings/connections/{connection_id}/secret",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/main.py",
       "line": 516,
       "method": "POST",
       "path": "/api/tasks/{task_id}/release",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Legacy release hard-disabled409; historical stored evidence retained",
+      "evidence_group": [
+        "backend/tests/test_release_http_gate.py"
+      ]
     },
     {
       "file": "backend/app/main.py",
       "line": 524,
       "method": "PUT",
       "path": "/api/settings/{key}",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/oracle_api.py",
       "line": 45,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/specifications/{specification_id}/oracles",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     },
     {
       "file": "backend/app/oracle_api.py",
       "line": 51,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/specifications/{specification_id}/oracles/{oracle_id}/approve",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     },
     {
       "file": "backend/app/project_api.py",
       "line": 109,
       "method": "POST",
       "path": "/{project_id}/pilot-cohorts/{cohort_id}/cases/{case_key}/effort",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/project_api.py",
       "line": 129,
       "method": "POST",
       "path": "/{project_id}/pilot-cohorts",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/project_api.py",
       "line": 197,
       "method": "POST",
       "path": "/{project_id}/pilot-cohorts/{cohort_id}/cases/{case_key}/task",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/project_api.py",
       "line": 211,
       "method": "POST",
       "path": "/{project_id}/pilot-cohorts/{cohort_id}/cases/{case_key}/prepare",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/project_api.py",
       "line": 225,
       "method": "PUT",
       "path": "/{project_id}",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "OUTSIDE_TASK_RUN_WORKFLOW"
     },
     {
       "file": "backend/app/qa_authorization_api.py",
       "line": 60,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/qa-authorization",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     },
     {
       "file": "backend/app/run_api.py",
       "line": 180,
       "method": "POST",
       "path": "/{task_id}/runs",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     },
     {
       "file": "backend/app/run_api.py",
       "line": 189,
       "method": "POST",
       "path": "/{task_id}/approvals",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     },
     {
       "file": "backend/app/run_api.py",
@@ -397,6 +597,19 @@
         "valid_binding",
         "stale_binding",
         "duplicate_valid_submission"
+      ],
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
       ]
     },
     {
@@ -416,6 +629,19 @@
         "valid_binding",
         "stale_binding",
         "duplicate_valid_submission"
+      ],
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
       ]
     },
     {
@@ -435,6 +661,19 @@
         "valid_binding",
         "stale_binding",
         "duplicate_valid_submission"
+      ],
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
       ]
     },
     {
@@ -459,49 +698,118 @@
         "evidence": "backend/tests/test_delivered_write_guards.py",
         "verified": "SYNTHETIC_DATABASE_DELIVERY_RECORD_AND_REPEATED_REFUSAL",
         "not_proven": "REAL_MODEL_QA_PORTABILITY_ZIP_CHAIN"
-      }
+      },
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     },
     {
       "file": "backend/app/run_api.py",
       "line": 257,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/revisions",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     },
     {
       "file": "backend/app/run_api.py",
       "line": 292,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/sa-authorization",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     },
     {
       "file": "backend/app/run_api.py",
       "line": 299,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/sa-invocation/cancel",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     },
     {
       "file": "backend/app/run_api.py",
       "line": 306,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/cancel",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     },
     {
       "file": "backend/app/specification_api.py",
       "line": 47,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/specification/validate",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "READ_ONLY_POST",
+      "guard": "Preview only; no provider dispatch or persisted artifact"
     },
     {
       "file": "backend/app/specification_api.py",
       "line": 51,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/specification/compile-preview",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "audit_scope": "READ_ONLY_POST",
+      "guard": "Preview only; no provider dispatch or persisted artifact"
     },
     {
       "file": "backend/app/specification_api.py",
@@ -513,7 +821,20 @@
         "evidence": "backend/tests/test_delivered_write_guards.py",
         "verified": "SYNTHETIC_DATABASE_DELIVERY_RECORD_AND_REPEATED_REFUSAL",
         "not_proven": "REAL_MODEL_QA_PORTABILITY_ZIP_CHAIN"
-      }
+      },
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     },
     {
       "file": "backend/app/specification_api.py",
@@ -525,7 +846,20 @@
         "evidence": "backend/tests/test_delivered_write_guards.py",
         "verified": "SYNTHETIC_DATABASE_DELIVERY_RECORD_AND_REPEATED_REFUSAL",
         "not_proven": "REAL_MODEL_QA_PORTABILITY_ZIP_CHAIN"
-      }
+      },
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     },
     {
       "file": "backend/app/specification_api.py",
@@ -537,7 +871,20 @@
         "evidence": "backend/tests/test_delivered_write_guards.py",
         "verified": "SYNTHETIC_DATABASE_DELIVERY_RECORD_AND_REPEATED_REFUSAL",
         "not_proven": "REAL_MODEL_QA_PORTABILITY_ZIP_CHAIN"
-      }
+      },
+      "audit_scope": "TASK_RUN_WRITE",
+      "engineering_audit": "REVIEWED",
+      "guard": "Existing Task transaction lock, binding/state prerequisites and immutable persisted approvals; delivered mutation blocked in service",
+      "evidence_group": [
+        "backend/tests/test_delivered_write_guards.py",
+        "backend/tests/test_workflow_write_refusals.py",
+        "backend/tests/test_run_queue_integration.py",
+        "backend/tests/test_specification_sa_prerequisite_integration.py",
+        "backend/tests/test_developer_journal_integration.py",
+        "backend/tests/test_hop_dispatch_integration.py",
+        "backend/tests/test_execution_authorization_integration.py",
+        "backend/tests/test_oracle_store_integration.py"
+      ]
     }
   ]
 }

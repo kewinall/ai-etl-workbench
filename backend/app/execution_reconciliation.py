@@ -58,6 +58,8 @@ def close(queue,task_id,run_id,expected_checksum,evidence_sha256,observed_row_co
             or type(observed_row_count) is not int or not 0<=observed_row_count<=9223372036854775807):
         raise ValueError('RECONCILIATION_EVIDENCE_REQUIRED')
     with queue.conn() as conn:
+        from .run_mutability import require_undelivered
+        require_undelivered(queue,conn,task_id,run_id)
         run,saved=_load(queue,conn,task_id,run_id)
         if saved:
             if (saved['binding_checksum']!=expected_checksum or saved['evidence_sha256']!=evidence_sha256

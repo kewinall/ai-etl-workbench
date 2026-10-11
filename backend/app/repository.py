@@ -244,7 +244,8 @@ class PostgresRepository:
    # race past a review that is validating the previous contract.
    if not c.execute('select task_id from platform.task where task_id=%s for update',(task_id,)).fetchone():raise ValueError('TASK_NOT_FOUND')
    latest=c.execute('SELECT write_started FROM platform.task_run WHERE task_id=%s ORDER BY created_at DESC,run_id DESC LIMIT 1',(task_id,)).fetchone()
-   if latest and latest['write_started']:raise TaskNamingConflict('NAMING_EXECUTED_VERSION_READ_ONLY')
+   delivered=c.execute('SELECT 1 FROM platform.release_delivery d JOIN platform.release_candidate_record r USING(candidate_id) WHERE r.task_id=%s LIMIT 1',(task_id,)).fetchone()
+   if (latest and latest['write_started']) or delivered:raise TaskNamingConflict('NAMING_EXECUTED_VERSION_READ_ONLY')
    version=c.execute("select coalesce(max(version),0)+1 version from platform.naming_contract where task_id=%s",(task_id,)).fetchone()['version'];contract_id=uuid.uuid4();status='CONFIRMED' if confirmed else 'DRAFT'
    c.execute("insert into platform.naming_contract(contract_id,task_id,version,status,contract_json,checksum,confirmed_at) values(%s,%s,%s,%s,%s,%s,case when %s then now() else null end)",(contract_id,task_id,version,status,json.dumps(contract),contract['checksum'],confirmed))
    for ordinal,column in enumerate(contract['columns'],1):c.execute("insert into platform.naming_contract_column(contract_id,ordinal,source_name,english_name,vertica_type,confidence,reason) values(%s,%s,%s,%s,%s,%s,%s)",(contract_id,ordinal,column['source_name'],column['english_name'],column['vertica_type'],column['confidence'],column['reason']))

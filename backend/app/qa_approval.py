@@ -43,6 +43,8 @@ def load_approval_offer(queue,task_id,run_id,*,connection=None):
 def approve_review(queue,task_id,run_id,expected_checksum,*,confirmed=False):
     if confirmed is not True:raise ValueError('QA_HUMAN_CONFIRMATION_REQUIRED')
     with queue.conn() as conn:
+        from .run_mutability import require_undelivered
+        require_undelivered(queue,conn,task_id,run_id)
         binding=load_approval_offer(queue,task_id,run_id,connection=conn)
         if binding['checksum']!=expected_checksum:raise ValueError('QA_APPROVAL_VERSION_CONFLICT')
         existing=conn.execute('SELECT * FROM platform.qa_review_approval WHERE run_id=%s',(run_id,)).fetchone()

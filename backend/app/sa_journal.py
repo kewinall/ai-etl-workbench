@@ -50,6 +50,8 @@ class SAJournal:
 
     def reserve(self, task_id, run_id, authorization=None):
         with self.queue.conn() as conn:
+            from .run_mutability import require_undelivered
+            require_undelivered(self.queue,conn,task_id,run_id)
             task = self.queue.locked_task(conn, task_id)
             run = conn.execute('SELECT * FROM platform.task_run WHERE run_id=%s AND task_id=%s FOR UPDATE', (run_id, task_id)).fetchone()
             if not run:

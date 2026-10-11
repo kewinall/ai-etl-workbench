@@ -58,6 +58,8 @@ def read(queue,task_id,run_id):
 def approve(queue,task_id,run_id,expected_checksum,*,confirmed=False):
     if confirmed is not True:raise ValueError('SA_HUMAN_CONFIRMATION_REQUIRED')
     with queue.conn() as conn:
+        from .run_mutability import require_undelivered
+        require_undelivered(queue,conn,task_id,run_id)
         binding=load_binding(queue,conn,task_id,run_id)
         if binding['checksum']!=expected_checksum:raise RunConflict('SA_HANDOFF_VERSION_CONFLICT')
         saved=conn.execute('SELECT * FROM platform.sa_handoff_approval WHERE run_id=%s',(run_id,)).fetchone()

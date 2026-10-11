@@ -12,6 +12,8 @@ def save_oracle(queue, task_id, run_id, specification_id, content):
     if not isinstance(content,bytes) or not 1<=len(content)<=8*1024*1024:
         raise ValueError('ORACLE_DOCUMENT_LIMIT')
     with queue.conn() as conn:
+        from .run_mutability import require_undelivered
+        require_undelivered(queue,conn,task_id,run_id)
         # Existing Task lock serializes versions and rejects stale/foreign inputs.
         candidate=load_approved_candidate(queue,conn,task_id,run_id,specification_id)
         naming=conn.execute('SELECT checksum FROM platform.naming_contract WHERE contract_id=(SELECT naming_contract_id FROM platform.specification WHERE specification_id=%s)',(specification_id,)).fetchone()
@@ -111,6 +113,8 @@ def review_oracle(queue,task_id,run_id,specification_id,oracle_id,offset=0,limit
 
 def approve_oracle(queue,task_id,run_id,specification_id,oracle_id,document_checksum):
     with queue.conn() as conn:
+        from .run_mutability import require_undelivered
+        require_undelivered(queue,conn,task_id,run_id)
         candidate=load_approved_candidate(queue,conn,task_id,run_id,specification_id)
         row=conn.execute('SELECT * FROM platform.result_oracle WHERE specification_id=%s ORDER BY version DESC LIMIT 1 FOR SHARE',(specification_id,)).fetchone()
         if not row or str(row['oracle_id'])!=str(oracle_id) or row['document_checksum']!=document_checksum:

@@ -30,6 +30,8 @@ class QAJournal:
     def reserve(self,task_id,run_id,comparison_id,context_checksum,consent,*,reassess_invocation_id=None,expected_prompt_checksum=None):
         if consent is not True:raise ValueError('QA_EXPLICIT_CONSENT_REQUIRED')
         with self.queue.conn() as conn:
+            from .run_mutability import require_undelivered
+            require_undelivered(self.queue,conn,task_id,run_id)
             self.queue.locked_task(conn,task_id)
             captured=load_qa_context(self.queue,task_id,run_id,comparison_id,connection=conn)
             context=captured['context'];run=captured['run']

@@ -96,6 +96,8 @@ class RunQueue:
         if set(overrides) - {'ai_profile_id', 'connection_id'}:
             raise ValueError('UNKNOWN_EXECUTION_OVERRIDE')
         with self.conn() as conn:
+            from .run_mutability import require_undelivered
+            require_undelivered(self,conn,task_id,None)
             task = self.locked_task(conn, task_id)
             # Same request returns its existing result even after later edits.
             existing = conn.execute('SELECT * FROM platform.task_run WHERE task_id=%s AND request_key=%s', (task_id, request_key)).fetchone()
@@ -129,6 +131,8 @@ class RunQueue:
         if any(not re.fullmatch(r'[a-z_][a-z0-9_]{0,62}', value) for value in (target_schema, target_table)):
             raise ValueError('INVALID_TARGET_IDENTIFIER')
         with self.conn() as conn:
+            from .run_mutability import require_undelivered
+            require_undelivered(self,conn,task_id,parent_id)
             task = self.locked_task(conn, task_id)
             parent = conn.execute('SELECT * FROM platform.task_run WHERE run_id=%s AND task_id=%s FOR UPDATE', (parent_id, task_id)).fetchone()
             if not parent:
@@ -261,6 +265,8 @@ class RunQueue:
         if decision not in ('APPROVE', 'REJECT'):
             raise ValueError('INVALID_DECISION')
         with self.conn() as conn:
+            from .run_mutability import require_undelivered
+            require_undelivered(self,conn,task_id,run_id)
             task = self.locked_task(conn, task_id)
             run = conn.execute('SELECT * FROM platform.task_run WHERE run_id=%s AND task_id=%s FOR UPDATE', (run_id, task_id)).fetchone()
             if not run:
@@ -289,6 +295,8 @@ class RunQueue:
 
     def cancel_unstarted(self, task_id, run_id):
         with self.conn() as conn:
+            from .run_mutability import require_undelivered
+            require_undelivered(self,conn,task_id,run_id)
             self.locked_task(conn, task_id)
             row = conn.execute('SELECT * FROM platform.task_run WHERE run_id=%s AND task_id=%s FOR UPDATE', (run_id, task_id)).fetchone()
             if not row:

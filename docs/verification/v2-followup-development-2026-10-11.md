@@ -46,3 +46,11 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - 完整回歸第一次2105passed／2failed／139skip：兩個舊Mock把新增查詢當成已交付。fixture改成明確existing Run＋no delivery，保留原QA及checksum拒絕業務斷言，沒有放寬產品守門。
 - 最終全套2107passed／139skipped／0failed／1 dependency warning，54.86秒。相關5項交付、SDM、SA及舊入口合併25passed。Diff check PASS。原Join未提交修改SHA256不變。
 - 第一段仍partial，inventory其餘操作需要按適用情況補逐項覆蓋；有效／失效SA規格、Hop單次派發與SDM idempotency既有測試本輪全套通過，不把合成terminal-row測試視為真實交付案例。第二／三段尚未開始。
+
+## 第一段工程驗證收斂
+
+- 完成交付前置檢查延伸：版本建立／修訂、輸入核准／取消、SA／Developer／QA預約、SA／QA核准、Oracle保存／核准、Hop派發、只讀比對恢復及執行／準備結案。均使用原Task鎖及既有release_delivery記錄，只限制寫入，不變更歷史GET。命名保存也直接確認Task交付記錄。
+- 已交付fixture擴為21項（5個HTTP artifact操作、16個直接transactional service操作）；各重複兩次明確拒絕、Run及所有platform計數與artifact file list不變。沒有模型或引擎實際呼叫，合成terminal記錄不代表真實QA／ZIP驗收。
+- 相關核准綁定／單次派發／Oracle／交付21項合併54passed；完整最終2123passed／139skip／0failed／1 warning（60.04秒）。新guard仍保留尚未交付時的有效核准、失效拒絕及原idempotency業務斷言。
+- inventory逐項標明Task/Run寫入、純預覽POST、停用入口及非工作流API；不是整個平台全部API安全稽核。正式Release approve對已交付僅允許同binding/checksum的既有交付acknowledgement，不產生新檔／事件／派發，不能當成重新核准。
+- 第一段工程里程碑可階段性通過，進入第二段。真實provider與完整執行證據仍在第三段，WS-0007保持active。準備失敗修訂資格與後端一致，未提供不合資格的直接重試。

@@ -39,6 +39,8 @@ class DeveloperJournal:
         if confirmed is not True:
             raise ValueError('DEVELOPER_EXPLICIT_CONSENT_REQUIRED')
         with self.queue.conn() as conn:
+            from .run_mutability import require_undelivered
+            require_undelivered(self.queue,conn,task_id,run_id)
             captured = load_context(self.queue, conn, task_id, run_id)
             context = captured['context']; settings = captured['run']['settings_snapshot']
             if context['context_checksum'] != context_checksum:

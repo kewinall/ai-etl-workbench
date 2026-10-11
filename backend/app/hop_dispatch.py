@@ -50,6 +50,8 @@ def enqueue(queue,task_id,run_id,specification_id,binding_checksum,confirmed):
     if confirmed is not True:raise ValueError('HOP_DISPATCH_CONSENT_REQUIRED')
     if os.getenv('WORKBENCH_EXECUTION_ENABLED')!='true':raise ValueError('EXECUTION_DISABLED')
     with queue.conn() as conn:
+        from .run_mutability import require_undelivered
+        require_undelivered(queue,conn,task_id,run_id)
         current=offer(queue,conn,task_id,run_id,specification_id)
         if current['binding_checksum']!=binding_checksum:raise ValueError('HOP_DISPATCH_BINDING_CHANGED')
         existing=conn.execute('SELECT request_id,status,binding_checksum FROM platform.hop_dispatch_request WHERE run_id=%s',(run_id,)).fetchone()

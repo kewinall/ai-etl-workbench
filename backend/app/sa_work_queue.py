@@ -71,6 +71,8 @@ class SAWorkQueue:
 
     def cancel_queued(self, task_id, run_id):
         with self.queue.conn() as conn:
+            from .run_mutability import require_undelivered
+            require_undelivered(self.queue,conn,task_id,run_id)
             self.queue.locked_task(conn, task_id)
             row = conn.execute("SELECT * FROM platform.agent_invocation WHERE task_id=%s AND run_id=%s AND role='pilot_sa' FOR UPDATE", (task_id, run_id)).fetchone()
             if not row or row['status'] not in ('SA_QUEUED', 'CANCELLED_NOT_DISPATCHED'):
