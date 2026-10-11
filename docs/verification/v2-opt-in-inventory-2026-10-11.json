@@ -199,7 +199,7 @@
       "environment_keys": [
         "WORKBENCH_CLAIM_REVIEW_TEST"
       ],
-      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "this_followup_execution": "PASS: fresh isolated PG17, real child process killed before target preparation, 1 backend PASS 3.35s; compiled current stage UI and real API 1 PASS 2.4s; SQL one closure/claim, target/write zero, no reclaim before or after; synthetic roles only, no model/Hop/Vertica. Database retained and services stopped.",
       "legacy_selectors_present": false
     },
     {

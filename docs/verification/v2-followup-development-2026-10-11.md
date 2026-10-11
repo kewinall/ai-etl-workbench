@@ -179,3 +179,16 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - 真實失聯 opt-in 稽核發現 hop-preparation-reconciliation-live.spec.ts 殘留未使用proof及未定義hash，另有舊需求頁入口；partial-write-reconciliation-live.spec.ts 的固定5197指向目前驗收環境，不能直接執行。歷史claim-review／partial-review Compose為舊image、外部保留DB／volume，不能直接up或重置既有已結案案例。這些尚待專用新隔離DB修正及實跑，不計入本批PASS；不恢復使用者已移除的證據檔案核對功能。
 - 5197仍為前端2530203／API a7a666f，本輪未部署、未呼叫模型/Hop/Vertica/QA/Release、未操作5183或已交付目標；app未推送。原Join未提交內容SHA仍為cc1f19bd4e2da5bf311ed3d3f89802f65e497d5fa40e7cc954d32b6a553e9777。
 - 完整預設回歸第一次128 PASS／26skip／1 FAIL（4.0分鐘），唯一失敗為ai-profiles頁面reload等load逾10秒；原斷言/timeout不改，單獨連同SDM重驗4 PASS（8.3秒）。固定source第二次完整回歸129 PASS／26skip／0 FAIL（3.8分鐘）；首輪失敗trace保留，不能宣稱首次全通過。最後JSON報告 runtime-temp/v2-sdm-default-confirmation.json。本批少一個skip為原SDM合成測試常態化，多兩個PASS為新增合成分支，不當成真實模型/ETL案例。
+
+## 真實程序死亡／網站結案及 SDM 部署（1099215）
+
+- 新增 `deploy/compose.claim-review-fresh.yml`：新的PG17資料卷／internal network、單次程序死亡test、現行API與compiled web，5196限loopback。四種dispatch開關皆false，沒有Hop、Vertica或真實模型Worker；測試會拒絕已有Run的DB，不連舊claim／partial資料卷。
+- 現行backend `test_hop_claim_process_loss.py` 實際建立子程序，CLAIMED交易commit後kill，兩次claim仍None、reap不重派、無target claim／write；**1PASS（3.35秒）**。這是合成角色下的真實控制面程序死亡，不宣稱原生Hop或Vertica中斷。59 migrations只套用新的測試DB。
+- 案例 `queue-test-b75eb5fe3d6d4971b4fca391d27dd36d`／Run `d65fb6f8-c714-41da-b595-20ef987861e7`：網站結果階段、唯一Task/Run明確binding、無file input、目標不存在與一次確認、單次POST、reload與390px **1PASS（2.4秒）**。修正舊requirements入口與未定義hash，未恢復證據檔案功能。非預期前端寫入攔截，結案真實打獨立API/PG。
+- 直接SQL驗證：僅1筆reconciliation／1次Hop claim／1結案event，event_delta=1，WRITE_STARTED=0、target_claims=0、worker_presence=0；原synthetic SA/Developer紀錄保留，四API開關false。結案後進程內只呼叫claim函式兩次（未啟動engine/worker），皆None且event數不變。Run FAILED／HOP_PREPARATION_RECONCILED、dispatch NEEDS_REVIEW、目標筆數與evidence hash皆null、release_ready=false、waiting=false、current_stage=results。
+- 獨立環境web/api/postgres已stop，資料卷及證據保留，不重跑fixture、不刪資料。證據 `v2-owner-death-ui-2026-10-11.json`；原SQL、GET、browser、source hashes與log在私有 `runtime-temp/v2-claim-review-fresh`。需只讀重查時使用compose `start postgres api web`，不得重新up tests；另測新死亡案例需新的project/volumes及空DB驗證。
+- 5197只重建web，納入d5e7de8 SDM修正，API仍a7a666f，bundle `index-DYmf-6uq.js`。首次缺UI_ACCEPT_PROJECT_ID在Compose解析就失敗，未改服務；補既有346e9419專案識別後 `up --no-deps --build -d web` PASS。protected metadata raw JSON鍵序差異造成首個比較失敗，改逐一核對name/id/image/started，九個服務實際值全不變，並非容器重啟。
+- 實際5197 compiled UI全API攔截SDM **3PASS（3.2秒）**；新三正式案七階段／390/768/1440／鍵盤／ZIP GET-only **10PASS（25.4秒）**、原三案 **10PASS（26.4秒）**。八個正式Release在部署前、後與全browser後的ZIPbytes/hash、完整Run/Releasehash、updated_at與WRITE_STARTED=1全不變；沒有模型、Hop、新交付或5183升級。
+- 部署證據 `v2-sdm-deployment-2026-10-11.json`。新prooffolder參數限定runtime-temp，既有上一輪基準未覆寫；本批 `runtime-temp/v2-sdm-deploy/previous-web-image.txt` 保存回復image ID。回復需將該IDtag為原stage-guidance image，再使用相同Compose/Project ID `up --no-deps -d web`（不build），核對原bundle與八Release。
+- App本機提交、不推送。backend app與一般frontend未新增其他變更：全backend2132PASS/139skip沿用，最新default browser129PASS/26skip為上輪固定source結果；本批額外兩個opt-in實跑不改稱全default數量。原Join未提交內容SHA不變。
+- 下一步：真實執行失聯／部分提交live測試仍有舊入口、固定5197及歷史DB前提；先建立可核查的独立來源/Task/Run環境與目標授權，不能回放已交付或已結案案例。QA真實補證與其餘未驗收項目仍以inventory層次追蹤；目前只完成控制面準備死亡分支，不把它當成真實部分寫入PASS。

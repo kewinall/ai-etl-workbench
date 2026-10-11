@@ -11,14 +11,14 @@
 
 ## 最新狀態（2026-10-11）
 
-- 本機 d5e7de8 已修正 SDM 背景更新清掉成功／不明結果警示，合成交付分支3案及完整129PASS/26skip通過；本批尚未部署5197，不能視為現行網站已有此修正。失聯live測試仍有舊hash／入口與固定5197前提，需另設獨立資料庫實測。
+- d5e7de8 SDM背景提示修正已部署5197（1099215工程批，compiled SDM3PASS、新三案10PASS及原三案10PASS）。新PG17實際程序死亡與網站結案已通過，但角色為synthetic，沒有Hop／Vertica／真實模型，不能代表部分寫入驗收；證據見 verification/v2-owner-death-ui-2026-10-11.json。執行／部分提交live測試仍有舊入口及固定5197前提。
 
 - v2 後續：已停用舊 Task 執行／補正／驗證入口，Run 工作流寫入會依既有交付記錄守門；工程 source `a7a666f` 已部署 5197。2026-10-11 新 CSV／Excel／LEFT JOIN 三案已經正常網站與真實模型、Hop、Vertica、QA、隔離可攜驗證及正式 ZIP，原目標各寫入一次，固定答案 2／2／5 筆完全符合。七階段三寬度／鍵盤／下載回歸 10 PASS，五個既有 Release 指紋及寫入次數不變。見 [後續開發驗證](verification/v2-followup-development-2026-10-11.md)。這是三個受控合成案例的驗收，不代表下列獨立里程碑完成。
 - 後續介面：新 Task 不再建立舊流程空白節點；空白舊版區隱藏，真實歷史節點及下載仍保留。未套用執行流程的驗證策略僅顯示保存值，無儲存入口。
 
 
 - 前端多代元件與 runtime 覆寫已完成引用稽核並移除；目前入口只保留明確引用的有效元件。見 [UI 收斂紀錄](verification/ui-simplification-2026-10-11.md)。
-- 狀態判定統一由 workflow-status 彙整（逐操作資格、已交付只讀）；專案摘要／篩選／卡片共用同一結果。5197 API 為 `a7a666f`，前端為 `2530203`（`index-BW7UvHH9.js`），包含舊入口退場、交付守門、空白歷史隱藏、草稿與錯誤保留、失敗診斷去重，以及 Hop／QA／比對恢復／QA核准回應不明時先GET核對、禁止自動重送。九個受保護服務及八個新舊正式成果不變，見 [異常分支部署讀回](verification/v2-followup-closure-deployment-2026-10-11.json)。
+- 狀態判定統一由 workflow-status 彙整（逐操作資格、已交付只讀）；專案摘要／篩選／卡片共用同一結果。5197 API 為 `a7a666f`，前端為 `d5e7de8`（`index-DYmf-6uq.js`），包含舊入口退場、交付守門、空白歷史隱藏、草稿與錯誤保留、失敗診斷去重，以及 Hop／QA／比對恢復／QA核准／SDM回應不明時先GET核對、禁止自動重送。九個受保護服務及八個新舊正式成果不變，見 [異常分支部署讀回](verification/v2-followup-closure-deployment-2026-10-11.json)。
 - 受管理工作區在操作資格缺漏或回應版本不符時一律停用寫入（「操作資格尚未確認」）；規格保存／核准 API 在同交易內驗證同 Run 有效 SA 核准；本輪覆蓋 21 項已交付拒絕及 9 種 API × 3 種前置條件拒絕。這是 Task/Run 工作流範圍，不是整個平台全部 API 的安全認證；不以唯讀彙整取代後端檢查。
 - 已交付版本目前不能建立修正版或新準備版本，畫面明示限制；REPLACE／UPSERT 不可選為新版執行方式（僅保留歷史意圖）。
 - 寫入型 live 瀏覽器測試為明確 opt-in（`WORKBENCH_ALLOW_SYNTHETIC_UI=1`、`WORKBENCH_TEST_CONTROL_WORKER=1`），只可在隔離 DB 執行。

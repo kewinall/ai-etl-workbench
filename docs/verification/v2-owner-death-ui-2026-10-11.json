@@ -1,0 +1,126 @@
+{
+  "date": "2026-10-11",
+  "engineering_commit": "1099215",
+  "scope": "REAL_PROCESS_DEATH_AND_PERSISTED_CONTROL_PLANE_WITH_SYNTHETIC_ROLES_NO_MODEL_HOP_VERTICA",
+  "compose": "deploy/compose.claim-review-fresh.yml",
+  "project": "ai-etl-claim-review-20261011",
+  "task_id": "queue-test-b75eb5fe3d6d4971b4fca391d27dd36d",
+  "run_id": "d65fb6f8-c714-41da-b595-20ef987861e7",
+  "before": {
+    "state": "NEEDS_REVIEW",
+    "write_started": false,
+    "dispatch": "CLAIMED",
+    "stage": "results",
+    "closure_enabled": true
+  },
+  "owner_death_test": {
+    "source_sha256": "ec14343f61c8c1f619663538e7924d165dc7c70c15c618a4d6e634ebe6fa5e9b",
+    "actual_child_terminated": true,
+    "reclaim_before_closure": 0,
+    "seconds": 3.35,
+    "migrations": 59,
+    "passed": 1
+  },
+  "browser": {
+    "source_sha256": "f4e2ff2c0afd143b732a39978aa40715116cad54ec28f4b96538753671fe95e3",
+    "stats": {
+      "startTime": "2026-10-11T11:01:18.809Z",
+      "duration": 2437.968,
+      "expected": 1,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "no_file_upload": true,
+    "width": 390,
+    "reload_passed": true,
+    "single_closure_post": true
+  },
+  "after": {
+    "state": "FAILED",
+    "outcome": "HOP_PREPARATION_RECONCILED",
+    "stage": "results",
+    "waiting": false,
+    "event_delta": 1,
+    "receipt": {
+      "status": "CLOSED_WITHOUT_RETRY",
+      "reconciliation_id": "e11ded58-954e-4b3b-bee7-a1b20265f75c",
+      "evidence_sha256": null,
+      "target_exists": false,
+      "observed_row_count": null,
+      "automatic_retry_allowed": false,
+      "release_ready": false,
+      "evidence_source": "OPERATOR_ATTESTATION"
+    }
+  },
+  "independent_sql": {
+    "scope": "SYNTHETIC_CONTROL_ONLY_NO_MODEL_HOP_VERTICA",
+    "run": {
+      "task_id": "queue-test-b75eb5fe3d6d4971b4fca391d27dd36d",
+      "run_id": "d65fb6f8-c714-41da-b595-20ef987861e7",
+      "state": "FAILED",
+      "outcome_code": "HOP_PREPARATION_RECONCILED",
+      "write_started": false,
+      "lease_token": null
+    },
+    "dispatch": {
+      "request_id": "ca9994cc-9673-437d-93ab-ca9d37cccc8a",
+      "status": "NEEDS_REVIEW",
+      "outcome_code": "HOP_PREPARATION_RECONCILED"
+    },
+    "reconciliation": {
+      "reconciliation_id": "e11ded58-954e-4b3b-bee7-a1b20265f75c",
+      "target_exists": false,
+      "observed_row_count": null,
+      "evidence_sha256": null
+    },
+    "events": {
+      "EXECUTION_CONSENT_RECORDED": 1,
+      "ENQUEUED": 1,
+      "RESULT_ORACLE_APPROVED": 1,
+      "REQUIREMENT_GATE_STARTED": 1,
+      "DEVELOPER_INTENT_RECORDED": 1,
+      "PIPELINE_NOT_READY": 1,
+      "SA_VALIDATED_NOT_APPROVED": 1,
+      "HOP_DISPATCH_QUEUED": 1,
+      "DISPATCH_RESERVED": 1,
+      "INPUT_APPROVE": 1,
+      "HOP_PREPARATION_RECONCILED_WITHOUT_RETRY": 1,
+      "DEVELOPER_VALIDATED_NOT_APPROVED": 1,
+      "SA_HANDOFF_APPROVED": 1,
+      "SPECIFICATION_APPROVED": 1,
+      "RESULT_ORACLE_SAVED": 1,
+      "SPECIFICATION_SAVED": 1,
+      "CLAIMED": 1,
+      "HOP_DISPATCH_CLAIMED": 1
+    },
+    "target_claims": 0,
+    "workers": 0,
+    "model_records": [
+      {
+        "provider": "LITELLM_BEDROCK",
+        "model": "bedrock/synthetic"
+      },
+      {
+        "provider": "LITELLM_BEDROCK",
+        "model": "bedrock/synthetic"
+      }
+    ],
+    "api_flags": {
+      "WORKBENCH_EXECUTION_ENABLED": "false",
+      "WORKBENCH_SA_DISPATCH_ENABLED": "false",
+      "WORKBENCH_DEVELOPER_DISPATCH_ENABLED": "false",
+      "WORKBENCH_QA_DISPATCH_ENABLED": "false"
+    },
+    "reclaim_attempts": 2,
+    "reclaimed": 0,
+    "status": "PASS"
+  },
+  "resources": "STOPPED; PostgreSQL and test runtime volumes retained; do not replay the death fixture",
+  "not_proven": [
+    "New real Hop process interruption",
+    "New Vertica partial commit",
+    "Real model retry or QA re-review"
+  ],
+  "private_evidence": "runtime-temp/v2-claim-review-fresh"
+}
