@@ -3,7 +3,7 @@
   "scope": "Static conditional test gates; entries are files, not the number of skipped parameter instances.",
   "default_regression": {
     "backend": {
-      "passed": 2124,
+      "passed": 2132,
       "skipped": 139
     },
     "browser": {
@@ -262,8 +262,9 @@
       "environment_keys": [
         "WORKBENCH_NATIVE_ACCEPTANCE"
       ],
-      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
-      "legacy_selectors_present": false
+      "this_followup_execution": "PASS: 10 passed; current frontend source / existing 5197 API; GET-only existing three Releases, all widths and SHA preserved. Not fresh execution acceptance.",
+      "legacy_selectors_present": false,
+      "obsolete_selector_review": "Migrated effective status, main Release download and collapsed SDM history."
     },
     {
       "file": "frontend/tests/partial-write-reconciliation-live.spec.ts",
@@ -596,8 +597,9 @@
       "environment_keys": [
         "WORKBENCH_TEST_CONTROL_WORKER"
       ],
-      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
-      "legacy_selectors_present": true
+      "this_followup_execution": "PASS: isolated website upload/revision/replacement, scoped CONTROL only; 1 passed; no model/ETL",
+      "legacy_selectors_present": true,
+      "obsolete_selector_review": "Migrated visible Task form, stage navigation, shared refresh and revision diff confirmation; all business assertions retained."
     },
     {
       "file": "frontend/tests/worker-lifecycle.spec.ts",

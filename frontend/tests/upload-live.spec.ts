@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
 import {createHash} from 'node:crypto';
+import {isolatedControlRun} from './fixtures/control';
 
 test('實際網站上傳 → 需求補正 → 共用儲存 Worker → PostgreSQL 證據（無模型／ETL）', async ({page, request}) => {
   test.skip(process.env.WORKBENCH_TEST_CONTROL_WORKER !== '1', 'Requires isolated CONTROL worker');
@@ -14,11 +15,11 @@ test('實際網站上傳 → 需求補正 → 共用儲存 Worker → PostgreSQL
     expect((await request.put('/api/settings/groups/data_connections_targets', {data:{...original,etl_qa:{connection_id:connection,host:'synthetic-no-connection',port:5433,database:'synthetic',user:'synthetic'}}})).status()).toBe(200);
     const project = await (await request.post('/api/projects',{data:{project_name:`真實上傳驗收-${suffix}`,default_ai_profile:profile,default_connection:connection}})).json();
     await page.goto(`/#/projects/${project.project_id}/tasks/new`);
-    await page.getByLabel('Task 名稱',{exact:true}).fill('實際上傳來源驗收');
-    await page.getByLabel('需求描述',{exact:true}).fill('合成 CSV 來源驗收，保留全部資料，只檢查來源與版本，不執行 ETL。');
+    await page.getByRole('textbox',{name:'Task 名稱',exact:true}).fill('實際上傳來源驗收');
+    await page.getByRole('textbox',{name:'需求描述',exact:true}).fill('合成 CSV 來源驗收，保留全部資料，只檢查來源與版本，不執行 ETL。');
     const bytes = Buffer.from('customer_id,amount\n001,12.50\n002,20.00\n');
     const uploadResponse = page.waitForResponse(r=>r.url().endsWith('/api/task-sources/upload') && r.request().method()==='POST');
-    await page.locator('input[type="file"]').setInputFiles({name:'source-proof.csv',mimeType:'text/csv',buffer:bytes});
+    await page.locator('input[type="file"]:visible').setInputFiles({name:'source-proof.csv',mimeType:'text/csv',buffer:bytes});
     const uploaded = await uploadResponse;
     expect(uploaded.status()).toBe(200);
     const metadata = await uploaded.json();
@@ -30,15 +31,20 @@ test('實際網站上傳 → 需求補正 → 共用儲存 Worker → PostgreSQL
     const submitted = created.request().postDataJSON();
     expect(submitted.source_config.sources[0].size).toBe(bytes.length);
     expect(submitted.source_config.sources[0].upload_id).toBe(metadata.upload_id);
+    expect(submitted.source_config.sources[0]).not.toHaveProperty('excel_selection_v1');
+    expect(submitted.source_config.sources[0]).not.toHaveProperty('json_profile_binding_v1');
     taskId = (await created.json()).id;
-    await page.getByRole('tab',{name:'需求與規格',exact:true}).click();
+    await page.getByRole('tab',{name:/1 · 需求與資料規格/}).click();
     const panel = page.getByRole('region',{name:'執行準備版本',exact:true});
     await panel.getByRole('button',{name:'建立準備版本',exact:true}).click();
     await panel.getByLabel('我已核對本次需求及設定版本').check();
     await panel.getByRole('button',{name:'確認此版輸入',exact:true}).click();
     const first = (await (await request.get(`/api/tasks/${taskId}/runs`)).json()).runs[0];
+    expect(isolatedControlRun(first.run_id).status).toBe('NEEDS_INPUT');
     await expect.poll(async()=> (await (await request.get(`/api/tasks/${taskId}/runs/${first.run_id}`)).json()).outcome_code,{timeout:20000}).toBe('REQUIREMENT_NEEDS_INPUT');
-    await panel.getByRole('button',{name:'重新載入版本'}).click();
+    await page.getByRole('button',{name:'重新核對狀態',exact:true}).click();
+    const completed=page.locator('#stage-panel-requirements > details.wb-stage-details');
+    if(await completed.count()&&await completed.getAttribute('open')===null)await completed.locator(':scope > summary').click();
     await panel.getByRole('button',{name:'補正需求並建立新版',exact:true}).click();
     const form = panel.getByRole('form',{name:'需求補正'});
     await form.getByLabel('目標 Schema').fill('ai_sample');
@@ -50,12 +56,15 @@ test('實際網站上傳 → 需求補正 → 共用儲存 Worker → PostgreSQL
     await form.getByRole('combobox',{name:'CSV 分隔符號',exact:true}).selectOption(',');
     await form.getByRole('combobox',{name:'CSV 標題列',exact:true}).selectOption('true');
     await form.getByRole('combobox',{name:'CSV 額外欄位',exact:true}).selectOption('REJECT');
+    await form.getByRole('button',{name:'預覽修訂差異'}).click();
+    await form.getByLabel('已核對差異，同意建立待需求確認的新版').check();
     await form.getByRole('button',{name:'保存補正並建立新版'}).click();
     await panel.getByLabel('我已核對本次需求及設定版本').check();
     await panel.getByRole('button',{name:'確認此版輸入',exact:true}).click();
     const child = (await (await request.get(`/api/tasks/${taskId}/runs`)).json()).runs[0];
     expect(child.parent_run_id).toBe(first.run_id);
     const url = `/api/tasks/${taskId}/runs/${child.run_id}`;
+    expect(isolatedControlRun(child.run_id).status).toBe('CHECKED');
     await expect.poll(async()=> (await (await request.get(url)).json()).outcome_code,{timeout:20000}).toBe('PIPELINE_NOT_READY');
     const detail = await (await request.get(url)).json();
     const evidence = detail.gate_result.source_evidence[0];
@@ -66,7 +75,9 @@ test('實際網站上傳 → 需求補正 → 共用儲存 Worker → PostgreSQL
     expect(evidence.csv.records_checked).toBe(2);
     expect(detail.write_started).toBe(false);
     expect((await (await request.get(`${url}/sa-invocation`)).json()).invocation).toBeNull();
-    await panel.getByRole('button',{name:'重新載入版本'}).click();
+    await page.getByRole('button',{name:'重新核對狀態',exact:true}).click();
+    const completedAgain=page.locator('#stage-panel-requirements > details.wb-stage-details');
+    if(await completedAgain.count()&&await completedAgain.getAttribute('open')===null)await completedAgain.locator(':scope > summary').click();
     await expect(panel.getByRole('region',{name:'初步需求檢查結果'})).toBeVisible();
     const sourcePanel = panel.getByRole('region',{name:'來源檔案驗證證據'});
     await expect(sourcePanel).toContainText('已核對檔案大小：39 bytes');
@@ -82,11 +93,13 @@ test('實際網站上傳 → 需求補正 → 共用儲存 Worker → PostgreSQL
     const newBytes = Buffer.from('customer_id,amount\n003,99.00\n');
     await replacementPanel.getByLabel('新 CSV 檔案').setInputFiles({name:'replacement.csv',mimeType:'text/csv',buffer:newBytes});
     await expect(replacementPanel).toContainText('replacement.csv');
-    await expect(replacementForm.getByRole('button',{name:'保存補正並建立新版'})).toBeDisabled();
+    await expect(replacementForm.getByRole('button',{name:'預覽修訂差異'})).toBeDisabled();
     await replacementPanel.getByRole('button',{name:'取消換檔，保留原來源'}).click();
-    await expect(replacementForm.getByRole('button',{name:'保存補正並建立新版'})).toBeEnabled();
+    await expect(replacementForm.getByRole('button',{name:'預覽修訂差異'})).toBeEnabled();
     await replacementPanel.getByLabel('新 CSV 檔案').setInputFiles({name:'replacement.csv',mimeType:'text/csv',buffer:newBytes});
     await replacementPanel.getByLabel('我已核對新檔案與欄位，確認此修訂改用新 CSV').check();
+    await replacementForm.getByRole('button',{name:'預覽修訂差異'}).click();
+    await replacementForm.getByLabel('已核對差異，同意建立待需求確認的新版').check();
     const revisionResponse=page.waitForResponse(r=>r.url().endsWith(`/api/tasks/${taskId}/runs/${child.run_id}/revisions`)&&r.request().method()==='POST');
     await replacementForm.getByRole('button',{name:'保存補正並建立新版'}).click();
     const revisionSaved=await revisionResponse;
@@ -100,6 +113,7 @@ test('實際網站上傳 → 需求補正 → 共用儲存 Worker → PostgreSQL
     expect((await (await request.get(replacementUrl)).json()).approval).toBeNull();
     await panel.getByLabel('我已核對本次需求及設定版本').check();
     await panel.getByRole('button',{name:'確認此版輸入',exact:true}).click();
+    expect(isolatedControlRun(replaced.run_id).status).toBe('CHECKED');
     await expect.poll(async()=> (await (await request.get(replacementUrl)).json()).outcome_code,{timeout:20000}).toBe('PIPELINE_NOT_READY');
     const replacementDetail = await (await request.get(replacementUrl)).json();
     expect(replacementDetail.gate_result.source_evidence[0].content_checksum).toBe(createHash('sha256').update(newBytes).digest('hex'));

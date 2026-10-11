@@ -33,8 +33,14 @@ def replace_csv_source(config, replacement):
                'encoding', 'delimiter', 'quote', 'header', 'header_row',
                'worksheet', 'worksheets', 'expires_at', 'profiled',
                'file_pattern', 'parser_format', 'sample_rows', 'source_type'}
-    if (set(sources[0]) - allowed
-            or set(config) - allowed - {'sources', 'requirement_supplement', 'csv_input_contract_v1'}):
+    # Earlier web forms saved these unrelated selection keys as null on CSV.
+    # Only those exact empty placeholders are compatible; populated foreign
+    # contracts and all unknown metadata remain rejected.
+    def metadata_keys(value):
+        return {key for key, item in value.items()
+                if not (key in {'excel_selection_v1', 'json_profile_binding_v1'} and item is None)}
+    if (metadata_keys(sources[0]) - allowed
+            or metadata_keys(config) - allowed - {'sources', 'requirement_supplement', 'csv_input_contract_v1'}):
         raise ValueError('CSV_REPLACEMENT_UNSUPPORTED_METADATA')
     if len({field.name for field in parsed.fields}) != len(parsed.fields):
         raise ValueError('DUPLICATE_SOURCE_FIELDS')

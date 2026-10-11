@@ -6,13 +6,17 @@ from app.control_worker import run_once
 
 
 @pytest.mark.parametrize('tamper', [False, True])
-def test_replacement_transaction_and_idempotency(context, tmp_path, monkeypatch, tamper):
+@pytest.mark.parametrize('empty_foreign', [False, True])
+def test_replacement_transaction_and_idempotency(context, tmp_path, monkeypatch, tamper, empty_foreign):
     queue, task_id = context
     monkeypatch.setattr(task_uploads, 'UPLOAD_ROOT', tmp_path)
     old = task_uploads.save_and_profile('old.csv', b'id\n1\n')
     new = task_uploads.save_and_profile('new.csv', b'id\n2\n')
     config = {'sources':[{**old, 'type':'CSV', 'has_actual_data':True}],
               'csv_input_contract_v1':{'version':1,'encoding':'UTF-8','delimiter':',','header':True,'extra_columns':'REJECT'}}
+    if empty_foreign:
+        config.update(excel_selection_v1=None,json_profile_binding_v1=None)
+        config['sources'][0].update(excel_selection_v1=None,json_profile_binding_v1=None)
     with queue.conn() as conn:
         conn.execute('UPDATE platform.task SET source_config=%s WHERE task_id=%s', (Jsonb(config),task_id))
     parent = queue.enqueue(task_id, 'replacement-parent')

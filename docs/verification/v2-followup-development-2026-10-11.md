@@ -81,3 +81,16 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - 第三段仍partial：新的CSV／Excel／Join真實七階段、其他opt-in舊入口與原正式Release只讀回歸未在本批執行。5197維持原source，app commits只在本機，未推送。
 
 - 第三段第一批最終預設瀏覽器102PASS/39skip/0FAIL（2.8分鐘）；新增草稿測試回放dfa6a00旧OracleHistory必FAIL（清空成0筆），修正後PASS。新增artifact-root前置後規格live再PASS15.6秒，TASK-20261011-0096 / Run143b9570-6988-4f82-82ea-99b9ebaf7e30，全部合成case finally取消且設定還原。Build PASS。
+
+## 第三段第二批：CSV 換檔與既有正式案例唯讀回歸
+
+- upload-live 移用可見且唯一的 Task 表單、七階段頁面、共用狀態刷新與修訂差異確認；CONTROL helper 先驗證 execution_enabled=false，再只消費測試 Project 唯一排隊 Run，沒有消費其他案例。
+- 實跑揭露 CSV 建立資料帶入 null 的 excel_selection_v1 / json_profile_binding_v1，換檔 whitelist 誤拒絕。前端只去除這兩項 null，後端兼容已保存 null；非 null 外來契約與未知 metadata 仍拒絕，沒有放寬任意來源支援。新增六項拒絕測試及兩層 null 整合 fixture；相關 12 passed。
+- 專用隔離 API 增加 runtime-temp 上傳 named volume，原 source mount 仍唯讀；只重新建立該測試 API，保留停止容器及原 artifact volume。未動 5197/5183。
+- 最終 upload-live 1 passed（9.7 秒）：TASK-20261011-0100；需求修正版 06b39a5f-3736-4f85-8430-74e8cf3064ef；換檔版 baad490d-b7e0-4866-b505-47b077d450a2。舊檔、輸入及核准保持，換檔版未沿用核准；write_started=false。finally 取消自己 Run、還原設定。證據 runtime-temp/v2-followup-upload-live-final。
+- 先前失敗包括舊 hidden form locator、舊修訂提交路徑及上述真正的 CSV metadata 422；修正後保留原業務斷言重新實跑，不能將初次失敗記為通過。
+- 建立來源文案與現有能力一致：CSV、Excel、雙 CSV Join 有受控真實案例；JSON／資料表與其他來源仍明示未完整驗收，Task 建立不代表該版本有執行資格。
+- 修復 native-acceptance-delivery 的舊狀態文字與下載入口，完整保留七階段、版本、390/768/1440px、鍵盤、SDM 歷史下載及 ZIP byte/SHA 斷言。使用目前前端 source（Vite 5200）連至原 5197 API；不是部署目前後端。
+- 正式三案唯讀最終 10 passed（42 秒）：9 個案例／寬度組合加 opt-in proof。路由攔截非 GET/HEAD/OPTIONS，before/after Run 與 Release 完整讀回相同，每案 WRITE_STARTED 仍為 1，ZIP 指紋與保存紀錄相同；零瀏覽器寫入。證據 runtime-temp/v2-followup-native-readonly-final。這是既有真實案例回歸，不能替代本輪新三案七階段執行驗收。
+- 本批完整後端 2132 passed / 139 skipped / 0 failed（60.99 秒），frontend build PASS；完整預設瀏覽器 102 passed / 39 skipped / 0 failed（2.9 分鐘），輸出 runtime-temp/v2-followup-upload-default-browser。skip 仍不算 PASS。
+- 尚待：Developer／QA-Hop／Copilot／失敗歷史等 opt-in 舊入口逐項修訂、適用異常分支與新的三案真實七階段。5197 API/web 未部署本批，5183 未變，沒有模型／Hop／Vertica 寫入／QA／正式交付建立。原 Join 未提交修改保持原 SHA256。

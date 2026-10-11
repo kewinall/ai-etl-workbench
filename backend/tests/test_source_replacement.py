@@ -29,3 +29,16 @@ def test_replacement_preserves_old_file_and_rejects_changed_new_file(tmp_path, m
 def test_no_replacement_preserves_all_existing_metadata():
     source = {'sources':[{'type':'CSV','password':'private'}], 'custom':'preserved'}
     assert replace_csv_source(source, None) == source
+
+
+@pytest.mark.parametrize('key', ['excel_selection_v1', 'json_profile_binding_v1'])
+@pytest.mark.parametrize('value', [{}, {'confirmed': True}, 'untrusted'])
+def test_populated_foreign_contract_remains_rejected(tmp_path, monkeypatch, key, value):
+    monkeypatch.setattr(task_uploads, 'UPLOAD_ROOT', tmp_path)
+    uploaded = task_uploads.save_and_profile('new.csv', b'id\n1\n')
+    replacement = {key:uploaded[key] for key in ('upload_id','checksum','size','original_name','fields')}
+    for config in ({'sources':[{'type':'CSV',key:value}]}, {'sources':[{'type':'CSV'}],key:value}):
+        before = deepcopy(config)
+        with pytest.raises(ValueError,match='CSV_REPLACEMENT_UNSUPPORTED_METADATA'):
+            replace_csv_source(config,replacement)
+        assert config == before

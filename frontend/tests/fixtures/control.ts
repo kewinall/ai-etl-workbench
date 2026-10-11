@@ -37,3 +37,16 @@ offer=read(q,task_id,run_id)
 assert offer['status']=='AWAITING_CONFIRMATION',offer
 print(json.dumps({'status':approve(q,task_id,run_id,offer['binding']['checksum'],confirmed=True)['developer_authorized'] and 'APPROVED_CURRENT'}))`;
 export const syntheticSaApproval = (runId: string) => JSON.parse(controlOnce(SYNTHETIC_SA_APPROVAL, runId).trim().split('\n').pop()!);
+
+
+// Consume only the sole queued Run in its newly created isolated project.
+export const isolatedControlRun = (runId:string) => JSON.parse(controlOnce(`import os,sys,json
+from app.run_queue import RunQueue
+from app.control_worker import run_once
+assert os.environ['WORKBENCH_EXECUTION_ENABLED']=='false'
+q=RunQueue(os.environ['DATABASE_URL'])
+with q.conn() as c:
+ project=c.execute('SELECT t.project_id FROM platform.task_run r JOIN platform.task t USING(task_id) WHERE r.run_id=%s',(sys.argv[1],)).fetchone()['project_id']
+ pending=c.execute("SELECT r.run_id FROM platform.task_run r JOIN platform.task t USING(task_id) WHERE t.project_id=%s AND r.state='QUEUED'",(project,)).fetchall()
+ assert [str(row['run_id']) for row in pending]==[sys.argv[1]],'Refuse to consume another Run'
+print(json.dumps(run_once(q,project_id=str(project))))`,runId).trim().split('\n').pop()!);
