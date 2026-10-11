@@ -2,6 +2,8 @@
 
 ## 最新結論
 
+> 第二輪 Codex 核查補正見文末「第二輪」；以下為第一輪紀錄（部分說法已在第二輪更正）。
+
 三段工程修改已完成，並經使用者授權以 `--no-deps` 只重建 5197 的 api／web（`84c0fc5`）；**未推送 GitHub**。
 5197 GET-only 讀回：專案摘要 `可交付 3`、三案七階段 `can_operate` 全 false、只剩 `release_download`；
 21 個階段頁無可用寫入按鈕或勾選框；部署前後 ZIP SHA-256、`updated_at`、WRITE_STARTED 次數均不變。
@@ -59,11 +61,11 @@ REPLACE／UPSERT 在補正表單中不可選為新版執行方式，只保留既
 | 目前使用 | `main.tsx` → `StageWorkspace.TaskWorkspace`、`ProjectWorkspace` 等 81 個靜態可達模組 | 保留 |
 | 相容導向 | `#/dashboard`、`#/usage`、`#/models`、`#/database`；舊 Task tab `overview/collaboration/artifacts/execution`；`/projects/{id}/settings`／`evaluation` | 保留 |
 | 歷史證據 | `LegacyTaskRecords`（舊版節點／Log／Hop／SQL 下載）、所有後端相容 API、Task／Run／模型紀錄／ZIP／核准 | 保留，不刪資料 |
-| 無引用 | `workbench/TaskWorkspace.tsx`、`ExecutionReadiness.tsx`、`DeliveryStatus.tsx`（入口不可達、無測試或動態載入） | 已移除；專屬 CSS `.wb-task-heading`、`.wb-task-tabs`、`.wb-timeline` 一併移除 |
+| 無引用 | `workbench/TaskWorkspace.tsx`、`ExecutionReadiness.tsx`、`DeliveryStatus.tsx`（入口不可達、無測試或動態載入） | 已移除；專屬 CSS `.wb-task-heading`、`.wb-task-tabs`、`.wb-timeline` 一併移除。**第二輪更正**：`ExecutionReadiness`（Pilot 執行準備）與可讀的版本協作時間軸只存在於已失效的 TaskWorkspace，移除後功能實際消失；已在七階段工作區恢復（見下方第二輪） |
 | 無引用 | `main.tsx` 53 個不可達宣告（舊 Dashboard、Analyzer、多代 Projects／Settings／Wizard／TaskDetail 等）與 10 條 runtime 覆寫（7 個名稱） | 已移除；`Usage`→`LayeredModelUsage`、`SystemSettings`→`CompleteFieldSettings` 改為明確引用 |
 
 `main.tsx` 由 194,950 bytes 降為約 49.6 KB；不再有 `@ts-ignore` 覆寫（原本 `SystemSettings=OperationalSystemSettings` 一類覆寫會被 `@ts-ignore` 隱藏型別錯誤）。
-移除元件呼叫的 API 均仍由現行元件使用，後端相容 API 未變更。
+~~移除元件呼叫的 API 均仍由現行元件使用~~ **更正（第二輪）**：此說法不正確。`GET /api/tasks/{id}/execution-settings`（Pilot 執行準備）與可讀協作時間軸在移除後沒有任何現行畫面使用，等於功能遺失；已恢復。後端相容 API 未變更。
 
 ## 測試與證據
 
@@ -86,4 +88,89 @@ REPLACE／UPSERT 在補正表單中不可選為新版執行方式，只保留既
 
 ## 回復方式
 
-依序 `git revert` 三個 commit（3→2→1）。API 只新增欄位，舊前端仍可讀；不涉及 migration 或資料修改。
+見文末「第二輪：回復步驟」（含確切 commit、viewport 修正與 5197 部署設定）。
+
+---
+
+## 第二輪：Codex 獨立核查補正（2026-10-11）
+
+起點：本機 `146e963`（即 5197 目前部署內容）。本輪 **未部署 5197、未推送 GitHub、未改 5183、未重跑已交付目標、未替換固定答案**。
+
+| Commit | 內容 |
+|---|---|
+| `188dfe7` | 資格缺漏時停用：受管理工作區缺 `operation_qualifications`、缺單項、`enabled` 非布林 `true`、或回應 Run 不一致時，寫入停用並顯示「操作資格尚未確認」；舊元件在非受管理環境保留相容（無寬鬆 fallback 進入正常工作區）。後端補 `sa_cancel`、`sdm_candidate`、`preparation_close` 與 task 層級 `prepare_run`／`input_cancel` |
+| `2ce20c9` | 真正的管理入口：主導覽只留「專案工作區」「操作指南」與可展開「管理」（專案設定、Pilot 評估、Pilot 成果、平台設定中心）；`aria-expanded`、Enter／Space、Esc 收合並回焦點；舊網址 `#/projects/{id}/settings`、`/evaluation`、`#/system`、`#/pilot`、`#/usage` 仍可開啟並自動展開管理 |
+| `b875ecf` | 退回／失效／已取消最新版的狀態：Gate 退回（`needs_input`）不再把第 1 階段標「已完成」；`stale_latest`、`cancelled_latest` 回到需求階段並給可執行下一步；已交付阻擋原因不再指向不存在的修正版操作 |
+| `c11832a` | 恢復 Pilot 執行準備與可讀版本協作時間軸；唯讀 POST（compile-preview、validate、naming suggest）不觸發整頁重新讀取；版本操作成功訊息在切換版本後保留；已交付版本顯示「目前不能直接從已交付版本建立修正版」；操作指南同步 |
+| `9502e67` | 22 項失敗測試逐項處理（下表） |
+| `5745ba0` | 已失效的退回版本：有效狀態改為「內容已變更，此版不可沿用」，與「取消此版並建立新準備版本」一致，不再邀請就地補正 |
+
+### 22 項失敗測試分類與處理
+
+分類：**產品缺陷**＝畫面行為錯誤，已修正後重驗；**舊測試**＝走已移除入口（舊分頁、各區「重新載入版本」、未收合區塊）或合成資料不完整，改走目前階段與收合入口，保留原業務斷言；**環境前置**＝需改寫平台設定或 CONTROL Worker，改為明確 opt-in 並在測試內檢查前置。沒有以刪除測試、弱化斷言或無理由 skip 消除失敗。
+
+| # | 測試 | 失敗原因 | 分類 | 處理結果 |
+|---|---|---|---|---|
+| 1 | ai-profile-drafts | 合成 profile 缺 `updated_at`／版本，產品正確拒絕保存 | 舊測試（fixture） | fixture 補版本欄位，新增 `X-Settings-Version` 標頭斷言；通過 |
+| 2 | excel-contract-live | (a) 改寫平台設定；(b) Gate 退回後第 1 階段被標「已完成」且需求區收合；(c) 補正須先預覽差異（b5f48fd 既有流程） | 產品缺陷＋環境前置＋舊測試 | `b875ecf` 修狀態；`WORKBENCH_ALLOW_SYNTHETIC_UI=1` opt-in；補「預覽修訂差異→勾選確認」步驟，原等待鎖定與回讀斷言保留；通過 |
+| 3 | excel-selection-live | 走舊 Task 頁與未收合的設定區 | 舊測試 | 改走 `/requirements` 與「Task 保存設定」收合區；通過 |
+| 4 | json-confirmation-live | 同 #2；另外規格建立在七階段 UI 要求 SA 核准，而本隔離環境不呼叫模型 | 產品缺陷＋環境前置＋舊測試 | 同 #2；SA 證據改在需求審查階段「需求審查技術證據」；設計階段僅以路由覆寫 SA 前置（`can_operate`、`specification_create`），JSON 綁定／規格核准／SDM／編譯預覽仍打真實隔離 API；通過 |
+| 5 | oracle-history | 舊分頁與重試按鈕；390px 需先展開階段清單 | 舊測試 | 改走執行確認／執行與結果階段；通過 |
+| 6 | project-history-filter | 篩選改用 `/summary` 工作流程分類；strict-mode 重複文字 | 舊測試 | fixture 提供 summary tasks，篩選「需修正」；通過 |
+| 7 | project-workspace（CRUD） | 專案分頁移除、切換器收合 | 舊測試 | 改走工作清單與收合切換器；通過 |
+| 8 | project-workspace（歷史 Task） | 舊版節點檢視入口改為「舊版紀錄」 | 舊測試 | 改斷言 `aria-pressed` 與「舊版節點詳情」區；節點內容斷言保留；通過 |
+| 9–13 | qa-source-formats ×5 | 以連接埠判斷環境，在本地隔離 API 誤判 | 舊測試（前置判斷） | 改以 `/api/ready.execution_enabled=false` 為前置，走品質審查階段；通過 |
+| 14 | readiness-response | Pilot 執行準備面板只在已移除的 TaskWorkspace | 產品缺陷 | `c11832a` 恢復面板；測試未修改；通過 |
+| 15 | run-detail-failure | 版本選擇改為標頭共用選單 | 舊測試 | 改用「共用 Run 版本」與 alert 斷言；通過 |
+| 16 | run-versions | 舊版本清單／各區刷新；成功訊息切換版本後消失；已取消／失效最新版無路可走 | 產品缺陷＋舊測試 | `c11832a`／`b875ecf` 修正；改用單一「重新核對狀態」與時間軸；CONTROL 分支 opt-in（`WORKBENCH_TEST_CONTROL_WORKER=1`）亦已通過 |
+| 17 | source-evidence | 舊入口與刷新按鈕 | 舊測試 | `routeWorkflow` fixture＋「重新核對狀態」；通過 |
+| 18–20 | specification-history V1／V2／V4 | 編譯預覽被唯讀 POST 觸發的整頁刷新清除；舊入口 | 產品缺陷＋舊測試 | `c11832a` 唯讀 POST 豁免；改走設計階段；通過 |
+| 21 | tool-load-failure | 合成回讀缺版本欄位 | 舊測試（fixture） | fixture 補版本並加標頭斷言；通過 |
+| 22 | transformation-intent | 需 CONTROL Worker 才會進入 NEEDS_REVIEW；舊「重新載入版本」；補正須先預覽差異 | 環境前置＋舊測試 | opt-in（`WORKBENCH_TEST_CONTROL_WORKER=1`＋`WORKBENCH_ALLOW_SYNTHETIC_UI=1`）；改用「重新核對狀態」與差異預覽；通過 |
+
+另外：`stage-guidance` 2 項在恢復 Pilot 執行準備後因合成 API 未回應 `/execution-settings` 出現第二個 alert（strict mode）；已在 fixture 補完整回應，未放寬斷言。
+
+### 本輪測試結果（雲端隔離環境；非 5197）
+
+| 類型 | 環境 | 結果 |
+|---|---|---|
+| 後端單元＋隔離 PostgreSQL | `pytest backend/tests`（compose.p0-tests 等效變數） | 2052 passed／129 skipped（第一輪 2048） |
+| Playwright 預設（合成 API＋隔離本地 API，無 opt-in） | `npx playwright test` | **89 passed／0 failed／39 skipped**（第一輪 63／22／36）。新增 3 個 skip 為 #2、#4、#22 的明確 opt-in |
+| Playwright opt-in：CONTROL Worker | 本地隔離 API＋`python -m app.control_worker`（`WORKBENCH_CONTROL_WORKER_ENABLED=true`、execution／模型派發全關） | transformation-intent、run-versions（含 CONTROL 分支）2 passed |
+| Playwright opt-in：控制單次（不常駐 Worker） | `WORKBENCH_CONTROL_PYTHON` 指向本地 venv | excel-contract-live、json-confirmation-live 2 passed（連續 3 次） |
+| 截圖 | 390／768／1440 | 管理群組展開、Gate 退回後需求頁（私人證據，未入 repo） |
+
+類型界線：全部是 **合成 API 或隔離本地 API／PostgreSQL**；**沒有** 真實模型呼叫、Hop／Vertica ETL 或 Release 寫入；不等於 5197 Runtime 驗收。
+
+opt-in 執行前置：
+- 只在隔離 DB 執行；不可對 5197／5183 使用。
+- excel／json live 的控制腳本拒絕領取其他 Run：若 DB 已有其他「已核准 QUEUED」Run 會直接失敗（實測：預設全套跑完後殘留 1 筆，先跑 CONTROL Worker 組消化後才通過）。
+- `claim()` 使用 `SKIP LOCKED`；頁面讀取規格歷史時 `GET .../specifications` 會短暫鎖 Task 列，控制腳本因此最多重試 20 次（實測重試 1 次）。這是既有後端行為，非本輪修改。
+
+### 已交付版本限制（維持，不新增能力）
+
+已交付版本只能查看與下載。目前 **不能** 從已交付版本建立修正版或新的準備版本；畫面固定顯示此限制，不提供不存在的操作指引。是否開放需另行決策。
+
+### 未完成與已知限制
+
+1. 本輪修正 **尚未部署 5197**（5197 仍為 `146e963` 內容）；部署需使用者另行授權，沿用 `runtime-temp/claude-2026-10-11/deploy-5197.cmd`。
+2. 操作資格只是前端停用與後端唯讀彙整；後端寫入 API 未依新資格拒絕。例：規格建立 API 不要求 SA 核准（json live 測試即利用此點），已交付 Run 的寫入也未實測「直接呼叫 API」是否被拒。
+3. 退回／補證／修正版／失聯結案的新分支僅有合成或隔離測試，尚未在 5197 實測。
+4. 39 個 skip 中其餘 36 個為既有 opt-in（真實案例、真實 Worker、Copilot、保留證據）或「Requires existing navigation」類舊 skip，本輪未處理。
+5. JSON／資料表完整執行、REPLACE／UPSERT 執行、維運復原、完整列印報告、人工成效基準仍為獨立里程碑。
+
+### 第二輪：回復步驟
+
+程式回復（在 `D:\ChatGPT\ai_agents_v2`，Windows 端加 `-c core.autocrlf=true`）：
+
+| 目標 | 指令 |
+|---|---|
+| 回到 5197 目前部署內容（撤銷第二輪） | `git revert --no-edit HEAD 5745ba0 9502e67 c11832a b875ecf 2ce20c9 188dfe7`（新到舊；`HEAD` 指本文件所在的 `docs: record Codex review corrections` commit，若之後另有提交請改用該 SHA）；結果等同 `146e963` |
+| 撤銷全部 UI 收斂但保留手機 viewport 修正 | 再依序 revert `146e963 99fa153 1336da7 1adf3dd`，**跳過 `84c0fc5`**（index.html `meta viewport`；撤銷會讓手機退回 980px 版面） |
+| 完全回到起點 | 回到 `ad61c9f` 內容（含撤銷 `84c0fc5`） |
+
+不涉及 migration 或資料修改；API 只新增欄位，舊前端仍可讀。
+
+部署回復（僅在已部署新版且需回復時；需使用者授權）：checkout 目標內容後重跑
+`docker compose -f deploy/compose.stage-guidance.yml -f deploy/compose.ui-acceptance.yml up -d --no-deps --build api web`
+（`UI_ACCEPT_PROJECT_ID=346e9419-4b0e-4ba7-ad29-1756ca7da833`，即 `deploy-5197.cmd`）。只重建 api／web；control、postgres、Hop／可攜驗證服務、volumes、5183 不動；完成後以 GET-only 讀回三案 ZIP SHA-256、`updated_at`、WRITE_STARTED 次數確認不變。
