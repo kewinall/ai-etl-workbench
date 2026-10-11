@@ -230,7 +230,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun,notice,onNotice}:
           <div data-field="transformation"><TransformationEditor value={transformation} sourceLabels={detail.input_summary.source_labels} sources={(detail.input_summary.transformation_source_refs || []).filter((ref: string) => !ref.startsWith('$source_order.'))} generatedOutputs={sourceOrder ? [ordinalRef] : []} disabled={busy} onChange={setTransformation}/></div>
           {detail.input_summary.csv_contract_editable && <CsvReplacement disabled={busy} onChange={setReplacement} onPending={setReplacementPending}/>}
           <p>保存會保留舊版本，並建立待確認的新版本，不執行 ETL。僅單一且沒有實體／樣本資料的來源可補正欄位。</p>
-          {detail.input_summary.csv_contract_editable && <fieldset><legend>CSV 輸入契約補正</legend>
+          {detail.input_summary.csv_contract_editable && <fieldset data-field="source"><legend>CSV 輸入契約補正</legend>
             <p>指定編碼、分隔與欄位政策；不修改原始檔案，不傳送實際路徑給模型。額外欄位「忽略」表示只使用已定義欄位，「拒收」表示出現未定義欄位即失敗。</p>
             {!csvContract ? <button type="button" onClick={() => {
               const old = detail.input_summary.csv_input_contract_v1;
@@ -243,7 +243,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun,notice,onNotice}:
               <button type="button" onClick={() => setCsvContract(null)}>不變更 CSV 契約</button>
             </>}
           </fieldset>}
-          {detail.input_summary.source_fields_editable ? <fieldset><legend>合成來源欄位</legend>
+          {detail.input_summary.source_fields_editable ? <fieldset data-field="source"><legend>合成來源欄位</legend>
             {!sourceFields && <button type="button" onClick={() => setSourceFields(detail.input_summary.source_fields.map((field: any) => ({name: field.name || '', type: field.type || ''})))}>編輯來源欄位</button>}
             {sourceFields && <>
               {sourceFields.map((field, index) => <div key={index} className="run-actions">

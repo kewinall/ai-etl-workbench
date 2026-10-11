@@ -10,11 +10,15 @@ function run(id=current){return {run_id:id,task_id:taskId,created_at:'2026-10-10
 function status(id=current,stage='requirements'){const i=keys.indexOf(stage);return {task_id:taskId,run_id:id,current_stage:stage,updated_at:'2026-10-10T00:00:00Z',historical:id===old,matches_current:true,category:'待你確認',owner:'你',completed:[],waiting:false,issues:[],stages:keys.map((key,n)=>({key,number:n+1,label:labels[n],status:n===i?'current':'blocked',can_operate:id!==old&&n<=i,blocked_reason:n>i?'先完成前一階段的必要核准與證據。':null})),next_action:{label:'確認需求版本',stage,enabled:id!==old},source_scope_note:'完整執行尚未驗收',operation_qualifications:quals(id!==old)};}
 // Synthetic eligibility: every operation allowed on the current version; real gating is tested in workflow-consistency.
 function quals(enabled:boolean){return Object.fromEntries(OPS.map(op=>[op,{type:'SAVE',enabled,blocked_reason:enabled?null:'歷史版本只讀'}]))}
-async function fixture(page:Page,options:{stage?:string;waiting?:boolean;issues?:any[];unknown?:boolean;actionLabel?:string;qaRevision?:boolean;join?:boolean;mismatch?:boolean;readOnlySource?:boolean;cancelled?:boolean;emptyLegacy?:boolean;legacyTask?:any}={}) {
+async function fixture(page:Page,options:{stage?:string;waiting?:boolean;issues?:any[];unknown?:boolean;actionLabel?:string;qaRevision?:boolean;join?:boolean;sourceEditor?:'csv'|'fields'|'excel';transformation?:boolean;mismatch?:boolean;readOnlySource?:boolean;cancelled?:boolean;emptyLegacy?:boolean;legacyTask?:any}={}) {
  let stale=false,reads=0,posts=0;const records=[run(),run(old)];
  if(options.mismatch)records[0].matches_current=false;
  if(options.cancelled)records.forEach(r=>r.state='CANCELLED');
  if(options.join)Object.assign(records[0].input_summary,{sources:[{label:'左表',fields:[{name:'id',type:'BIGINT'}]},{label:'右表',fields:[{name:'id',type:'BIGINT'}]}]});
+ if(options.sourceEditor==='csv')Object.assign(records[0].input_summary,{csv_contract_editable:true});
+ if(options.sourceEditor==='fields')Object.assign(records[0].input_summary,{source_fields_editable:true,source_fields:[{name:'amount',type:'NUMERIC'}]});
+ if(options.sourceEditor==='excel')Object.assign(records[0].input_summary,{excel_selection:{worksheet:'明細',header_row:2}});
+ if(options.transformation)Object.assign(records[0].input_summary,{transformation_source_refs:['source.0.amount']});
  if(options.qaRevision)Object.assign(records[0],{write_started:true,qa_revision:{checksum:'c'.repeat(64)}});
  await page.route('**/api/**',async route=>{
   const path=new URL(route.request().url()).pathname;
@@ -197,6 +201,22 @@ test('QA 退回修正版保留已執行結果並要求新目標；不自動送�
  await expect(page.getByRole('region',{name:'修訂差異預覽'}).getByRole('cell',{name:/^Join 規則/}).first()).toBeVisible();
  await expect(page.getByText('join_contract_v1',{exact:false})).toBeHidden();expect(f.counts().posts).toBe(0);
  });
+
+for(const item of [
+ {path:'csv_input_contract_v1.encoding',options:{sourceEditor:'csv' as const},button:'設定 CSV 輸入契約'},
+ {path:'source_fields_v1.amount.type',options:{sourceEditor:'fields' as const},button:'編輯來源欄位'},
+ {path:'excel_input_contract_v1.blank_rows',options:{sourceEditor:'excel' as const},button:'設定 Excel 讀取契約'},
+ {path:'transformation_contract_v1.filters',options:{transformation:true},button:'新增轉換意圖'},
+ {path:'join_contract_v1.keys',options:{join:true},button:'設定 Join 條件'},
+])test(`來源轉換Join問題定位可操作入口 ${item.button}`,async({page})=>{
+ const f=await fixture(page,{...item.options,issues:[{message:'必要規則未確認',field_path:item.path}]});
+ await page.goto(base+'/review/'+current);
+ await page.getByRole('button',{name:'前往修正',exact:true}).click();
+ await expect(page.getByRole('button',{name:item.button,exact:true})).toBeFocused();
+ await expect(page.getByLabel('補正後需求')).toHaveValue('原始需求，其他內容必須保留');
+ await expect(page.getByLabel('目標 Table',{exact:true})).toHaveValue('original');
+ expect(f.counts().posts).toBe(0);
+});
 
 for (const [path,field] of [['requirements_v1.write_mode','write_mode'],['requirements_v1.date_scope','date_scope'],['requirements_v1.key_columns','key_columns']]) test(`缺漏問題定位實際欄位 ${field}`,async({page})=>{
  const f=await fixture(page,{issues:[{message:'必要欄位缺漏',field_path:path}]});

@@ -111,7 +111,13 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
     const button=document.querySelector<HTMLButtonElement>('[data-revision-start]');
     button?.click();
     let frame=0,tries=0;
-    const focus=()=>{const field=document.querySelector<HTMLElement>(`[data-field="${pendingField}"]`);if(field&&!field.matches(':disabled')){(field.matches('input,select,textarea,button')?field:field.querySelector<HTMLElement>('input:not(:disabled),select:not(:disabled),textarea:not(:disabled),button:not(:disabled)')||field)?.focus();field.scrollIntoView({block:'center'});setPendingField('')}else if(tries++<60)frame=requestAnimationFrame(focus);else setPendingField('')};
+    const focus=()=>{
+      // Several source editors share a group; skip empty or disabled editors.
+      const targets=Array.from(document.querySelectorAll<HTMLElement>(`[data-field="${pendingField}"]`));
+      const control=targets.map(field=>field.matches('input,select,textarea,button')&&!field.matches(':disabled')?field:field.querySelector<HTMLElement>('input:not(:disabled),select:not(:disabled),textarea:not(:disabled),button:not(:disabled)')).find(Boolean);
+      if(control){control.focus();control.scrollIntoView({block:'center'});setPendingField('')}
+      else if(tries++<60)frame=requestAnimationFrame(focus);else setPendingField('');
+    };
     frame=requestAnimationFrame(focus);
     return()=>cancelAnimationFrame(frame);
   },[pendingField,stage,loading,error]);
