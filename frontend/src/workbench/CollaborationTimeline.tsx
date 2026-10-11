@@ -1,36 +1,53 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {request} from './api';
+import {useManagedRefresh, useWorkflowRefresh} from './useWorkflowRefresh';
 
 // Readable, read-only timeline for one Run: human decisions, control events and SA/Developer/QA model records.
-// Restored from the pre-seven-stage Task view; it never calls models or replays ETL.
+// Restored from the pre-seven-stage Task view; it never calls models or replays ETL. Labels describe what the
+// event recorded at that time; they never infer the present service or workflow state from an old event code.
 const time = (value: string) => value ? new Date(value).toLocaleString() : '未記錄';
-const eventLabels: Record<string, string> = {ENQUEUED: '保存準備版本', INPUT_APPROVE: '人工確認輸入', INPUT_REJECT: '人工拒絕輸入', CLAIMED: '控制程式領取', REQUIREMENT_GATE_STARTED: '開始需求檢查', PIPELINE_NOT_READY: '初步檢查完成，後續流程尚未接通', REQUIREMENT_NEEDS_INPUT: '需求缺漏，等待補正', SA_QUEUED: '人工授權 SA 並排隊', SA_DISPATCH_RESERVED: '保存 SA 派發意圖', SA_VALIDATED_NOT_APPROVED: 'SA 結構驗證通過，等待人工核准', OPERATOR_CANCELLED: '人工取消版本'};
+const eventLabels: Record<string, string> = {ENQUEUED: '保存準備版本', INPUT_APPROVE: '人工確認輸入', INPUT_REJECT: '人工拒絕輸入', CLAIMED: '控制程式領取', REQUIREMENT_GATE_STARTED: '開始需求檢查', PIPELINE_NOT_READY: '當時初步需求檢查完成，等待後續審查', REQUIREMENT_NEEDS_INPUT: '需求缺漏，等待補正', SA_QUEUED: '人工授權 SA 並排隊', SA_DISPATCH_RESERVED: '保存 SA 派發意圖', SA_VALIDATED_NOT_APPROVED: 'SA 結構驗證通過，等待人工核准', OPERATOR_CANCELLED: '人工取消版本'};
 
 export function CollaborationTimeline({taskId, runId}: {taskId: string; runId: string}) {
   const selected = runId;
+  const managed = useManagedRefresh();
   const [detail, setDetail] = useState<any>(null);
   const [invocation, setInvocation] = useState<any>(null);
   const [roles, setRoles] = useState<any[]>([]);
   const [error, setError] = useState('');
-  const [refresh, setRefresh] = useState(0);
+  const ticket = useRef(0);
+  const base = `/api/tasks/${taskId}/runs/${selected}`;
+  // Reads the run, SA and Developer/QA records together; only the newest read applies. A background re-read keeps
+  // the shown records until its replacement arrives.
+  const load = async () => {
+    if (!selected) return;
+    const mine = ++ticket.current;
+    try {
+      const [run, sa] = await Promise.all([request(base), request(`${base}/sa-invocation`)]);
+      const nextRoles = await Promise.all(['developer','qa-review'].map(async endpoint => {
+        const role = endpoint === 'developer' ? 'Developer' : 'QA';
+        try {
+          const data = await request(`${base}/${endpoint}`);
+          return {role, records: data.history ?? (data.invocation ? [data.invocation] : [])};
+        } catch (e: any) {return {role, error: e.message, records: []}}
+      }));
+      if (mine !== ticket.current) return;
+      setDetail(run); setInvocation(sa.invocation); setRoles(nextRoles); setError('');
+    } catch (e: any) {
+      if (mine === ticket.current) setError(e.message);
+    }
+  };
   useEffect(() => {
-    let live = true;
     setDetail(null); setInvocation(null); setError(''); setRoles([]);
-    if (selected) Promise.all([request(`/api/tasks/${taskId}/runs/${selected}`), request(`/api/tasks/${taskId}/runs/${selected}/sa-invocation`)])
-      .then(([run, sa]) => {if (live) {setDetail(run); setInvocation(sa.invocation)}}).catch(e => live && setError(e.message));
-    if (selected) Promise.all(['developer','qa-review'].map(async endpoint => {
-      const role = endpoint === 'developer' ? 'Developer' : 'QA';
-      try {
-        const data = await request(`/api/tasks/${taskId}/runs/${selected}/${endpoint}`);
-        return {role, records: data.history ?? (data.invocation ? [data.invocation] : [])};
-      } catch (e: any) {return {role, error: e.message, records: []}}
-    })).then(value => {if (live) setRoles(value)});
-    return () => {live = false};
-  }, [taskId, selected, refresh]);
+    void load();
+    return () => {ticket.current++};
+  }, [taskId, selected]);
+  // Inside the stage workspace the shared「重新核對狀態」refreshes this view; its own button is only a retry.
+  useWorkflowRefresh(base, load);
   return <section className="panel" aria-label="版本協作紀錄">
     <h3>版本協作紀錄</h3><p>分別呈現人工決定、控制程式事件與 SA／Developer／QA 模型紀錄。檢視不會呼叫模型或重跑 ETL；AI 建議不等於人工核准。</p>
-    <button type="button" onClick={() => setRefresh(n => n + 1)}>重新讀取此版本紀錄</button>
-    {error && <p role="alert">無法讀取紀錄：{error}</p>}
+    {(!managed || error) && <button type="button" onClick={() => void load()}>{error ? '重試讀取此版本紀錄' : '重新讀取此版本紀錄'}</button>}
+    {error && <p role="alert">無法讀取紀錄：{error}{detail ? '；下方為上次成功讀取的紀錄。' : ''}</p>}
     {!detail && !error && <p role="status">正在讀取此版本紀錄…</p>}
     {detail && <>
       <p>Run：{detail.run_id} · 輸入 checksum：{detail.input_checksum}</p>
