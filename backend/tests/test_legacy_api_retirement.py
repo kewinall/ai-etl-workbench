@@ -30,3 +30,18 @@ def test_versioned_task_update_preserves_task_and_events(context):
 
 
 from test_run_queue_integration import context
+
+
+def test_naming_cannot_invalidate_written_version(context):
+    from app.repository import PostgresRepository, TaskNamingConflict
+    queue, task_id = context
+    repository = PostgresRepository(queue.url)
+    contract = {'contract_type': 'NamingContractV1', 'columns': [], 'checksum': 'a' * 64}
+    run = queue.enqueue(task_id, 'naming-write-guard')
+    repository.confirm_naming_contract(task_id, contract)
+    before = repository.naming_contract(task_id)
+    with queue.conn() as conn:
+        conn.execute("UPDATE platform.task_run SET state='NEEDS_REVIEW',phase='HOP_EXECUTION',write_started=true,outcome_code='HOP_EXECUTED_QA_REQUIRED' WHERE run_id=%s", (run['run_id'],))
+    with pytest.raises(TaskNamingConflict):
+        repository.confirm_naming_contract(task_id, {**contract, 'checksum': 'b' * 64})
+    assert repository.naming_contract(task_id) == before

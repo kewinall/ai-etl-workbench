@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-from .repository import PostgresRepository, TaskCreationConflict, SettingsConflict, TaskVersionConflict
+from .repository import PostgresRepository, TaskCreationConflict, SettingsConflict, TaskVersionConflict, TaskNamingConflict
 from .project_api import create_project_router
 from .execution_settings import resolve_settings
 from .ai_profile_api import create_ai_profile_router
@@ -448,7 +448,8 @@ def confirm_naming_contract(task_id:str,data:NamingContractInput):
  names=[str(x.get('english_name') or '') for x in columns]
  if len(names)!=len(set(names)) or any(not re.fullmatch(r'[a-z_][a-z0-9_]*',x) for x in names):raise HTTPException(422,'英文欄位必須為唯一 snake_case identifier')
  contract={'contract_type':'NamingContractV1','status':'CONFIRMED','columns':columns,'checksum':__import__('hashlib').sha256(json.dumps(columns,ensure_ascii=False,sort_keys=True).encode()).hexdigest()}
- return repo.confirm_naming_contract(task_id,contract)
+ try:return repo.confirm_naming_contract(task_id,contract)
+ except TaskNamingConflict:raise HTTPException(409,detail={'code':'NAMING_EXECUTED_VERSION_READ_ONLY','message':'目前版本已開始寫入，命名契約只能查閱；請依修正版流程重新確認，不能改寫已執行版本。'}) from None
 @app.post('/api/tasks/{task_id}/sample-source/rebuild')
 def rebuild_sample_source(task_id:str):
  if os.getenv('WORKBENCH_EXECUTION_ENABLED','true').lower()!='true':raise HTTPException(503,detail={'code':'EXECUTION_DISABLED','message':'容器執行整合尚未驗收，範例表重建暫停'})

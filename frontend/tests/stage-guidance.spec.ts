@@ -343,3 +343,13 @@ test('補正表單不提供 REPLACE／UPSERT 作為新版執行方式（合成 A
  await expect(page.getByRole('form',{name:'需求補正'})).toContainText('目前編譯器只執行 APPEND');
  expect(f.counts().posts).toBe(0);
 });
+
+
+test('Hop 準備失敗不可沿用需求階段補正入口（合成 API）',async({page})=>{
+ const f=await fixture(page);
+ await page.route('**/api/tasks/'+taskId+'/runs/'+current,route=>route.fulfill({json:{...run(),phase:'HOP_PREPARATION',outcome_code:'HOP_PREPARATION_INVALID'}}));
+ await page.goto(base+'/requirements/'+current);
+ await expect(page.getByText('執行準備失敗，尚未啟動 Hop',{exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'補正需求並建立新版',exact:true})).toHaveCount(0);
+ expect(f.counts().posts).toBe(0);
+});

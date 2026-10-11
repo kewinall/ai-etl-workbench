@@ -23,3 +23,16 @@
 ## 下一步
 
 依v2-write-api-inventory-2026-10-11.json逐項讀取handler與service，補有效／缺少／失效／跨Run／已交付／重複請求的適用拒絕測試。完成第一段後才進第二段；5197部署仍需沿用有效部署授權。
+
+## 後續守門核查（第二批，仍屬第一段）
+
+- 命名契約保存同樣取得Task鎖，最新Run已write_started即拒絕NAMING_EXECUTED_VERSION_READ_ONLY，避免已執行版本的命名被改寫而使交付綁定失效。新修正版有全新未寫入Run時不受此限制；不以任何歷史Run曾寫入封鎖整個Task。
+- requirement_revision資格及前端表單依實際後端規則限REQUIREMENT_GATE；Hop準備／執行階段不能因gate_result存在就誤顯示可補正。原有失敗結案與QA修正版分支保留。
+- 9個寫入入口×3情境直接HTTP拒絕測試27passed：unreviewed、write_started但缺少後續條件、cross-Task；全部通過請求schema後才拒絕，Task、Run完整讀回及所有platform資料表計數不變。新增命名守門與三階段資格測試；相關合併69passed。
+- 第二批全套後端2096passed／139skipped／0failed／1 dependency warning，53.17秒；frontend build PASS，僅bundle大小提示。
+- Stage-guidance瀏覽器30個合成案例PASS（含新增準備失敗無錯誤補正入口）；原live案例首次因沒有隔離API失敗，專用API僅internal network時無host port mapping，接上獨立browser-only網路後readiness=ready且execution_enabled=false，live獨立重驗1passed（3.4秒）。不掩蓋兩次環境失敗，不宣稱一次31passed或全套瀏覽器通過。
+- 私有測試API ai-etl-retirement-20261011-api綁127.0.0.1:8765，Vite5199；與原5197／5183分開。專用API外部派發全false，沒有模型／Hop Worker。該live只建立合成Task並确认輸入，未呼叫模型或ETL。
+
+## 第一段剩餘
+
+inventory九項只是部分情境通過；有效／失效完整binding、正式交付fixture及合法重複請求尚待補齊。其他入口仍PENDING；不可将2096單元整合測試視為逐API全面驗收。準備失敗已明示不可補正，未新增網站重跑流程。第二／三段尚未開始。

@@ -197,7 +197,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun,notice,onNotice}:
       {detail.input_summary.requirements_v1?.date_scope === 'RANGE' && <p>日期欄位：{detail.input_summary.requirements_v1.date_column}；{detail.input_summary.requirements_v1.start_date}（包含）至 {detail.input_summary.requirements_v1.end_date_exclusive}（不包含）</p>}
       {!!detail.input_summary.requirements_v1?.key_columns?.length && <p>鍵欄位：{detail.input_summary.requirements_v1.key_columns.join('、')}</p>}
       {detail.events?.some((event: any) => event.event_type === 'QA_REVISION_LINKED') && <p>此版本的 QA 審查已由補正版本接續；原 Hop 結果、QA 意見與證據保留，未重跑原寫入。</p>}
-      {((detail.state === 'NEEDS_REVIEW' && detail.gate_result && !detail.write_started) || detail.failed_revision_available || detail.qa_revision) && detail.matches_current && <>
+      {((detail.state === 'NEEDS_REVIEW' && detail.phase === 'REQUIREMENT_GATE' && detail.gate_result && !detail.write_started) || detail.failed_revision_available || detail.qa_revision) && detail.matches_current && <>
         {detail.qa_revision && <p>QA 尚未通過。保存補正會結束此版本的待審流程，保留原始執行與 QA 意見；必須指定 ai_sample 中不同的新目標，新版重新確認需求與核准，不會自動重跑 Hop。</p>}
         {detail.failed_revision_available && <p>此失敗版本已核對結案。修正後必須指定 ai_sample 中不同的新目標，重新通過需求與執行核准；不沿用舊核准、不重跑舊寫入，舊失敗與證據完整保留。</p>}
         {!editing && <button data-revision-start disabled={readOnly||!revisionOp.enabled||busy} onClick={() => {

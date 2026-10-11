@@ -243,7 +243,7 @@ def operation_qualifications(run, *, current, historical, delivered, approved_in
         return result
 
     spec_pending = any(not s.get('approval_effective') for s in specifications)
-    revisable = ((state == 'NEEDS_REVIEW' and run.get('gate_result') and not started)
+    revisable = ((state == 'NEEDS_REVIEW' and run.get('phase') == 'REQUIREMENT_GATE' and run.get('gate_result') and not started)
                  or run.get('failed_revision_available') or bool(run.get('qa_revision')))
     release_status = release.get('status')
     return {

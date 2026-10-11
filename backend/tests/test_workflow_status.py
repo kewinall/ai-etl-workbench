@@ -299,3 +299,10 @@ def test_specification_writes_require_current_sa_approval(sa_status):
                   sa_approval={'status': 'APPROVED_CURRENT'},
                   specifications=[{'specification_id': 's1', 'approval_effective': False}])
     assert status['operation_qualifications']['specification_approve']['enabled']
+
+
+@pytest.mark.parametrize('phase,allowed', [('REQUIREMENT_GATE', True), ('HOP_PREPARATION', False), ('HOP_EXECUTION', False)])
+def test_requirement_revision_matches_actual_backend_phase(phase, allowed):
+    status = case(run={'state': 'NEEDS_REVIEW', 'phase': phase, 'gate_result': {'status': 'CHECKED'},
+                       'approval': {'decision': 'APPROVE'}})
+    assert status['operation_qualifications']['requirement_revision']['enabled'] is allowed

@@ -48,35 +48,95 @@
       "line": 31,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/release/candidate",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PARTIAL_DIRECT_HTTP_REFUSAL_PASS",
+      "proven_cases": [
+        "unreviewed",
+        "written_without_downstream_prerequisites",
+        "cross_task"
+      ],
+      "evidence": "backend/tests/test_workflow_write_refusals.py",
+      "unproven_cases": [
+        "complete_delivered_fixture",
+        "valid_binding",
+        "stale_binding",
+        "duplicate_valid_submission"
+      ]
     },
     {
       "file": "backend/app/formal_release_api.py",
       "line": 35,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/release/approve",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PARTIAL_DIRECT_HTTP_REFUSAL_PASS",
+      "proven_cases": [
+        "unreviewed",
+        "written_without_downstream_prerequisites",
+        "cross_task"
+      ],
+      "evidence": "backend/tests/test_workflow_write_refusals.py",
+      "unproven_cases": [
+        "complete_delivered_fixture",
+        "valid_binding",
+        "stale_binding",
+        "duplicate_valid_submission"
+      ]
     },
     {
       "file": "backend/app/hop_dispatch_api.py",
       "line": 63,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/hop-dispatch",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PARTIAL_DIRECT_HTTP_REFUSAL_PASS",
+      "proven_cases": [
+        "unreviewed",
+        "written_without_downstream_prerequisites",
+        "cross_task"
+      ],
+      "evidence": "backend/tests/test_workflow_write_refusals.py",
+      "unproven_cases": [
+        "complete_delivered_fixture",
+        "valid_binding",
+        "stale_binding",
+        "duplicate_valid_submission"
+      ]
     },
     {
       "file": "backend/app/hop_dispatch_api.py",
       "line": 70,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/comparison-recovery",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PARTIAL_DIRECT_HTTP_REFUSAL_PASS",
+      "proven_cases": [
+        "unreviewed",
+        "written_without_downstream_prerequisites",
+        "cross_task"
+      ],
+      "evidence": "backend/tests/test_workflow_write_refusals.py",
+      "unproven_cases": [
+        "complete_delivered_fixture",
+        "valid_binding",
+        "stale_binding",
+        "duplicate_valid_submission"
+      ]
     },
     {
       "file": "backend/app/hop_dispatch_api.py",
       "line": 77,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/hop-preparation-reconciliation",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PARTIAL_DIRECT_HTTP_REFUSAL_PASS",
+      "proven_cases": [
+        "unreviewed",
+        "written_without_downstream_prerequisites",
+        "cross_task"
+      ],
+      "evidence": "backend/tests/test_workflow_write_refusals.py",
+      "unproven_cases": [
+        "complete_delivered_fixture",
+        "valid_binding",
+        "stale_binding",
+        "duplicate_valid_submission"
+      ]
     },
     {
       "file": "backend/app/json_source_profile.py",
@@ -314,28 +374,76 @@
       "line": 213,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/reconciliation",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PARTIAL_DIRECT_HTTP_REFUSAL_PASS",
+      "proven_cases": [
+        "unreviewed",
+        "written_without_downstream_prerequisites",
+        "cross_task"
+      ],
+      "evidence": "backend/tests/test_workflow_write_refusals.py",
+      "unproven_cases": [
+        "complete_delivered_fixture",
+        "valid_binding",
+        "stale_binding",
+        "duplicate_valid_submission"
+      ]
     },
     {
       "file": "backend/app/run_api.py",
       "line": 229,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/sa-approval",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PARTIAL_DIRECT_HTTP_REFUSAL_PASS",
+      "proven_cases": [
+        "unreviewed",
+        "written_without_downstream_prerequisites",
+        "cross_task"
+      ],
+      "evidence": "backend/tests/test_workflow_write_refusals.py",
+      "unproven_cases": [
+        "complete_delivered_fixture",
+        "valid_binding",
+        "stale_binding",
+        "duplicate_valid_submission"
+      ]
     },
     {
       "file": "backend/app/run_api.py",
       "line": 239,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/qa-approval",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PARTIAL_DIRECT_HTTP_REFUSAL_PASS",
+      "proven_cases": [
+        "unreviewed",
+        "written_without_downstream_prerequisites",
+        "cross_task"
+      ],
+      "evidence": "backend/tests/test_workflow_write_refusals.py",
+      "unproven_cases": [
+        "complete_delivered_fixture",
+        "valid_binding",
+        "stale_binding",
+        "duplicate_valid_submission"
+      ]
     },
     {
       "file": "backend/app/run_api.py",
       "line": 244,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/sdm-delivery",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PARTIAL_DIRECT_HTTP_REFUSAL_PASS",
+      "proven_cases": [
+        "unreviewed",
+        "written_without_downstream_prerequisites",
+        "cross_task"
+      ],
+      "evidence": "backend/tests/test_workflow_write_refusals.py",
+      "unproven_cases": [
+        "complete_delivered_fixture",
+        "valid_binding",
+        "stale_binding",
+        "duplicate_valid_submission"
+      ]
     },
     {
       "file": "backend/app/run_api.py",
