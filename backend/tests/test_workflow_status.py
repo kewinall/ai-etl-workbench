@@ -257,6 +257,13 @@ def test_stale_latest_version_points_back_to_requirements():
     assert stale['next_action']['stage'] == 'requirements'
     assert '取消此版並建立新準備版本' in stale['next_action']['label']
     assert stale['operation_qualifications']['input_cancel']['enabled']
+    assert stale['effective_status'] == '內容已變更，此版不可沿用'
+    returned = case(run={'state': 'NEEDS_REVIEW', 'matches_current': False, 'approval': {'decision': 'APPROVE'},
+                         'gate_result': {'status': 'NEEDS_INPUT', 'issues': [{'message': '缺目標'}]}})
+    # A stale returned version must not invite a correction of itself; it must be cancelled and re-prepared.
+    assert returned['needs_input'] is False and returned['stages'][0]['status'] == 'current'
+    assert returned['effective_status'] == '內容已變更，此版不可沿用'
+    assert '取消此版並建立新準備版本' in returned['next_action']['label']
     written = case(run={'state': 'NEEDS_REVIEW', 'matches_current': False, 'write_started': True})
     assert written['stale_latest'] is False and written['next_action']['label'] == '檢視歷史與失效核准原因'
     historical = case(latest_run_id='other', run={'state': 'QUEUED'})

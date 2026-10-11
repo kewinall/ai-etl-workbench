@@ -51,7 +51,7 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
         elif gate.get('status') == 'NEEDS_INPUT' or review.get('status') == 'NEEDS_INPUT':
             index, action, enabled = 0, '前往修正需求', current
             # The confirmed input was returned for correction: stage 1 is not complete for this version.
-            needs_input, completed[0] = True, False
+            needs_input, completed[0] = current, False
         elif sa_approval.get('status') == 'AWAITING_CONFIRMATION':
             action, enabled = '確認需求審查結果', current
         elif sa_record and not sa_ok:
@@ -170,6 +170,8 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
                  '規格已核准，待執行確認' if spec_ok else 'SA 已確認，待流程設計' if sa_ok else
                  '需求待補正，請建立補正版本' if needs_input else
                  '輸入已確認，待需求審查' if approved_input else '待確認此版輸入')
+    if stale_latest:
+        effective = '內容已變更，此版不可沿用'
     if run['state'] == 'CANCELLED':
         effective = '已取消'
     return {'task_id': run['task_id'], 'run_id': str(run['run_id']),
