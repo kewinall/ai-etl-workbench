@@ -202,3 +202,14 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - AI Profile dirty只比對可編輯欄位（路由按key排序、空值一致），不因updated_at等metadata判定為未儲存；保存後以伺服器讀回值同步draft，先清除此Profile的保護再顯示成功。全域離開判斷使用同步ref，其他隱藏草稿／保存中／保存失敗仍受保護；取消與明確捨棄只清本Profile。原導航測試改驗inline保留提示，移除無作用dialog listener，原保存／重載／不呼叫模型斷言不變。相關5項PASS（8.4秒）。
 - 修改後完整隔離瀏覽器 **147 PASS／27 skip／0 FAIL**；build PASS，bundle index-CQpDjssy.js，500KB警示保留。backend未修改，2132PASS/139skip是上輪結果，不重複冒算。5197仍為d5e7de8/index-DYmf-6uq.js；此批尚未部署或推送app，5183未動，新模型/Hop/Vertica/QA/Release零呼叫。原Join未提交內容保持不變。
 - 下一步：只重建5197 web並做八Release/九保護容器/compiled UI讀回；再依新專用URL/Task/Run限制規劃尚未驗收的新故障與真實QA補證，不重放已結案或已交付資料。JSON/資料表、REPLACE/UPSERT、已交付修正版、乾淨機器及維運復原仍是獨立未完成項目。
+
+## AI Profile 前端受控部署與唯讀資格一致性
+
+- 5197只重建web，source d3a2e4d（部署HEAD08ccdd9），實際bundle index-CQpDjssy.js；API仍a7a666f，沒有DB/Worker重啟。第一次指定project-directory改變build context造成路徑解析失敗，既有web image未替換；移除覆寫後正常Compose web-only部署PASS，不影響服務。
+- compiled AI Profile合成API回歸4PASS（4.2秒）；新三正式案例七階段/390/768/1440/鍵盤/ZIP GET-only10PASS（24.7秒），原三10PASS（25.4秒）。九保護容器ID/image/StartedAt前後完全一致，八新舊Release部署前、後、browser後hash/bytes/updated_at/WRITE_STARTED=1全不變。沒有新模型、Hop、Vertica、QA、正式交付或5183升級。證據 v2-profile-deployment-2026-10-11.json；原始基準与回復image在runtime-temp/v2-profile-deploy，未覆寫前批。
+- 回復：將本批previous-web-image.txt中的IDtag為ai-etl-workbench-web:stage-guidance，使用原stage-guidance＋ui-acceptance Compose與原UI_ACCEPT_PROJECT_ID執行up --no-deps -d web（不build），核對原index-DYmf-6uq.js與八Release。不得使用project-directory覆寫相對context，且不能重建API/DB/Worker或重跑案例。
+- 唯讀API來源稽核：正式Excel真實GET目前只有release_download可用、七stage均不可操作；但原source若仍為current QUEUED，proxy只覆寫stage/matches_current，逐操作prepare/input等仍可能enabled。新增完整fixture測試舊版1FAIL4PASS（首次缺task_id的fixture錯誤另保留，未冒稱產品缺陷），修正來源邊界停用所有非DOWNLOAD操作及next_action.operation_enabled，真正保存的下載資格保留。GET轉發、固定allowlist、不可寫入的HTTP405規則不變；39項proxy/workflow測試PASS（3.61秒）。
+
+- 後端完整PG17隔離回歸2134 PASS／139skip／0FAIL（60.97秒），Applied migrations=0；四dispatch false，未連5183/5197工作DB。測試容器ai-etl-readonly-qualification-tests-20261011已自然退出，log留runtime-temp/v2-profile-deploy/backend-regression.log。唯讀資格修正只本機提交，尚未部署5197 API，不宣稱runtime API已套用。
+- 真實QA補證歷史實際GET核對：原Join Run保存2次copilot/gpt-5.4 QA，prompt v4 NEEDS_REVIEW → v5 PASS，1筆reassesses_invocation_id確實指回保留的前次紀錄；原Run僅1次WRITE_STARTED、已正式Release，GET前後完整Run/Release不變。同時核對保留native-pilot失聯結案：FAILED/HOP_RESULT_UNKNOWN、目標保存1筆、CLOSED_WITHOUT_RETRY、retry/QA/release皆false，原Run/receipt前後不變。證據v2-retained-reassessment-2026-10-11.json，private原值只留runtime-temp。不將原保存真實QA複核冒稱新版5197另作新補證，也沒有新模型或ETL呼叫。
+- 目前5197 web已納入本輪AI Profile修正；API仍a7a666f，新的唯讀资格補正待受控API部署。下一步先為原QA補證/失聯Run建立固定GET-only網站唯讀回歸（目前來源allowlist不擴大），验证当前品质历史及结果阶段显示，不能重送旧核准或执行。若另作当前版新的真实故障写入/QA补证，须先准备具体独立案例与核准，不重用已交付/已结案目标。WS-0007保持active，27browser/139backend skip不算PASS。

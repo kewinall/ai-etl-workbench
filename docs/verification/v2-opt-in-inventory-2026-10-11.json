@@ -3,8 +3,9 @@
   "scope": "Initial static conditional test inventory, including entries subsequently made unconditional. Entries are files, not skipped parameter instances.",
   "default_regression": {
     "backend": {
-      "passed": 2132,
-      "skipped": 139
+      "passed": 2134,
+      "skipped": 139,
+      "failed": 0
     },
     "browser": {
       "passed": 147,

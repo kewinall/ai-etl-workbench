@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-11",
+  "scope": "Original 5183 stored evidence, GET-only; not a new 5197 QA recheck",
+  "qa_history_count": 2,
+  "qa_reassessment_count": 1,
+  "qa_reassessment_links_resolved": true,
+  "qa_history_statuses": [
+    {
+      "status": "VALIDATED_NOT_APPROVED",
+      "review_status": "PASS",
+      "review_outcome": null,
+      "model": "copilot/gpt-5.4",
+      "prompt_version": 5
+    },
+    {
+      "status": "VALIDATED_NOT_APPROVED",
+      "review_status": "NEEDS_REVIEW",
+      "review_outcome": null,
+      "model": "copilot/gpt-5.4",
+      "prompt_version": 4
+    }
+  ],
+  "qa_formal_release_unchanged": true,
+  "qa_original_write_started_count": 1,
+  "closed_native_failure": {
+    "state": "FAILED",
+    "outcome": "HOP_RESULT_UNKNOWN",
+    "observed_rows": 1,
+    "automatic_retry": false,
+    "qa_approved": false,
+    "release_ready": false,
+    "before_after_equal": true
+  },
+  "new_model_etl_write_or_approval": false
+}
