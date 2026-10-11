@@ -2,7 +2,7 @@ import {useEffect,useState} from 'react';
 import {jsonBody,request} from './api';
 import {ExecutionReconciliation} from './ExecutionReconciliation';
 import {ComparisonRecovery} from './ComparisonRecovery';
-import {useWorkflowRefresh,useWorkflowReadOnly,useServiceBlocker,useOperation,useManagedRefresh} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useWorkflowReadOnly,useServiceBlocker,useOperation,useManagedRefresh,unconfirmed} from './useWorkflowRefresh';
 
 export function HopDispatch({taskId,runId,onReconciled}:{taskId:string;runId:string;onReconciled?:()=>Promise<void>}) {
   const managed=useManagedRefresh();
@@ -30,7 +30,7 @@ export function HopDispatch({taskId,runId,onReconciled}:{taskId:string;runId:str
         <details><summary>檢視即將執行的建表 DDL</summary><pre>{data.offer.ddl}</pre></details>
         {!data.dispatch_enabled?<p>部署尚未啟用 Hop 執行，不會寫入資料庫。</p>:<>
           <label><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>我已核對規格、標準答案及 DDL，同意新建此測試表並執行一次 Hop 寫入；失敗不自動重跑</label>
-          <button disabled={readOnly||!op.enabled||!!serviceBlocker||busy||!consent} onClick={dispatch}>授權並排入 Hop 執行</button>
+          <button disabled={readOnly||!op.enabled||!!serviceBlocker||busy||!consent} onClick={dispatch}>授權並排入 Hop 執行</button>{unconfirmed(op)&&<p role="status">{op.reason}</p>}
         </>}
       </>}
     {data?.request?.status==='NEEDS_REVIEW'&&data.request.outcome_code==='HOP_PREPARATION_OR_COMPARISON_FAILED'&&<ComparisonRecovery key={'comparison-'+base} base={`/api/tasks/${encodeURIComponent(taskId)}/runs/${runId}`}/>}

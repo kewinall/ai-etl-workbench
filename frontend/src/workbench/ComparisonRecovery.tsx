@@ -1,11 +1,12 @@
 import {useEffect,useState} from 'react';
 import {jsonBody,request} from './api';
-import {useWorkflowRefresh,useWorkflowReadOnly} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useOperation} from './useWorkflowRefresh';
 import {ExecutionReconciliation} from './ExecutionReconciliation';
 
 export function ComparisonRecovery({base}:{base:string}) {
   const url=base+'/comparison-recovery';
-  const readOnly=useWorkflowReadOnly();
+  const op=useOperation('comparison_recovery');
+  const readOnly=!op.enabled;
   const [attempt,setAttempt]=useState(0);
   const [data,setData]=useState<any>(null),[consent,setConsent]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
   useWorkflowRefresh(base,()=>setAttempt(n=>n+1),busy||consent);

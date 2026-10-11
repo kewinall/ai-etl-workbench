@@ -139,7 +139,7 @@ def summarize(run, *, latest_run_id, sa, sa_approval, developer, specifications,
                   'execution_started': bool(run.get('write_started')),
                   'qa_approved': qa_ok, 'delivered': delivered}
     qualifications = operation_qualifications(
-        run, current=current, delivered=delivered, approved_input=approved_input, gate=gate,
+        run, current=current, historical=historical, delivered=delivered, approved_input=approved_input, gate=gate,
         sa_record=sa_record, sa_ok=sa_ok, sa_approval=sa_approval, developer=developer, dev_record=dev_record,
         specifications=specifications, spec_ok=spec_ok, hop=hop, job=job, code=code, qa=qa, qa_record=qa_record,
         qa_ok=qa_ok, qa_approval=qa_approval, release=release, recovery=recovery, comparison_done=completed[4],
@@ -200,7 +200,7 @@ def source_scope_note(run):
 DELIVERED = '此版已正式交付；只能查看與下載。需要變更時請另建修正版本，不回到原版本修改。'
 
 
-def operation_qualifications(run, *, current, delivered, approved_input, gate, sa_record, sa_ok, sa_approval,
+def operation_qualifications(run, *, current, historical, delivered, approved_input, gate, sa_record, sa_ok, sa_approval,
                              developer, dev_record, specifications, spec_ok, hop, job, code, qa, qa_record, qa_ok,
                              qa_approval, release, recovery, comparison_done, service_ops, active_run):
     """Per-operation eligibility derived from existing offers/approvals. Backend writes still re-validate."""
@@ -212,9 +212,11 @@ def operation_qualifications(run, *, current, delivered, approved_input, gate, s
         common = DELIVERED
     if common is None and state == 'CANCELLED':
         common = '此版已取消；只保留原始輸入與歷史紀錄。'
+    latest_blocker = ('歷史版本只讀；請切換到最新版本。' if historical else DELIVERED if delivered else None)
 
-    def item(kind, ok, reason, service=None, *, allow_when_delivered=False):
-        blocker = None if allow_when_delivered else common
+    def item(kind, ok, reason, service=None, *, allow_when_delivered=False, task_level=False):
+        # task_level: prepare/cancel stay available on the latest version even when its inputs went stale.
+        blocker = None if allow_when_delivered else (latest_blocker if task_level else common)
         if blocker is None and service and service in service_ops and not service_ops[service]['service_ready']:
             blocker = service_ops[service]['blocked_reason']
         if blocker is None and unknown and kind in ('AUTHORIZE_MODEL', 'EXECUTE_WRITE'):
@@ -231,15 +233,17 @@ def operation_qualifications(run, *, current, delivered, approved_input, gate, s
                  or run.get('failed_revision_available') or bool(run.get('qa_revision')))
     release_status = release.get('status')
     return {
-        'prepare_run': item('CREATE_RUN', not active_run, '已有待處理或已交付的版本；不能另建準備版本。'),
+        'prepare_run': item('CREATE_RUN', not active_run, '已有待處理或已交付的版本；不能另建準備版本。', task_level=True),
         'input_confirm': item('CONFIRM_INPUT', state == 'QUEUED' and not run.get('approval'),
                               '此版輸入已有決定，或版本不在待確認狀態。'),
         'input_cancel': item('CANCEL_RUN', state in ('QUEUED', 'NEEDS_REVIEW') and not started,
-                             '已開始外部寫入或版本已結束，不能取消。'),
+                             '已開始外部寫入或版本已結束，不能取消。', task_level=True),
         'requirement_revision': item('CREATE_REVISION', bool(revisable),
                                      '目前沒有可補正的需求缺口；已執行版本只能經 QA 補正或失敗結案後建立修正版。'),
         'sa_authorize': item('AUTHORIZE_MODEL', approved_input and gate.get('status') == 'CHECKED' and not sa_record,
                              '需先確認輸入並通過初步需求檢查；已有 SA 呼叫紀錄時不重送。', 'sa'),
+        'sa_cancel': item('CANCEL_QUEUED', sa_record.get('status') == 'SA_QUEUED',
+                          '只有尚未被領取的 SA 工作可以取消。'),
         'sa_approve': item('APPROVE', sa_approval.get('status') == 'AWAITING_CONFIRMATION',
                            '目前沒有待確認的 SA 審查結果。'),
         'naming_confirm': item('SAVE', sa_ok and not started,
@@ -250,12 +254,15 @@ def operation_qualifications(run, *, current, delivered, approved_input, gate, s
                                      '需先確認 SA；規格已核准或已開始執行後不再新增規格。'),
         'specification_approve': item('APPROVE', spec_pending and not spec_ok and not job and not started,
                                       '沒有待核准的規格版本。'),
+        'sdm_candidate': item('SAVE', spec_ok and not delivered, '需先有核准有效的規格。'),
         'oracle_save': item('SAVE', spec_ok and not job and not started, '需先核准規格；開始執行後標準答案不可替換。'),
         'oracle_approve': item('APPROVE', spec_ok and not job and not started, '需先核准規格；開始執行後標準答案不可替換。'),
         'hop_execute': item('EXECUTE_WRITE', bool(hop.get('offer')) and hop.get('dispatch_enabled') is True and not job and not started,
                             hop.get('blocked_reason') or '尚無有效執行條件，或此版已派發執行。', 'hop'),
         'execution_close': item('CLOSE_RECONCILIATION', code in ('HOP_RESULT_UNKNOWN', 'HOP_EXECUTION_FAILED') and not run.get('failed_revision_available'),
                                 '只有失敗或結果不明的執行需要人工核對結案。'),
+        'preparation_close': item('CLOSE_RECONCILIATION', job.get('status') in ('CLAIMED', 'NEEDS_REVIEW'),
+                                  '只有已領取但結果不明或待核對的執行準備需要人工結案。'),
         'comparison_recovery': item('VERIFY_READ_ONLY', code == 'HOP_EXECUTED_QA_REQUIRED' and not comparison_done
                                     and recovery.get('status') not in ('QUEUED', 'CLAIMED'),
                                     '結果比對已存在或正在處理。', 'hop'),

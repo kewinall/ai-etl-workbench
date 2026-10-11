@@ -50,7 +50,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
   const canCancel=useWorkflowCanCancel();
   const canPrepare=useWorkflowCanPrepare();
   const workflow=useWorkflowStatus();
-  const prepareOp=useOperation('prepare_run'),confirmOp=useOperation('input_confirm'),cancelOp=useOperation('input_cancel'),revisionOp=useOperation('requirement_revision');
+  const prepareOp=useOperation('prepare_run',{ignoreReadOnly:true}),confirmOp=useOperation('input_confirm'),cancelOp=useOperation('input_cancel',{ignoreReadOnly:true}),revisionOp=useOperation('requirement_revision');
   const [runs, setRuns] = useState<any[]>([]);
   const [detail, setDetail] = useState<any>(null);
   const [busy, setBusy] = useState(false);

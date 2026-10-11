@@ -1,10 +1,11 @@
 import {useEffect,useState} from 'react';
 import {request,jsonBody} from './api';
 import {oracleDocument,type OracleColumn,type OracleCell} from './oracleDocument';
-import {useWorkflowReadOnly} from './useWorkflowRefresh';
+import {useOperation} from './useWorkflowRefresh';
 
 export function OracleEditor({base,onHistory}:{base:string;onHistory:(items:any[])=>void}) {
-  const readOnly=useWorkflowReadOnly();
+  const saveOp=useOperation('oracle_save');
+  const readOnly=!saveOp.enabled;
   const [context,setContext]=useState<any>(null),[columns,setColumns]=useState<OracleColumn[]>([]);
   const [rows,setRows]=useState<OracleCell[][]>([]),[dirty,setDirty]=useState(false);
   const [busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[error,setError]=useState('');

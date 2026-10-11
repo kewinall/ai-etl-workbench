@@ -148,7 +148,7 @@ def test_spec_rejection_is_cleared_by_later_saved_spec():
     assert not case(run={'events': [rejected, {'event_type': 'SPECIFICATION_SAVED'}]})['issues']
 
 
-WRITE_OPERATIONS = ['prepare_run', 'input_confirm', 'input_cancel', 'requirement_revision', 'sa_authorize',
+WRITE_OPERATIONS = ['prepare_run', 'input_confirm', 'input_cancel', 'requirement_revision', 'sa_authorize', 'sa_cancel', 'sdm_candidate',
                     'sa_approve', 'naming_confirm', 'developer_authorize', 'specification_create',
                     'specification_approve', 'oracle_save', 'oracle_approve', 'hop_execute', 'execution_close',
                     'comparison_recovery', 'qa_authorize', 'qa_approve', 'sdm_prepare', 'release_candidate',
@@ -228,3 +228,14 @@ def test_source_note_follows_actual_sources():
     assert 'JSON' not in csv['source_scope_note'] and csv['source_types'] == ['CSV']
     json = case(run={'input_snapshot': {'source_config': {'sources': [{'type': 'JSON'}]}}})
     assert 'JSON' in json['source_scope_note'] and '尚未完成' in json['source_scope_note']
+
+
+def test_stale_latest_input_can_still_be_cancelled_or_replaced():
+    stale = case(run={'state': 'QUEUED', 'matches_current': False})
+    q = stale['operation_qualifications']
+    assert q['input_cancel']['enabled'] and not q['input_confirm']['enabled']
+    cancelled = case(run={'state': 'CANCELLED', 'matches_current': False})
+    assert cancelled['operation_qualifications']['prepare_run']['enabled']
+    old = case(latest_run_id='other', run={'state': 'CANCELLED'})
+    assert not old['operation_qualifications']['prepare_run']['enabled']
+    assert not old['operation_qualifications']['input_cancel']['enabled']

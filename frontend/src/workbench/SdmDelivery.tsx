@@ -2,7 +2,7 @@ import {useEffect,useState} from 'react';
 import {request,jsonBody} from './api';
 import {SdmHistory} from './SdmHistory';
 import {FormalRelease} from './FormalRelease';
-import {useWorkflowReadOnly,useWorkflowRefresh,useOperation,useManagedRefresh} from './useWorkflowRefresh';
+import {useWorkflowReadOnly,useWorkflowRefresh,useOperation,useManagedRefresh,unconfirmed} from './useWorkflowRefresh';
 
 export function SdmDelivery({base}:{base:string}){
   const managed=useManagedRefresh();
@@ -29,7 +29,7 @@ export function SdmDelivery({base}:{base:string}){
   <h4>已執行版本的 SDM</h4><p>須先在「品質審查」核准目前版本；此操作產生候選文件並綁定 QA，不會直接開放 Release。</p>
   {error&&<p role="alert">{error}</p>}
   {!busy&&approval&&approval.status!=='APPROVED_CURRENT'&&<p>此版本尚無有效人工 QA 核准，不能準備交付文件。</p>}
-  <button disabled={readOnly||!op.enabled||busy||approval?.status!=='APPROVED_CURRENT'} onClick={prepare}>{busy?'處理中…':'產生／取得 QA 關聯 SDM'}</button>
+  <button disabled={readOnly||!op.enabled||busy||approval?.status!=='APPROVED_CURRENT'} onClick={prepare}>{busy?'處理中…':'產生／取得 QA 關聯 SDM'}</button>{unconfirmed(op)&&<p role="status">{op.reason}</p>}
   {(!managed||error)&&<button disabled={busy} onClick={()=>setRevision(n=>n+1)}>{managed?'重試讀取交付條件':'重新核對交付條件'}</button>}
   {saved&&<p role="status">SDM 已保存並關聯 QA；請由下方歷史文件下載。尚未完成 Release 驗證。</p>}
   <SdmHistory key={`history:${base}:${saved?.document?.sdm_id||''}`} base={base}/>

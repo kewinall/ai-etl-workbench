@@ -14,13 +14,20 @@ export const useWorkflowStatus=()=>useContext(WorkflowStatus);
 export const WorkflowManagedRefresh=createContext(false);
 export const useManagedRefresh=()=>useContext(WorkflowManagedRefresh);
 
-// Per-operation eligibility from the server projection. Enabled here never bypasses backend validation;
-// outside the stage workspace (no projection) only the read-only flag applies.
-export function useOperation(name:string):{enabled:boolean;reason:string;known:boolean}{
-  const readOnly=useContext(WorkflowReadOnly);
+// Per-operation eligibility from the server projection. Enabled here never bypasses backend validation.
+// Inside the managed stage workspace a missing projection, a missing entry or anything but enabled===true
+// disables the operation ("操作資格尚未確認"). Only components rendered outside that workspace keep the
+// legacy read-only fallback.
+export const UNCONFIRMED='操作資格尚未確認；請按「重新核對狀態」，未確認前不提供此操作。';
+export function useOperation(name:string,{ignoreReadOnly=false}:{ignoreReadOnly?:boolean}={}):{enabled:boolean;reason:string;known:boolean}{
+  const readOnly=useContext(WorkflowReadOnly)&&!ignoreReadOnly;
+  const managed=useContext(WorkflowManagedRefresh);
+  const status=useContext(WorkflowStatus);
   const item=useContext(WorkflowQualifications)[name];
-  if(!item)return {enabled:!readOnly,reason:'',known:false};
-  return {enabled:!readOnly&&item.enabled!==false,reason:item.enabled===false?item.blocked_reason||'目前不可操作。':'',known:true};
+  if(!managed&&!item)return {enabled:!readOnly,reason:'',known:false};
+  if(managed&&(!status||!item))return {enabled:false,reason:UNCONFIRMED,known:true};
+  const ok=item.enabled===true;
+  return {enabled:!readOnly&&ok,reason:ok?'':item.blocked_reason||UNCONFIRMED,known:true};
 }
 
 // Only re-read server state. Never invoke a write or reset an open editor.
@@ -35,3 +42,6 @@ export function useWorkflowRefresh(base:string,read:()=>unknown,editing=false) {
     return()=>window.removeEventListener('workbench:read-refresh',refreshed);
   },[base]);
 }
+
+// Visible note when an operation is disabled only because its eligibility could not be confirmed.
+export const unconfirmed=(op:{enabled:boolean;reason:string})=>!op.enabled&&op.reason===UNCONFIRMED;

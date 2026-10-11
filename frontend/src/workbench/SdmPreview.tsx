@@ -7,10 +7,10 @@ import {validateSdmExcel} from './sdmExcel';
 import {ExcelInputSummary} from './ExcelInputContract';
 import {validateSdmJson} from './sdmJson';
 import {JsonInputSummary} from './JsonInputContract';
-import {useWorkflowReadOnly} from './useWorkflowRefresh';
+import {useOperation} from './useWorkflowRefresh';
 
 export function SdmPreview({url,specificationChecksum}:{url:string;specificationChecksum:string}) {
-  const readOnly=useWorkflowReadOnly();
+  const readOnly=!useOperation('sdm_candidate').enabled;
   const [attempt,setAttempt]=useState(0),[data,setData]=useState<any>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const [saving,setSaving]=useState(false),[saved,setSaved]=useState<any>(null);
   const createCandidate=async()=>{

@@ -1,6 +1,6 @@
 import {useEffect,useState} from 'react';
 import {request,jsonBody} from './api';
-import {useWorkflowRefresh,useWorkflowReadOnly,useOperation,useManagedRefresh} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useWorkflowReadOnly,useOperation,useManagedRefresh,unconfirmed} from './useWorkflowRefresh';
 
 export function SAApproval({base}:{base:string}) {
   const managed=useManagedRefresh();
@@ -26,7 +26,7 @@ export function SAApproval({base}:{base:string}) {
         try {await request(base+'/sa-approval',jsonBody('POST',{confirmed:true,binding_checksum:data.binding.checksum}));setData(await request(base+'/sa-approval'));setConfirmed(false)}
         catch {setData(null);setConfirmed(false);setError('核准未完成或版本已變更，請重新核對；未授權執行 ETL。')}
         finally {setBusy(false)}
-      }}>確認 SA 建議並交接</button>
+      }}>確認 SA 建議並交接</button>{unconfirmed(op)&&<p role="status">{op.reason}</p>}
     </>}
     {(!managed||error)&&<button disabled={busy} onClick={load}>{managed?'重試讀取 SA 交接':'重新核對 SA 交接'}</button>}
   </section>;

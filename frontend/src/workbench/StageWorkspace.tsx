@@ -19,6 +19,8 @@ import {WorkflowReadOnly,WorkflowQualifications,WorkflowCanCancel,WorkflowCanPre
 import {LegacyTaskRecords} from './LegacyTaskRecords';
 import {RequirementSummary,ReviewSummary,DesignSummary,ConfirmSummary,ResultsSummary,QualitySummary,DeliverySummary,label as refLabel} from './StageSummary';
 
+// The server run list is empty: the only eligible write is creating the first preparation snapshot.
+const NO_RUN={no_run:true,operation_qualifications:{prepare_run:{type:'CREATE_RUN',enabled:true,blocked_reason:null}}};
 const keys=['requirements','review','design','confirm','results','quality','delivery'];
 const labels=['需求與資料規格','需求審查','流程設計審查','執行確認','執行與結果','品質審查','成果交付'];
 const oldTabs:Record<string,string>={overview:'requirements',collaboration:'review',artifacts:'results',execution:'results'};
@@ -29,6 +31,7 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
   const api=`/api/tasks/${encodeURIComponent(task.id)}`;
   const [runs,setRuns]=useState<any[]>([]),[detail,setDetail]=useState<any>(null),[workflow,setWorkflow]=useState<any>(null);
   const [error,setError]=useState(''),[loading,setLoading]=useState(true),[epoch,setEpoch]=useState(0);
+  const [noRun,setNoRun]=useState(false);
   const [history,setHistory]=useState<any>(null),[historyError,setHistoryError]=useState('');
   const [pendingField,setPendingField]=useState('');
   const [projectName,setProjectName]=useState(''),[navOpen,setNavOpen]=useState(false),[expanded,setExpanded]=useState<Record<string,boolean>>({});
@@ -50,7 +53,7 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
     try {
       const list=await request(`${api}/runs`);
       if(ticket!==generation.current)return;
-      setRuns(list.runs);
+      setRuns(list.runs);setNoRun(!list.runs.length);
       const id=runId||list.runs[0]?.run_id;
       if(runId&&!list.runs.some((r:any)=>r.run_id===runId))throw Error('指定版本不存在或不屬於此 Task；未改用最新版本。');
       if(!id){setDetail(null);setWorkflow(null);if(!keys.includes(tab||'')){window.history.replaceState(window.history.state,'',window.location.pathname+window.location.search+'#'+base+'/'+stage);window.dispatchEvent(new HashChangeEvent('hashchange'))}return}
@@ -155,9 +158,10 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
       {workflow.execution_blocked_reason&&workflow.current_stage==='confirm'&&<p>{workflow.execution_blocked_reason}</p>}
       <details><summary>來源支援與驗收範圍</summary><p>{workflow.source_scope_note}</p><p>已完成：{workflow.completed.join('、')||'尚無有效核准'}</p></details>
     </section>}
+    {valid&&!workflow.operation_qualifications&&<p role="alert">操作資格尚未確認：伺服器未回傳逐操作資格，此頁所有寫入操作已停用。請按「重新核對狀態」。</p>}
     {stageInfo?.blocked_reason&&<p role="status">{stageInfo.blocked_reason} 此階段可檢視，操作須等前置條件成立。</p>}
     {valid&&!!workflow.issues.length&&<section className="panel workflow-issues" aria-label="問題處理區"><h3>待處理問題</h3><ul>{workflow.issues.map((issue:any,i:number)=><li key={i}><b>{issue.message}</b><p>位置：{where(issue)}</p>{(issue.field_path||issue.evidence_ids?.length)&&<details><summary>精確路徑</summary><code>{issue.field_path||issue.evidence_ids?.join('、')}</code>{(issue.issue_type||issue.code)&&<p>代碼：{issue.issue_type||issue.code}</p>}</details>}<button disabled={loading||!!error||workflow.historical} onClick={()=>{if(issue.stage){select(issue.stage);return}const path=issue.field_path||issue.evidence_ids?.[0]||'';setPendingField(fieldOf(path));select('requirements')}}>{issue.stage==='quality'?'檢視 QA 意見與補證':issue.stage==='design'?'檢視並修正规格':'前往修正'}</button></li>)}</ul></section>}
-    <WorkflowManagedRefresh.Provider value={true}><WorkflowCanPrepare.Provider value={!loading&&!error&&!workflow?.historical&&!workflow?.read_only_source&&!runs.some(r=>['QUEUED','RUNNING','NEEDS_REVIEW'].includes(r.state))}><WorkflowCanCancel.Provider value={valid&&!loading&&!error&&!workflow.historical&&!workflow.read_only_source&&!detail.write_started&&['QUEUED','NEEDS_REVIEW'].includes(detail.state)}><WorkflowStatus.Provider value={valid?workflow:null}><WorkflowQualifications.Provider value={workflow?.operation_qualifications||{}}><WorkflowReadOnly.Provider value={!!readonly}>
+    <WorkflowManagedRefresh.Provider value={true}><WorkflowCanPrepare.Provider value={!loading&&!error&&!workflow?.historical&&!workflow?.read_only_source&&!runs.some(r=>['QUEUED','RUNNING','NEEDS_REVIEW'].includes(r.state))}><WorkflowCanCancel.Provider value={valid&&!loading&&!error&&!workflow.historical&&!workflow.read_only_source&&!detail.write_started&&['QUEUED','NEEDS_REVIEW'].includes(detail.state)}><WorkflowStatus.Provider value={valid?workflow:noRun&&!loading&&!error?NO_RUN:null}><WorkflowQualifications.Provider value={valid?workflow.operation_qualifications||{}:noRun&&!loading&&!error?NO_RUN.operation_qualifications:{}}><WorkflowReadOnly.Provider value={!!readonly}>
     <section className="panel" hidden={stage!=='requirements'} role="tabpanel" id="stage-panel-requirements" aria-labelledby="stage-requirements">
       {valid&&complete('requirements')&&<RequirementSummary detail={detail}/>}
       {fold('requirements',<>{(!runId||valid)&&<fieldset className="workflow-controls" disabled={loading||!!error}><RunVersions taskId={task.id} requestedRunId={selected||undefined} onSelectRun={id=>select('requirements',id)}/></fieldset>}
@@ -172,7 +176,7 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
       {stage==='delivery'&&<DeliverySummary base={runBase}/>}
       <fieldset className="workflow-controls" disabled={loading||!!error}>
         {stage==='review'&&fold('review',<><SAInvocation key={selected} taskId={task.id} runId={selected}/><details><summary>需求審查技術證據</summary><SAEvidence taskId={task.id} runId={selected}/></details></>)}
-        {stage==='design'&&fold('design',<><NamingConfirmation taskId={task.id} runId={selected} historical={workflow.historical||!workflow.matches_current||detail.write_started} editable={!readonly&&!detail.write_started&&workflow.operation_qualifications?.naming_confirm?.enabled!==false} sourceOrder={detail.input_summary.source_order_v1}/><DeveloperInvocation key={selected} taskId={task.id} runId={selected}/><SpecificationHistory key={selected} taskId={task.id} runId={selected}/></>)}
+        {stage==='design'&&fold('design',<><NamingConfirmation taskId={task.id} runId={selected} historical={workflow.historical||!workflow.matches_current||detail.write_started} editable={!readonly&&!detail.write_started&&workflow.operation_qualifications?.naming_confirm?.enabled===true} sourceOrder={detail.input_summary.source_order_v1}/><DeveloperInvocation key={selected} taskId={task.id} runId={selected}/><SpecificationHistory key={selected} taskId={task.id} runId={selected}/></>)}
         {stage==='confirm'&&fold('confirm',<><OracleHistory taskId={task.id} requestedRunId={selected} stage="confirm"/><HopDispatch key={selected} taskId={task.id} runId={selected}/></>)}
         {stage==='results'&&fold('results',<><RunArtifacts taskId={task.id} requestedRunId={selected}/><ComparisonHistory taskId={task.id} runId={selected}/>{['HOP_EXECUTION_FAILED','HOP_RESULT_UNKNOWN'].includes(detail.outcome_code)&&<><ExecutionDiagnosis base={runBase}/><ExecutionReconciliation base={runBase} onSaved={async()=>setEpoch(n=>n+1)}/></>}<HopDispatch key={selected} taskId={task.id} runId={selected}/></>)}
         {stage==='quality'&&<>{workflow.current_stage==='results'&&<p role="alert">{workflow.execution_blocked_reason} <button type="button" onClick={()=>select('results')}>前往執行結果與比對</button></p>}{fold('quality',<QAReviewHistory key={selected} taskId={task.id} runId={selected}/>,'查看歷次 QA 模型紀錄與核准詳情')}{detail.qa_revision&&<button disabled={readonly} onClick={()=>{setPendingField('target_table');select('requirements')}}>建立修正版（保留原始執行，使用新目標）</button>}</>}

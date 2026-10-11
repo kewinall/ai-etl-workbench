@@ -1,10 +1,11 @@
 import {useEffect,useState} from 'react';
 import {request,jsonBody} from './api';
-import {useWorkflowReadOnly,useWorkflowRefresh} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useOperation} from './useWorkflowRefresh';
 
 export function ExecutionReconciliation({base,onSaved,preparation=false}:{base:string;onSaved:()=>Promise<void>;preparation?:boolean}) {
   const endpoint=base+(preparation?'/hop-preparation-reconciliation':'/reconciliation');
-  const readOnly=useWorkflowReadOnly();
+  const op=useOperation(preparation?'preparation_close':'execution_close');
+  const readOnly=!op.enabled;
   const [data,setData]=useState<any>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
   const [confirmed,setConfirmed]=useState(false),[rows,setRows]=useState(''),[targetExists,setTargetExists]=useState('');
   const [attempt,setAttempt]=useState(0);
