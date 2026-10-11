@@ -22,10 +22,13 @@ from .sa_contract import digest
 SYNTHETIC_CSV=b'record_key,label\nA,alpha\nB,beta\n'
 
 
-def check_scope(current,binding_checksum,acceptance_target=None):
+def check_scope(current,binding_checksum,acceptance_target=None,parents_unexecuted=False):
     spec=current['specification'];run=current['run']
     source=run['input_snapshot']['source_config']['sources']
-    if (current['binding_checksum']!=binding_checksum or run['write_started'] or run.get('parent_run_id')
+    scoped_acceptance=(acceptance_target==spec['target_table']
+                      and bool(re.fullmatch(r'ui_accept_revision_[0-9]{8}_v1',acceptance_target or '')))
+    if (current['binding_checksum']!=binding_checksum or run['write_started']
+            or (run.get('parent_run_id') and not (scoped_acceptance and parents_unexecuted is True))
             or spec['version']!=1 or spec['target_schema']!='ai_sample'
             or not (re.fullmatch(r'pilot_missing_column_[0-9]{8}',spec['target_table'])
                     or (acceptance_target==spec['target_table']
@@ -37,6 +40,27 @@ def check_scope(current,binding_checksum,acceptance_target=None):
     return spec['target_table']
 
 
+def unexecuted_parents(conn,task_id,run):
+    """Only pre-execution requirement revisions may precede this fresh fault."""
+    if not run.get('parent_run_id'):return True
+    row=conn.execute("""
+        WITH RECURSIVE ancestors AS (
+            SELECT run_id,parent_run_id,task_id,write_started,ARRAY[run_id] AS path
+            FROM platform.task_run WHERE task_id=%s AND run_id=%s
+            UNION ALL
+            SELECT p.run_id,p.parent_run_id,p.task_id,p.write_started,a.path||p.run_id
+            FROM platform.task_run p JOIN ancestors a ON p.run_id=a.parent_run_id AND p.task_id=a.task_id
+            WHERE NOT p.run_id=ANY(a.path)
+        )
+        SELECT bool_or(parent_run_id IS NULL) AS rooted,
+               bool_and(NOT write_started) AS unwritten,
+               bool_or(EXISTS(SELECT 1 FROM platform.hop_dispatch_request h WHERE h.run_id=a.run_id)
+                    OR EXISTS(SELECT 1 FROM platform.task_run_execution_reservation r WHERE r.run_id=a.run_id)) AS dispatched
+        FROM ancestors a
+        """,(task_id,run['parent_run_id'])).fetchone()
+    return bool(row and row['rooted'] is True and row['unwritten'] is True and row['dispatched'] is False)
+
+
 def run(queue,repo,task_id,run_id,binding_checksum):
     if os.getenv('WORKBENCH_SYNTHETIC_FAILURE_PROBE')!='missing-column-v1':
         raise ValueError('EXPLICIT_FAILURE_PROBE_REQUIRED')
@@ -45,7 +69,9 @@ def run(queue,repo,task_id,run_id,binding_checksum):
         queue.locked_task(conn,task_id)
         row=conn.execute('SELECT specification_id FROM platform.hop_dispatch_request WHERE run_id=%s AND status=\'QUEUED\'',(run_id,)).fetchone()
         if not row:raise ValueError('QUEUED_AUTHORIZED_REQUEST_REQUIRED')
-        check_scope(offer(queue,conn,task_id,run_id,row['specification_id']),binding_checksum,acceptance_target)
+        current=offer(queue,conn,task_id,run_id,row['specification_id'])
+        parents_unexecuted=unexecuted_parents(conn,task_id,current['run']) if acceptance_target else False
+        check_scope(current,binding_checksum,acceptance_target,parents_unexecuted)
     request=claim(queue,task_id,run_id)
     if not request:raise ValueError('FAILURE_PROBE_ALREADY_CLAIMED')
     code='HOP_PREPARATION_OR_COMPARISON_FAILED'
@@ -54,7 +80,8 @@ def run(queue,repo,task_id,run_id,binding_checksum):
         with queue.conn() as conn:
             queue.locked_task(conn,task_id)
             current=offer(queue,conn,task_id,run_id,request['specification_id'])
-            table=check_scope(current,binding_checksum,acceptance_target)
+            parents_unexecuted=unexecuted_parents(conn,task_id,current['run']) if acceptance_target else False
+            table=check_scope(current,binding_checksum,acceptance_target,parents_unexecuted)
             registered=conn.execute('SELECT * FROM platform.platform_sample_table WHERE schema_name=\'ai_sample\' AND table_name=%s',(table,)).fetchone()
             if (not registered or str(registered['project_id'])!=str(current['run']['project_id'])
                     or registered['task_id']!=task_id):raise ValueError('FAILURE_PROBE_OWNERSHIP_INVALID')

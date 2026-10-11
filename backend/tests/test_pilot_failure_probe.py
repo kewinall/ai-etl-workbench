@@ -22,6 +22,21 @@ def test_acceptance_target_requires_explicit_exact_allowance():
     assert check_scope(data,'a'*64,'ui_accept_revision_20261011_v1')=='ui_accept_revision_20261011_v1'
 
 
+def test_acceptance_requirement_revision_requires_proven_unexecuted_parents():
+    data=current();target='ui_accept_revision_20261011_v1';data['specification']['target_table']=target
+    data['run']['parent_run_id']='previous-input'
+    with pytest.raises(ValueError):check_scope(data,'a'*64,target)
+    with pytest.raises(ValueError):check_scope(data,'a'*64,target,1)
+    assert check_scope(data,'a'*64,target,True)==target
+    data['run']['write_started']=True
+    with pytest.raises(ValueError):check_scope(data,'a'*64,target,True)
+
+
+def test_legacy_probe_cannot_use_acceptance_parent_exception():
+    data=current();data['run']['parent_run_id']='previous-input'
+    with pytest.raises(ValueError):check_scope(data,'a'*64,data['specification']['target_table'],True)
+
+
 @pytest.mark.parametrize('target',['ui_accept_csv_20261011_v2','ui_accept_revision_20261011_v2',
     'ui_accept_revision_20261011_v1;DROP','business','ui_accept_partial_20261011_v1'])
 def test_explicit_acceptance_allowance_cannot_expand_target_namespace(target):
