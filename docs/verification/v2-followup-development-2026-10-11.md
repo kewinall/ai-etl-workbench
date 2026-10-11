@@ -192,3 +192,13 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - 部署證據 `v2-sdm-deployment-2026-10-11.json`。新prooffolder參數限定runtime-temp，既有上一輪基準未覆寫；本批 `runtime-temp/v2-sdm-deploy/previous-web-image.txt` 保存回復image ID。回復需將該IDtag為原stage-guidance image，再使用相同Compose/Project ID `up --no-deps -d web`（不build），核對原bundle與八Release。
 - App本機提交、不推送。backend app與一般frontend未新增其他變更：全backend2132PASS/139skip沿用，最新default browser129PASS/26skip為上輪固定source結果；本批額外兩個opt-in實跑不改稱全default數量。原Join未提交內容SHA不變。
 - 下一步：真實執行失聯／部分提交live測試仍有舊入口、固定5197及歷史DB前提；先建立可核查的独立來源/Task/Run環境與目標授權，不能回放已交付或已結案案例。QA真實補證與其餘未驗收項目仍以inventory層次追蹤；目前只完成控制面準備死亡分支，不把它當成真實部分寫入PASS。
+
+## 部分寫入歷史唯讀與 AI Profile 保存保護修正
+
+- 兩份真實結案 live 測試改走目前 results/Run，保留原筆數／binding／一次 POST／禁止重試等業務斷言；加入共用專用環境 URL 守門，必須明確相同 loopback 5201–5299，不允許 5183、5197、5199 或共享環境。15 項守門測試 PASS；本轮沒有執行新的結案寫入，不能把 selector 修正當成真實新故障驗收。
+- 保留的 2026-09-28 真實部分提交案例：舊 owner exit137、保存 1000 筆與已結案紀錄，在目前 compiled UI 結果階段唯讀回歸 1 PASS（6.8秒），390/768/1440 重載同 Run，無證據檔案輸入／一般重試。所有前端非 GET 攔截，讀取 gateway POST 實際回405；67張 platform 表完整 row-multiset 指紋前後一致、模型與Release零紀錄。新證據 v2-partial-readonly-2026-10-11.json，私有來源與trace留 runtime-temp/v2-partial-readonly。
+- 原API image已不存在，從停止的原容器讀取原source唯讀掛載至現有 dependency runtime；純 workflow projection為目前source，API只轉發限定原GET。不套migration、不更新原app、不啟動原owner/recovery/Vertica；原PG與臨時reader在查閱後停止。Docker address pools已滿，新network失敗無刪除；只使用已核對無peer的隔離browser network。1000筆是原保存證據，本輪沒有重新查Vertica，沒有把這個案例宣稱為當前版本新部分寫入。
+- 完整瀏覽器前測143 PASS／27skip／1 FAIL（3.8min），再次發生AI Profile reload10秒逾時。Trace證明beforeunload被dialog.dismiss取消，112網路請求均完成；原因是保存提示已出現但草稿保護仍有時序落差，舊測試未消耗的dialog listener殘留。新增 MutationObserver 在成功訊息第一次出現立即 dispatch beforeunload，舊版1FAIL／2PASS，新版3PASS，沒有增加timeout或固定等待。
+- AI Profile dirty只比對可編輯欄位（路由按key排序、空值一致），不因updated_at等metadata判定為未儲存；保存後以伺服器讀回值同步draft，先清除此Profile的保護再顯示成功。全域離開判斷使用同步ref，其他隱藏草稿／保存中／保存失敗仍受保護；取消與明確捨棄只清本Profile。原導航測試改驗inline保留提示，移除無作用dialog listener，原保存／重載／不呼叫模型斷言不變。相關5項PASS（8.4秒）。
+- 修改後完整隔離瀏覽器 **147 PASS／27 skip／0 FAIL**；build PASS，bundle index-CQpDjssy.js，500KB警示保留。backend未修改，2132PASS/139skip是上輪結果，不重複冒算。5197仍為d5e7de8/index-DYmf-6uq.js；此批尚未部署或推送app，5183未動，新模型/Hop/Vertica/QA/Release零呼叫。原Join未提交內容保持不變。
+- 下一步：只重建5197 web並做八Release/九保護容器/compiled UI讀回；再依新專用URL/Task/Run限制規劃尚未驗收的新故障與真實QA補證，不重放已結案或已交付資料。JSON/資料表、REPLACE/UPSERT、已交付修正版、乾淨機器及維運復原仍是獨立未完成項目。

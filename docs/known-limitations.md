@@ -11,7 +11,8 @@
 
 ## 最新狀態（2026-10-11）
 
-- d5e7de8 SDM背景提示修正已部署5197（1099215工程批，compiled SDM3PASS、新三案10PASS及原三案10PASS）。新PG17實際程序死亡與網站結案已通過，但角色為synthetic，沒有Hop／Vertica／真實模型，不能代表部分寫入驗收；證據見 verification/v2-owner-death-ui-2026-10-11.json。執行／部分提交live測試仍有舊入口及固定5197前提。
+- AI Profile 保存後離開保護的時序問題已修正，保存成功立即解除本表單保護，其他草稿與保存失敗仍保留提醒；build及隔離回歸已驗證。本批尚未部署5197。執行／部分提交live測試已移除舊入口與固定5197，改用專用URL守門；未執行新的真實故障寫入。保留真實部分提交紀錄已完成新版唯讀回歸，67張表指紋不變，沒有重啟Vertica或重跑ETL；見 verification/v2-partial-readonly-2026-10-11.json。
+- d5e7de8 SDM背景提示修正已部署5197（1099215工程批，compiled SDM3PASS、新三案10PASS及原三案10PASS）。新PG17實際程序死亡與網站結案已通過，但角色為synthetic，沒有Hop／Vertica／真實模型，不能代表新的部分寫入驗收；證據見 verification/v2-owner-death-ui-2026-10-11.json。
 
 - v2 後續：已停用舊 Task 執行／補正／驗證入口，Run 工作流寫入會依既有交付記錄守門；工程 source `a7a666f` 已部署 5197。2026-10-11 新 CSV／Excel／LEFT JOIN 三案已經正常網站與真實模型、Hop、Vertica、QA、隔離可攜驗證及正式 ZIP，原目標各寫入一次，固定答案 2／2／5 筆完全符合。七階段三寬度／鍵盤／下載回歸 10 PASS，五個既有 Release 指紋及寫入次數不變。見 [後續開發驗證](verification/v2-followup-development-2026-10-11.md)。這是三個受控合成案例的驗收，不代表下列獨立里程碑完成。
 - 後續介面：新 Task 不再建立舊流程空白節點；空白舊版區隱藏，真實歷史節點及下載仍保留。未套用執行流程的驗證策略僅顯示保存值，無儲存入口。

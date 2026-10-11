@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-11",
+  "case": "retained_partial_write_20260928_readonly",
+  "source": "Original retained API source and PostgreSQL records; current pure workflow projection and compiled frontend; GET-only temporary reader",
+  "original_api_image_unavailable": true,
+  "original_source_current_dependency_runtime": true,
+  "browser": {
+    "passed": 1,
+    "seconds": 6.8,
+    "widths": [
+      390,
+      768,
+      1440
+    ],
+    "non_get_allowed": false,
+    "post_gateway_status": 405
+  },
+  "platform_tables_unchanged": 67,
+  "closure": {
+    "count": 1,
+    "status": "CLOSED_WITHOUT_RETRY",
+    "saved_partial_rows": 1000,
+    "retry_allowed": false,
+    "qa_allowed": false,
+    "release_allowed": false
+  },
+  "new_native_execution": false,
+  "new_vertica_query": false,
+  "original_owner_recovery_vertica_remained_stopped": true,
+  "temporary_reader_and_original_postgres_stopped_after_test": true,
+  "database_migrations_applied": false,
+  "limits": [
+    "Stored 1000 rows are historical evidence; Vertica was not restarted or independently queried this round.",
+    "This is retained real partial-write read-only UI regression, not a new current-version partial-write execution.",
+    "Old API image unavailable; copied original source read-only under existing dependency runtime.",
+    "No private task, run, target or log identifiers published."
+  ]
+}

@@ -7,8 +7,9 @@
       "skipped": 139
     },
     "browser": {
-      "passed": 129,
-      "skipped": 26
+      "passed": 147,
+      "skipped": 27,
+      "failed": 0
     },
     "scope": "Isolated deterministic engineering including oracle draft regression; real execution cases are separate."
   },
@@ -146,13 +147,14 @@
         }
       ],
       "environment_keys": [
-        "WORKBENCH_REAL_RECONCILIATION",
-        "WORKBENCH_CRASH_TASK",
-        "WORKBENCH_CRASH_RUN",
+        "WORKBENCH_CRASH_EVIDENCE",
         "WORKBENCH_CRASH_PROJECT",
-        "WORKBENCH_CRASH_EVIDENCE"
+        "WORKBENCH_CRASH_RUN",
+        "WORKBENCH_CRASH_TASK",
+        "WORKBENCH_REAL_RECONCILIATION",
+        "WORKBENCH_RECONCILIATION_URL"
       ],
-      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "this_followup_execution": "NOT_OPTED_IN_FOR_NEW_REAL_WRITE; current results route and dedicated loopback URL guard verified separately",
       "legacy_selectors_present": false
     },
     {
@@ -274,10 +276,11 @@
         }
       ],
       "environment_keys": [
+        "WORKBENCH_PARTIAL_EVIDENCE_PATH",
         "WORKBENCH_PARTIAL_REVIEW_TEST",
-        "WORKBENCH_PARTIAL_EVIDENCE_PATH"
+        "WORKBENCH_RECONCILIATION_URL"
       ],
-      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "this_followup_execution": "NOT_OPTED_IN_FOR_NEW_REAL_WRITE; current results route and dedicated loopback URL guard verified separately",
       "legacy_selectors_present": false
     },
     {
@@ -1458,6 +1461,16 @@
         "WORKBENCH_ALLOW_DATABASE_TESTS"
       ],
       "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
+      "legacy_selectors_present": false
+    },
+    {
+      "file": "frontend/tests/partial-write-history-readonly.spec.ts",
+      "kind": "browser",
+      "environment_keys": [
+        "WORKBENCH_PARTIAL_HISTORY_TASK",
+        "WORKBENCH_PARTIAL_HISTORY_RUN"
+      ],
+      "this_followup_execution": "1 PASS 6.8s; retained original real partial-write records, GET-only, no replay",
       "legacy_selectors_present": false
     }
   ]
