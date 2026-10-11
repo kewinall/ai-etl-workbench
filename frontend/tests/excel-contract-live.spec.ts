@@ -1,10 +1,10 @@
 import {test, expect} from '@playwright/test';
 import {readFileSync} from 'node:fs';
-import {execFileSync} from 'node:child_process';
+import {controlOnce, syntheticWritesAllowed} from './fixtures/control';
 
 test('Excel 契約真實補正、等待鎖定、回讀與舊版保留', async ({page, request}) => {
   test.setTimeout(90000);
-  expect(process.env.WORKBENCH_TEST_URL).toBe('http://127.0.0.1:5195');
+  test.skip(!syntheticWritesAllowed(), 'Explicit isolated write permission required (rewrites platform settings; WORKBENCH_ALLOW_SYNTHETIC_UI=1)');
   expect((await (await request.get('/api/ready')).json()).execution_enabled).toBe(false);
   const original = (await (await request.get('/api/settings/groups')).json()).values.data_connections_targets;
   const nonce = Date.now();
@@ -52,9 +52,15 @@ q=RunQueue(os.environ['DATABASE_URL'])
 with q.conn() as c:
  rows=c.execute("SELECT r.run_id FROM platform.task_run r JOIN platform.task_run_approval a USING(run_id) WHERE r.state='QUEUED' AND a.decision='APPROVE'").fetchall()
  assert [str(r['run_id']) for r in rows]==[sys.argv[1]]
-print(json.dumps(run_once(q)))`;
-    const result = execFileSync('wsl', ['-d', 'RockyLinux9', '-u', 'root', '--', 'docker', 'exec',
-      'ai-etl-ui-regression-api-1', 'python', '-c', script, parent.run_id], {encoding: 'utf8', timeout: 30000});
+import time
+# claim() uses SKIP LOCKED; an open workspace page may briefly hold the Task row, as a looping worker would retry.
+for attempt in range(20):
+ result=run_once(q)
+ if result['status']!='IDLE': break
+ time.sleep(0.5)
+print('idle retries',attempt,file=sys.stderr)
+print(json.dumps(result))`;
+    const result = controlOnce(script, parent.run_id);
     expect(JSON.parse(result).status).toBe('NEEDS_INPUT');
     await page.goto(`/#/projects/${project.project_id}/tasks/${taskId}/requirements`);
     await expect(page.getByRole('region', {name: 'Excel 讀取契約摘要'})).toContainText('尚未確認');
@@ -74,6 +80,9 @@ print(json.dumps(run_once(q)))`;
     });
     const saved = page.waitForResponse(r => r.url().endsWith(`/runs/${parent.run_id}/revisions`) && r.request().method() === 'POST');
     try {
+      // Revisions now require reviewing the field diff before saving (pre-existing flow since b5f48fd).
+      await form.getByRole('button', {name: '預覽修訂差異'}).click();
+      await form.getByLabel('已核對差異，同意建立待需求確認的新版').check();
       await form.getByRole('button', {name: '保存補正並建立新版'}).click();
       await expect.poll(() => intercepted).toBe(true);
       await expect(form.getByLabel('Excel 空白列處理')).toBeDisabled();

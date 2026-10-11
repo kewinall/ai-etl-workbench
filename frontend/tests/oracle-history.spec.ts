@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {routeWorkflow} from './fixtures/workflow';
 
 test('標準答案歷史：錯誤重讀、版本切換與窄版面（合成 UI，不是 QA 驗收）',async({page,request})=>{
   const project=await(await request.post('/api/projects',{data:{project_name:'答案查閱-'+Date.now()}})).json();
@@ -13,11 +14,14 @@ test('標準答案歷史：錯誤重讀、版本切換與窄版面（合成 UI�
     :route.fulfill({json:{items:['MATCH','MISMATCH'].map((status,i)=>({comparison_id:`comparison-${i}`,checksum:'a'.repeat(64),created_at:'2026-09-13T00:00:00Z',evidence:{status,expected_count:2,actual_count:2,missing_count:i,unexpected_count:i,oracle_id:'oracle-ui',oracle_document_checksum:'b'.repeat(64),execution_binding_checksum:'c'.repeat(64),hop_event_id:1,hop_log_checksum:'d'.repeat(64),actual_provenance:'NOT_VERIFIED',qa_passed:false,release_ready:false}}))}}));
   await page.route('**/specifications/spec-new/oracles',r=>fail?r.fulfill({status:503,json:{detail:'合成讀取失敗'}}):r.fulfill({json:{items:[]}}));
   await page.route('**/specifications/spec-old/oracles',r=>r.fulfill({json:{items:[{oracle_id:'oracle-ui',version:1,approval_recorded:true,created_at:'2026-09-13T00:00:00Z',approved_at:'2026-09-13T00:01:00Z',document_checksum:'a'.repeat(64)}]}}));
-  await page.goto(`/#/projects/${project.project_id}/tasks/${task.id}/execution`);
+  // Answers now live in the execution-confirm stage and comparisons in the results stage of the shared Run workspace.
+  await page.route(`**/api/tasks/${task.id}/runs/run-ui`,r=>r.fulfill({json:{run_id:'run-ui',task_id:task.id,state:'NEEDS_REVIEW',matches_current:true,write_started:false,events:[],input_summary:{target_schema:'ai_sample',target_table:'oracle_ui'},settings_summary:{}}}));
+  await routeWorkflow(page,task.id,{stage:'confirm'});
+  await page.goto(`/#/projects/${project.project_id}/tasks/${task.id}/confirm/run-ui`);
   const panel=page.getByRole('region',{name:'標準答案版本紀錄'});
   await expect(panel.getByRole('alert')).toBeVisible();
   await expect(panel.getByText('此規格尚未保存標準答案。')).toHaveCount(0);
-  fail=false;await panel.getByRole('button',{name:'重新讀取標準答案'}).click();
+  fail=false;await panel.getByRole('button',{name:'重試讀取標準答案'}).click();
   await expect(panel.getByText('此規格尚未保存標準答案。')).toBeVisible();
   await panel.getByLabel('標準答案規格版本').selectOption('spec-old');
   await expect(panel.getByText('曾人工核准；目前資格尚未評估')).toBeVisible();
@@ -27,6 +31,8 @@ test('標準答案歷史：錯誤重讀、版本切換與窄版面（合成 UI�
   await panel.getByLabel('標準答案規格版本').selectOption('spec-new');
   await expect(panel.getByText('此規格尚未保存標準答案。')).toBeVisible();
   await expect(panel.getByText('曾人工核准；目前資格尚未評估')).toHaveCount(0);
+  await page.getByRole('button',{name:/目前查看：第/}).click(); // 390px: the stage list is collapsed behind the current stage
+  await page.getByRole('tab',{name:/5 · 執行與結果/}).click();
   const comparisons=page.getByRole('region',{name:'結果比對證據'});
   await expect(comparisons.getByRole('heading',{name:'比對一致（非正式 QA）'})).toBeVisible();
   await expect(comparisons.getByRole('heading',{name:'發現結果差異'})).toBeVisible();
@@ -34,10 +40,10 @@ test('標準答案歷史：錯誤重讀、版本切換與窄版面（合成 UI�
   await comparisons.getByText('追溯版本與指紋',{exact:true}).first().click();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2)).toBe(true);
   comparisonFail=true;
-  await comparisons.getByRole('button',{name:'重新讀取比對證據'}).click();
+  await page.getByRole('button',{name:'重新核對狀態'}).click();
   await expect(comparisons.getByRole('alert')).toBeVisible();
   await expect(comparisons.getByRole('heading',{name:'比對一致（非正式 QA）'})).toHaveCount(0);
   comparisonFail=false;
-  await comparisons.getByRole('button',{name:'重新讀取比對證據'}).click();
+  await comparisons.getByRole('button',{name:'重試讀取比對證據'}).click();
   await expect(comparisons.getByRole('heading',{name:'發現結果差異'})).toBeVisible();
 });

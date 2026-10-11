@@ -1,4 +1,5 @@
 import {test, expect} from '@playwright/test';
+import {routeWorkflow} from './fixtures/workflow';
 
 test('來源證據失敗分支（合成 API 回應，只驗證 UI）', async ({page, request}) => {
   const project = await (await request.post('/api/projects',{data:{project_name:`來源失敗UI-${Date.now()}`}})).json();
@@ -10,13 +11,14 @@ test('來源證據失敗分支（合成 API 回應，只驗證 UI）', async ({p
   await page.route(`${base}/${runId}`, route=>route.fulfill({json:run}));
   const errors:string[]=[];
   page.on('pageerror', error=>errors.push(error.message));
-  await page.goto(`/#/projects/${project.project_id}/tasks/${task.id}/requirements`);
+  await routeWorkflow(page, task.id, {stage: 'requirements'});
+  await page.goto(`/#/projects/${project.project_id}/tasks/${task.id}/requirements/${runId}`);
   const evidence = page.getByRole('region',{name:'來源檔案驗證證據'});
   await expect(evidence).toContainText('沒有實體來源檔案檢查證據');
   run.outcome_code = 'HOP_RESULT_UNKNOWN';
   run.write_started = true;
   run.state = 'NEEDS_REVIEW';
-  await page.getByRole('button',{name:'重新載入版本'}).click();
+  await page.getByRole('button',{name:'重新核對狀態'}).click(); // shared workspace re-read
   await expect(page.getByRole('alert',{name:'執行結果待核對'})).toContainText('禁止直接重跑');
   await expect(page.getByRole('button',{name:'補正需求並建立新版',exact:true})).toHaveCount(0);
   for(const [code,text] of [
@@ -26,7 +28,7 @@ test('來源證據失敗分支（合成 API 回應，只驗證 UI）', async ({p
     ['HOP_RESULT_UNKNOWN','執行器異常或回報無法驗證'],
   ]) {
     run.outcome_code=code;
-    await page.getByRole('button',{name:'重新載入版本'}).click();
+    await page.getByRole('button',{name:'重新核對狀態'}).click(); // shared workspace re-read
     await expect(page.getByRole('alert',{name:'執行結果待核對'})).toContainText(text);
   }
   for(const [status,message] of [
@@ -37,12 +39,12 @@ test('來源證據失敗分支（合成 API 回應，只驗證 UI）', async ({p
     ['UNKNOWN_STATUS','不可視為通過'],
   ]){
     run.gate_result.source_evidence=[{source_ref:'source.0',status}];
-    await page.getByRole('button',{name:'重新載入版本'}).click();
+    await page.getByRole('button',{name:'重新核對狀態'}).click(); // shared workspace re-read
     await expect(evidence).toContainText(message);
     await expect(evidence).not.toContainText('符合此版本的大小與 checksum');
   }
   run.gate_result.source_evidence=[{source_ref:'source.0',status:'CSV_CONTENT_INVALID',csv:{status:'INVALID',complete:false,records_checked:4,issues:[{code:'CSV_HEADER_MISMATCH',record:0},{code:'CSV_MISSING_COLUMNS',record:4}]}}];
-  await page.getByRole('button',{name:'重新載入版本'}).click();
+  await page.getByRole('button',{name:'重新核對狀態'}).click(); // shared workspace re-read
   await expect(evidence).toContainText('未通過或尚未完整掃描');
   await expect(evidence).toContainText('標題名稱或順序與確認欄位不同（標題列）');
   await expect(evidence).toContainText('資料記錄 4，非文字行號');

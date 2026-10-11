@@ -1,7 +1,11 @@
 import {test, expect} from '@playwright/test';
+import {syntheticWritesAllowed} from './fixtures/control';
 
 test('轉換意圖逐欄位補正、保存重載與歷史隔離（真實隔離 API，無模型或 ETL）', async ({page, request}) => {
   page.setDefaultTimeout(10000);
+  // Waits for an isolated deterministic CONTROL worker to move the approved Run to NEEDS_REVIEW (same opt-in as upload/specification live tests).
+  test.skip(process.env.WORKBENCH_TEST_CONTROL_WORKER !== '1', 'Requires isolated CONTROL worker (WORKBENCH_TEST_CONTROL_WORKER=1)');
+  test.skip(!syntheticWritesAllowed(), 'Explicit isolated write permission required (rewrites platform settings; WORKBENCH_ALLOW_SYNTHETIC_UI=1)');
   const ready = await (await request.get('/api/ready')).json();
   expect(ready.execution_enabled).toBe(false);
   const suffix = Date.now(), profile = 'intent-ui-' + suffix, connection = 'intent-conn-' + suffix;
@@ -20,7 +24,8 @@ test('轉換意圖逐欄位補正、保存重載與歷史隔離（真實隔離 A
     await panel.getByRole('button', {name: '確認此版輸入', exact: true}).click();
     const parent = (await (await request.get(`/api/tasks/${task}/runs`)).json()).runs[0];
     await expect.poll(async () => (await (await request.get(`/api/tasks/${task}/runs/${parent.run_id}`)).json()).state, {timeout: 20000}).toBe('NEEDS_REVIEW');
-    await panel.getByRole('button', {name: '重新載入版本', exact: true}).click();
+    // The workspace now has a single re-read control for status and versions.
+    await page.getByRole('button', {name: '重新核對狀態', exact: true}).click();
     await panel.getByRole('button', {name: '補正需求並建立新版', exact: true}).click();
     const form = panel.getByRole('form', {name: '需求補正'});
     await form.getByRole('button', {name: '新增轉換意圖', exact: true}).click();
@@ -44,6 +49,9 @@ test('轉換意圖逐欄位補正、保存重載與歷史隔離（真實隔離 A
     await page.setViewportSize({width: 390, height: 900});
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2)).toBe(true);
     const saved = page.waitForResponse(r => r.url().endsWith('/revisions') && r.request().method() === 'POST');
+    // Revisions require reviewing the field diff before saving (pre-existing flow since b5f48fd).
+    await form.getByRole('button', {name: '預覽修訂差異', exact: true}).click();
+    await form.getByLabel('已核對差異，同意建立待需求確認的新版').check();
     await form.getByRole('button', {name: '保存補正並建立新版', exact: true}).click();
     const result = await saved; expect(result.status()).toBe(201);
     // The application reloads after save; verify persisted state through the

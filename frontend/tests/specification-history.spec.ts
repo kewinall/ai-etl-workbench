@@ -1,4 +1,5 @@
 import {test, expect} from '@playwright/test';
+import {routeWorkflow} from './fixtures/workflow';
 
 for (const version of [1,2,4]) test(`規格歷史與核准互動 V${version}（瀏覽器合成回應，非資料庫核准驗收）`, async ({page, request}) => {
   const project = await (await request.post('/api/projects', {data: {project_name: '規格UI-'+Date.now()}})).json();
@@ -27,11 +28,13 @@ for (const version of [1,2,4]) test(`規格歷史與核准互動 V${version}（�
     await route.fulfill({json: {status: 'SPEC_APPROVED_NOT_EXECUTABLE', execution_authorized: false}});
   });
   await page.route(`${base}/${runId}/specification/compile-preview`, route => route.fulfill({json: {status: 'VALIDATED_NOT_APPROVED', plan: {stages: [{id: 'source', component: 'CSVInput'}]}, hpl: '<pipeline>UI fixture only</pipeline>'}}));
+  // Specifications now live in the design stage of the shared Run workspace and load automatically.
+  await routeWorkflow(page, task.id, {stage: 'design'});
+  await page.route(`${base}/${runId}/developer`, route => route.fulfill({json: {invocation: null, eligible: false, dispatch_enabled: false}}));
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto(`/#/projects/${project.project_id}/tasks/${task.id}/requirements`);
+  await page.goto(`/#/projects/${project.project_id}/tasks/${task.id}/design/${runId}`);
   const panel = page.getByRole('region', {name: 'ETL 規格版本', exact: true});
-  await panel.getByRole('button', {name: '載入規格版本'}).click();
   await expect(panel).toContainText('amount 大於 100.00');
   if (version === 2) {
     const join = panel.getByRole('region',{name:'Join 關聯規則'});
@@ -125,14 +128,14 @@ for (const version of [1,2,4]) test(`規格歷史與核准互動 V${version}（�
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({path: test.info().outputPath('specification-page.png'), fullPage: true});
   stale = true;
-  await panel.getByRole('button', {name: '重新整理規格版本'}).click();
+  await page.getByRole('button', {name: '重新核對狀態'}).click();
   await expect(panel).toContainText('歷史核准已失效');
   await expect(panel.getByRole('button', {name: '核准此版規格'})).toHaveCount(0);
   await expect(panel.getByRole('button', {name: '檢查 Hop 編譯預覽'})).toBeDisabled();
   expect(errors).toEqual([]);
   await page.route(`${base}/${runId}/sa-invocation`, route => route.fulfill({json: {invocation: null}}));
   await page.route(`${base}/${runId}`, route => route.fulfill({json: {...run, events: [{event_id: 1, event_type: 'SPECIFICATION_APPROVED', phase: 'SPEC_VALIDATION', created_at: run.created_at, event_context: {specification_id: 's1', version: 1, checksum: 'a'.repeat(64), approval_id: 'approval1'}}]}}));
-  await page.getByRole('tab', {name: '協作紀錄', exact: true}).click();
+  await page.getByText('審查／修訂時間軸與技術詳情', {exact: true}).click();
   const timeline = page.getByRole('region', {name: '版本協作紀錄'});
   await expect(timeline).toContainText('人工核准規格（非執行授權）');
   await expect(timeline).toContainText('規格第 1 版');

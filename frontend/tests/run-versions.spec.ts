@@ -29,16 +29,18 @@ test('準備版本、輸入確認、設定異動失效、取消與拒絕', async
     expect(detail.approval.decision).toBe('APPROVE');
     expect(detail.write_started).toBe(false);
     expect(detail.lease_token).toBeUndefined();
-    await page.getByRole('tab', {name: '協作紀錄', exact: true}).click();
+    // The collaboration timeline is the read-only 審查／修訂時間軸 section of the shared Run workspace.
+    await page.getByText('審查／修訂時間軸與技術詳情', {exact: true}).click();
     const timeline = page.getByRole('region', {name: '版本協作紀錄'});
     await expect(timeline.getByText('人工操作 · 輸入確認', {exact: true})).toBeVisible();
     await expect(timeline.getByText(/APPROVE；不等於 Hop/)).toBeVisible();
-    await page.getByRole('tab', {name: '需求與規格', exact: true}).click();
+    const refresh = () => page.getByRole('button', {name: '重新核對狀態'}).click(); // one shared re-read for every panel
     if (process.env.WORKBENCH_TEST_CONTROL_WORKER === '1') {
       await expect.poll(async () => (await (await request.get(`/api/tasks/${taskId}/runs/${first.run_id}`)).json()).outcome_code, {timeout: 20000}).toBe('REQUIREMENT_NEEDS_INPUT');
-      await panel.getByRole('button', {name: '重新載入版本'}).click();
+      await refresh();
       await expect(panel.getByRole('region', {name: '初步需求檢查結果'})).toContainText('請明確選擇新增、覆寫或鍵值合併');
       await expect(panel.getByRole('region', {name: '初步需求檢查結果'})).toContainText('請確認 CSV 編碼');
+      await panel.getByText(/^控制流程紀錄/).click();
       await expect(panel.getByText(/REQUIREMENT_GATE_STARTED/)).toBeVisible();
       const checked = await (await request.get(`/api/tasks/${taskId}/runs/${first.run_id}`)).json();
       expect(checked.state).toBe('NEEDS_REVIEW');
@@ -48,8 +50,8 @@ test('準備版本、輸入確認、設定異動失效、取消與拒絕', async
       const form = panel.getByRole('form', {name: '需求補正'});
       await form.getByLabel('補正後需求').fill('合成資料補正需求：保存歷史版本，不執行 ETL');
       await form.getByLabel('目標 Table').fill('corrected_synthetic');
-      await page.getByRole('tab', {name: '概覽', exact: true}).click();
-      await page.getByRole('tab', {name: '需求與規格', exact: true}).click();
+      await page.getByRole('tab', {name: /2 · 需求審查/}).click();
+      await page.getByRole('tab', {name: /1 · 需求與資料規格/}).click();
       await expect(form.getByLabel('目標 Table')).toHaveValue('corrected_synthetic');
       await form.getByRole('button', {name: '放棄補正'}).click();
       await expect(form).toHaveCount(0);
@@ -72,6 +74,10 @@ test('準備版本、輸入確認、設定異動失效、取消與拒絕', async
       await form.getByRole('button', {name: '新增來源欄位', exact: true}).click();
       await form.getByLabel('欄位 2 名稱', {exact: true}).fill('created_date');
       await form.getByRole('combobox', {name: '欄位 2 型別', exact: true}).selectOption('DATE');
+      // Revisions require reviewing the field diff before saving (pre-existing flow since b5f48fd).
+      await form.getByRole('button', {name: '預覽修訂差異'}).click();
+      await expect(form.getByRole('region', {name: '修訂差異預覽'})).toContainText('corrected_synthetic');
+      await form.getByLabel('已核對差異，同意建立待需求確認的新版').check();
       await form.getByRole('button', {name: '保存補正並建立新版'}).click();
       await expect(panel.getByText('目標：ai_sample.corrected_synthetic', {exact: true})).toBeVisible();
       await expect(panel.getByRole('button', {name: '確認此版輸入', exact: true})).toBeDisabled();
@@ -80,11 +86,15 @@ test('準備版本、輸入確認、設定異動失效、取消與拒絕', async
       expect(child.input_summary.source_fields).toContainEqual({name: 'created_date', type: 'DATE'});
       expect(child.input_summary.csv_input_contract_v1.extra_columns).toBe('REJECT');
       await expect(panel.getByRole('region', {name: 'CSV 輸入契約摘要'})).toContainText('額外欄位：拒收');
-      await panel.getByRole('button', {name: '查看 SA 證據清單', exact: true}).click();
-      const evidence = panel.getByRole('region', {name: 'SA 需求證據', exact: true});
+      // SA evidence and SA status live in the 需求審查 stage of the same Run.
+      await page.getByRole('tab', {name: /2 · 需求審查/}).click();
+      const review = page.getByRole('tabpanel', {name: /2 · 需求審查/});
+      await review.getByText('需求審查技術證據', {exact: true}).click();
+      await review.getByRole('button', {name: '查看 SA 證據清單', exact: true}).click();
+      const evidence = review.getByRole('region', {name: 'SA 需求證據', exact: true});
       await expect(evidence.getByText(/此證據檢視不會呼叫模型/)).toBeVisible();
-      await expect(panel.getByRole('region', {name: 'SA 呼叫狀態'})).toContainText('此版本尚無 SA 派發紀錄');
-      await panel.getByRole('button', {name: '重新載入 SA 狀態'}).click();
+      await expect(review.getByRole('region', {name: 'SA 呼叫狀態'})).toContainText('此版本尚無 SA 派發紀錄');
+      await refresh();
       await expect(evidence.getByText('來源欄位 · source.0.field.1', {exact: true})).toBeVisible();
       const context = await (await request.get(`/api/tasks/${taskId}/runs/${child.run_id}/sa-context`)).json();
       expect(context.execution_authorized).toBe(false);
@@ -96,19 +106,20 @@ test('準備版本、輸入確認、設定異動失效、取消與拒絕', async
       expect(old.input_summary.target_table).toBe('synthetic');
       expect(old.input_summary.source_fields).toHaveLength(1);
       expect((await (await request.get(`/api/tasks/${taskId}/runs/${child.run_id}`)).json()).approval).toBeNull();
+      await page.getByRole('tab', {name: /1 · 需求與資料規格/}).click();
       await panel.getByRole('button', {name: first.run_id, exact: true}).click();
       await expect(panel.getByText(/此版本已由補正版本取代/)).toBeVisible();
       await expect(panel.getByRole('region', {name: 'SA 需求證據'}).getByText('來源欄位 · source.0.field.1', {exact: true})).toHaveCount(0);
-      await panel.locator('.run-version-list > button').first().click();
+      await page.getByLabel('共用 Run 版本').selectOption(child.run_id);
       await panel.getByLabel('我已核對本次需求及設定版本').check();
       await panel.getByRole('button', {name: '確認此版輸入', exact: true}).click();
       await expect.poll(async () => (await (await request.get(`/api/tasks/${taskId}/runs/${child.run_id}`)).json()).outcome_code, {timeout: 20000}).toBe('PIPELINE_NOT_READY');
-      await panel.getByRole('button', {name: '重新載入版本'}).click();
-      await panel.getByRole('button', {name: '重新載入 SA 狀態'}).click();
+      await refresh();
       if (process.env.WORKBENCH_TEST_SA_QUEUE_ONLY === '1') {
         // Dedicated run: API authorization enabled, SA worker intentionally stopped.
         // This verifies UI -> API -> PostgreSQL outbox, not a real provider response.
-        const sa = panel.getByRole('region', {name: 'SA 呼叫狀態'});
+        await page.getByRole('tab', {name: /2 · 需求審查/}).click();
+        const sa = page.getByRole('region', {name: 'SA 呼叫狀態'});
         const enqueue = sa.getByRole('button', {name: '授權並排入 SA 工作'});
         await expect(enqueue).toBeDisabled();
         await sa.getByRole('checkbox', {name: '我同意此版本的 SA 模型呼叫及上述用量限制'}).check();
@@ -116,15 +127,16 @@ test('準備版本、輸入確認、設定異動失效、取消與拒絕', async
         await enqueue.click();
         expect((await response).status()).toBe(202);
         await expect(sa).toContainText('已授權並排隊，尚未由 Worker 領取');
-        await sa.getByRole('button', {name: '重新載入 SA 狀態'}).click();
+        await refresh();
         await expect(sa).toContainText('已授權並排隊，尚未由 Worker 領取');
         await sa.getByRole('button', {name: '取消尚未領取的 SA 工作'}).click();
         await expect(sa).toContainText('已取消排隊，未呼叫模型');
         await expect(enqueue).toHaveCount(0);
+        await page.getByRole('tab', {name: /1 · 需求與資料規格/}).click();
       }
     }
     expect((await request.put('/api/settings/ai-profiles/'+profileId, {data: {...profile, region: 'us-west-2'}})).status()).toBe(200);
-    await panel.getByRole('button', {name: '重新載入版本'}).click();
+    await refresh();
     await expect(panel.getByText(/內容已變更，舊版確認不可沿用/)).toBeVisible();
     await panel.getByRole('button', {name: '取消未執行版本'}).click();
     await expect(panel.getByRole('status')).toContainText('歷史紀錄仍保留');
@@ -133,8 +145,10 @@ test('準備版本、輸入確認、設定異動失效、取消與拒絕', async
     await panel.getByRole('button', {name: '拒絕此版輸入', exact: true}).click();
     await expect(panel.getByRole('status')).toContainText('準備版本已取消');
     await page.reload();
-    await expect(panel.locator('.run-version-list > button')).toHaveCount(process.env.WORKBENCH_TEST_CONTROL_WORKER === '1' ? 3 : 2);
-    await expect(page.getByRole('heading', {name: '建立 Task 的完整設定'})).toBeVisible();
+    // Versions are listed in the shared Run selector of the workspace header.
+    await expect(page.getByLabel('共用 Run 版本').locator('option')).toHaveCount(process.env.WORKBENCH_TEST_CONTROL_WORKER === '1' ? 3 : 2);
+    await page.getByText('Task 保存設定（目前內容；版本輸入以上方不可變快照為準）', {exact: true}).click();
+    await expect(page.getByRole('heading', {name: '來源完整設定'}).first()).toBeVisible();
   } finally {
     if (taskId) {
       const runs = (await (await request.get(`/api/tasks/${taskId}/runs`)).json()).runs || [];

@@ -69,9 +69,11 @@ test('Excel 真實上傳、工作表／標頭確認、失效攔截與 Task 保�
   expect(naming.status()).toBe(200);
   expect((await naming.json()).contract.columns.map((column: any) => column.source_name)).toEqual(['客戶編號', '金額']);
   expect((await (await request.get(`/api/tasks/${task.id}/runs`)).json()).runs).toEqual([]);
-  await page.getByRole('tab', {name: '需求與規格', exact: true}).click();
+  // Saved creation settings (including the Excel selection) are in the requirements stage of the Task workspace.
+  await expect(page).toHaveURL(new RegExp(`/tasks/${task.id}/requirements$`));
   await page.reload();
-  await expect(page.getByRole('heading', {name: '建立 Task 的完整設定'})).toBeVisible();
+  await page.getByText('Task 保存設定（目前內容；版本輸入以上方不可變快照為準）', {exact: true}).click();
+  await expect(page.getByRole('heading', {name: '來源完整設定'}).first()).toBeVisible();
   const selection = page.getByRole('region', {name: '已保存的 Excel 來源選擇'});
   await expect(selection).toContainText('已確認：明細，第 2 列標頭');
   await selection.getByText('來源選擇指紋', {exact: true}).click();

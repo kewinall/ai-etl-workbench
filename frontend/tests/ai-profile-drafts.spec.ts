@@ -1,14 +1,16 @@
 import {test,expect} from '@playwright/test';
 
 test('保存一個 AI Profile 不覆寫另一個草稿（合成 API，無模型呼叫）',async({page})=>{
-  let profiles=['draft-a','draft-b'].map(profile_id=>({profile_id,display_name:profile_id,provider_type:'LITELLM_BEDROCK',region:'us-east-1',endpoint:null,enabled:true,model_routes:{requirement_gate:'synthetic',etl_specification:'synthetic',qa_review:'synthetic'}}));
+  let profiles=['draft-a','draft-b'].map(profile_id=>({profile_id,display_name:profile_id,provider_type:'LITELLM_BEDROCK',region:'us-east-1',endpoint:null,enabled:true,updated_at:'2026-10-11T00:00:00Z',model_routes:{requirement_gate:'synthetic',etl_specification:'synthetic',qa_review:'synthetic'}}));
+  // Saves are optimistic-concurrency writes: the fixture carries the persisted version the page must send back.
   let releaseSave!:()=>void;
   const saving=new Promise<void>(resolve=>{releaseSave=resolve});
   await page.route('**/api/settings/ai-profiles',route=>route.fulfill({json:profiles}));
   await page.route('**/api/settings/ai-profiles/draft-b',async route=>{
     expect(route.request().method()).toBe('PUT');
+    expect(route.request().headers()['x-settings-version']).toBe('2026-10-11T00:00:00Z');
     await saving;
-    profiles=profiles.map(p=>p.profile_id==='draft-b'?{...p,...route.request().postDataJSON()}:p);
+    profiles=profiles.map(p=>p.profile_id==='draft-b'?{...p,...route.request().postDataJSON(),updated_at:'2026-10-11T00:00:01Z'}:p);
     await route.fulfill({json:profiles[1]});
   });
   await page.goto('/#/system');

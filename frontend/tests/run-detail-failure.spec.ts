@@ -1,4 +1,5 @@
 import {test, expect} from '@playwright/test';
+import {routeWorkflow} from './fixtures/workflow';
 
 test('版本讀取失敗或識別不符不可留下舊核准內容（合成回應）', async ({page, request}) => {
   const project = await (await request.post('/api/projects', {data:{project_name:'版本讀取-'+Date.now()}})).json();
@@ -12,18 +13,21 @@ test('版本讀取失敗或識別不符不可留下舊核准內容（合成回�
   await page.route(`${base}/${first.run_id}`, r=>r.fulfill({json:first}));
   let mode = 'failure';
   await page.route(`${base}/${second.run_id}`, r=>mode==='failure' ? r.fulfill({status:503,json:{detail:{message:'合成版本讀取失敗'}}}) : r.fulfill({json:first}));
-  await page.goto(`/#/projects/${project.project_id}/tasks/${task.id}/requirements`);
+  // Versions are switched in the shared workspace header; a failed or mismatched read must clear the old confirmable content.
+  await routeWorkflow(page, task.id, {stage: 'requirements'});
+  await page.goto(`/#/projects/${project.project_id}/tasks/${task.id}/requirements/${first.run_id}`);
   const panel = page.getByRole('region',{name:'執行準備版本',exact:true});
   await panel.getByLabel('我已核對本次需求及設定版本').check();
   await expect(panel.getByRole('button',{name:'確認此版輸入',exact:true})).toBeEnabled();
-  await panel.getByRole('button').filter({hasText:second.run_id}).click();
-  await expect(panel.getByRole('status')).toContainText('合成版本讀取失敗');
+  await page.getByLabel('共用 Run 版本').selectOption(second.run_id);
+  await expect(page.getByRole('alert').filter({hasText:'合成版本讀取失敗'})).toBeVisible();
   await expect(panel.getByRole('button',{name:'確認此版輸入',exact:true})).toHaveCount(0);
   mode = 'mismatch';
-  await panel.getByRole('button').filter({hasText:second.run_id}).click();
-  await expect(panel.getByRole('status')).toContainText('版本回應不一致');
+  await page.getByRole('button',{name:'重新核對狀態'}).click();
+  await expect(page.getByRole('alert').filter({hasText:'版本回應不一致'})).toBeVisible();
   await expect(panel.getByRole('region',{name:'版本內容'})).toHaveCount(0);
-  await panel.getByRole('button').filter({hasText:first.run_id}).click();
+  await expect(panel.getByRole('button',{name:'確認此版輸入',exact:true})).toHaveCount(0);
+  await page.getByLabel('共用 Run 版本').selectOption(first.run_id);
   await expect(panel.getByRole('button',{name:'確認此版輸入',exact:true})).toBeDisabled();
   await expect(panel.getByLabel('我已核對本次需求及設定版本')).not.toBeChecked();
 });

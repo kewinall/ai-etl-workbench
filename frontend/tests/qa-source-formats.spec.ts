@@ -1,7 +1,9 @@
 import {test, expect} from '@playwright/test';
+import {routeWorkflow} from './fixtures/workflow';
 
 for (const format of ['CSV', 'JOIN', 'XLSX', 'JSON', 'UNKNOWN']) test(`QA 來源 ${format} 合成歷史呈現，不是模型或資料庫驗收`, async ({page, request}) => {
-  expect(process.env.WORKBENCH_TEST_URL).toBe('http://127.0.0.1:5195');
+  // Precondition instead of a fixed port: only create synthetic Projects/Tasks where ETL execution is disabled.
+  test.skip((await (await request.get('/api/ready')).json()).execution_enabled, '真實執行環境不建立合成 Task');
   const project = await (await request.post('/api/projects', {data: {project_name: `QA格式-${format}-${Date.now()}`}})).json();
   const response = await request.post(`/api/projects/${project.project_id}/tasks`, {data: {name: 'QA格式呈現', requirement: 'Synthetic UI only',
     source_config: {sources: [{type: 'CSV', has_actual_data: false, fields: [{name: 'id', type: 'BIGINT'}]}]}, target_schema: 'ai_sample', target_table: 'ui_only'}});
@@ -25,7 +27,9 @@ for (const format of ['CSV', 'JOIN', 'XLSX', 'JSON', 'UNKNOWN']) test(`QA 來源
     review: {status: 'NEEDS_REVIEW', summary: '缺少真實結果來源', issues: [{message: '合成回應不作驗收證據', evidence_ids: ['result_source']}]}};
   await page.route(`${base}/${runId}/qa-review`, route => route.fulfill({json: {run_id: runId, invocation: item, history: [item], matches_current: true, qa_approved: false, release_ready: false}}));
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
-  await page.goto(`/#/projects/${project.project_id}/tasks/${task.id}/execution`);
+  // QA records now live in the 品質審查 stage of the shared Run workspace.
+  await routeWorkflow(page, task.id, {stage: 'quality'});
+  await page.goto(`/#/projects/${project.project_id}/tasks/${task.id}/quality/${runId}`);
   const qa = page.getByRole('region', {name: 'QA 審查紀錄', exact: true});
   await qa.getByText('當時的語意審查依據', {exact: true}).click();
   const panel = qa.getByRole('region', {name: 'QA 來源證據', exact: true});
@@ -39,7 +43,7 @@ for (const format of ['CSV', 'JOIN', 'XLSX', 'JSON', 'UNKNOWN']) test(`QA 來源
   await page.setViewportSize({width: 390, height: 1000});
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2)).toBe(true);
   await panel.screenshot({path: test.info().outputPath(`qa-source-${format}.png`)});
-  await qa.getByRole('button', {name: '重新讀取 QA 審查'}).click();
+  await page.getByRole('button', {name: '重新核對狀態'}).click();
   await expect(qa).toContainText('QA 建議：NEEDS_REVIEW');
   expect(errors).toEqual([]);
 });

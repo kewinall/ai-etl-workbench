@@ -36,11 +36,13 @@ test('專案新增、編輯、取消、重載與 Task 導覽', async ({page, req
   await expect(page.getByLabel('英文名稱 1', {exact: true})).toHaveValue('customer_id');
   const saved = await request.get('/api/projects/'+projectId);
   expect((await saved.json()).naming_rules.column_aliases['客戶編號']).toBe('customer_id');
+  await page.getByText(/^切換專案（目前：/).click(); // the project switcher is collapsed on project pages
   await page.getByRole('button', {name: '新增專案', exact: true}).click();
   await page.getByRole('button', {name: '取消變更', exact: true}).click();
   await expect(page).not.toHaveURL(/\/new\/settings$/);
   await page.goto(`/#/projects/${projectId}/history`);
-  await expect(page.getByRole('tab', {name: '歷史 Task'})).toHaveAttribute('aria-selected','true');
+  // Projects open on the work list; settings and Pilot evaluation moved under the main 管理 navigation.
+  await expect(page.getByRole('region', {name: '專案歷史 Task'})).toBeVisible();
   await page.getByRole('button', {name: '建立 Task', exact: true}).click();
   await expect(page).toHaveURL(new RegExp(projectId+'/tasks/new$'));
   await expect(page.getByLabel('所屬專案', {exact: true})).toHaveValue(name);
@@ -63,8 +65,11 @@ test('專案新增、編輯、取消、重載與 Task 導覽', async ({page, req
   const result = await created;
   expect(result.status()).toBe(201);
   expect((await result.json()).project_id).toBe(projectId);
-  await page.getByRole('tab', {name: '需求與規格', exact: true}).click();
-  await expect(page.getByRole('heading', {name: '建立 Task 的完整設定'})).toBeVisible();
+  // The created Task opens in the shared stage workspace; saved creation settings sit in the requirements stage.
+  await expect(page).toHaveURL(new RegExp('/projects/'+projectId+'/tasks/[^/]+/requirements$'));
+  await page.getByText('Task 保存設定（目前內容；版本輸入以上方不可變快照為準）', {exact: true}).click();
+  await expect(page.getByRole('heading', {name: '來源完整設定'}).first()).toBeVisible();
+  await expect(page.getByText('這是合成 CSV 上傳與專案歸屬驗收，不執行資料庫寫入', {exact: true})).toBeVisible();
 });
 
 test('歷史 Task 保留建立內容、節點、Job 頁面及返回路徑', async ({page, request}) => {
@@ -79,33 +84,36 @@ test('歷史 Task 保留建立內容、節點、Job 頁面及返回路徑', asyn
   const task = await response.json();
   await page.goto(`/#/projects/${project.project_id}/history`);
   await page.getByRole('button', {name: /歷史節點驗收/}).click();
-  await expect(page).toHaveURL(new RegExp('/tasks/'+task.id+'$'));
+  await expect(page).toHaveURL(new RegExp('/tasks/'+task.id+'/requirements$'));
   const readiness = page.getByRole('region', {name: 'Pilot 執行準備'});
   await expect(readiness.getByText('設定尚未完整', {exact: true})).toBeVisible();
   await expect(readiness.getByText(/此角色尚未指定模型/)).toBeVisible();
   const checked = page.waitForResponse(r => r.url().endsWith('/execution-settings'));
   await readiness.getByRole('button', {name: '重新檢查設定'}).click();
   expect((await checked).status()).toBe(200);
-  await page.getByRole('tab', {name: '需求與規格', exact: true}).click();
-  await expect(page.getByRole('heading', {name: '建立 Task 的完整設定'})).toBeVisible();
+  // Creation settings are in the requirements stage; legacy nodes/SQL/Hop logs stay in the read-only 舊版紀錄 section.
+  await page.getByText('Task 保存設定（目前內容；版本輸入以上方不可變快照為準）', {exact: true}).click();
+  await expect(page.getByRole('heading', {name: '來源完整設定'}).first()).toBeVisible();
   await expect(page.getByText('保留原始建立需求與客戶編號欄位，這筆合成 Task 不執行 ETL', {exact: true})).toBeVisible();
   await page.reload();
-  await expect(page.getByRole('tab', {name: '需求與規格', exact: true})).toHaveAttribute('aria-selected', 'true');
-  await page.getByRole('tab', {name: '產物與流程', exact: true}).click();
-  await expect(page.getByRole('heading', {name: '舊版節點狀態', exact: true})).toBeVisible();
-  await expect(page.locator('button.nodebutton')).toHaveCount(8);
-  await page.getByRole('button', {name: /Rule Router/}).click();
-  await expect(page.getByRole('heading', {name: 'Rule Router 詳細資訊', exact: true})).toBeVisible();
+  await expect(page.getByRole('tab', {name: /1 · 需求與資料規格/})).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', {name: /5 · 執行與結果/}).click();
+  await page.getByText('舊版紀錄：Task 節點、Log、Hop、SQL 與下載', {exact: true}).click();
+  const legacy = page.locator('details', {has: page.getByText('舊版紀錄：Task 節點、Log、Hop、SQL 與下載', {exact: true})});
+  await expect(legacy.getByRole('heading', {name: '舊版節點', exact: true})).toBeVisible();
+  await expect(legacy.locator(':scope > button[aria-pressed]')).toHaveCount(8);
+  await legacy.getByRole('button', {name: /Rule Router/}).click();
+  await expect(legacy.getByRole('button', {name: /Rule Router/})).toHaveAttribute('aria-pressed', 'true');
+  await expect(legacy.getByRole('region', {name: '舊版節點詳情'})).toContainText('Rule Router');
   await page.screenshot({path: test.info().outputPath('node-details.png'), fullPage: true});
-  await page.getByRole('button', {name: '關閉節點詳情', exact: true}).click();
-  await expect(page.getByRole('heading', {name: '所有 SQL', exact: true})).toBeVisible();
-  await page.getByRole('tab', {name: '執行與 QA', exact: true}).click();
-  await expect(page.getByRole('heading', {name: '舊版 Apache Hop Log', exact: true})).toBeVisible();
-  await page.getByRole('tab', {name: '交付', exact: true}).click();
+  await legacy.getByRole('button', {name: '讀取舊版產物', exact: true}).click();
+  await expect(legacy.getByRole('heading', {name: '舊版 SQL', exact: true})).toBeVisible();
+  await expect(legacy.getByRole('heading', {name: '舊版 Apache Hop Log', exact: true})).toBeVisible();
+  await page.getByRole('tab', {name: /7 · 成果交付/}).click();
   await expect(page.getByText('尚無準備版本。請先到需求與規格建立版本並確認規格。',{exact:true})).toBeVisible();
   await expect(page.getByRole('link', {name: /Release ZIP/})).toHaveCount(0);
   await page.goBack();
-  await expect(page.getByRole('tab', {name: '執行與 QA', exact: true})).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', {name: /5 · 執行與結果/})).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('button', {name: '← 返回工作清單', exact: true}).click();
   await expect(page).toHaveURL(new RegExp(project.project_id+'/history$'));
   await expect(page.getByRole('button', {name: /歷史節點驗收/})).toBeVisible();

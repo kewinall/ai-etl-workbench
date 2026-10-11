@@ -4,8 +4,9 @@ test('工具路徑讀取可恢復，不完整回讀不可冒充儲存成功',asy
   let mode='fail';
   await page.route('**/api/settings/groups',route=>mode==='fail'
     ?route.fulfill({status:503,json:{detail:'合成工具設定讀取失敗'}})
-    :route.fulfill({json:{values:mode==='missing'?{}:{execution_tool_paths:{hop_run_path:'/synthetic/hop'}}}}));
+    :route.fulfill({json:{values:mode==='missing'?{}:{execution_tool_paths:{hop_run_path:'/synthetic/hop'}},versions:{execution_tool_paths:'tools-v1'}}}));
   await page.route('**/api/settings/groups/execution_tool_paths',async route=>{
+    expect(route.request().headers()['x-settings-version']).toBe('tools-v1');
     mode='missing';await route.fulfill({json:{ok:true}});
   });
   await page.goto('/#/system');
