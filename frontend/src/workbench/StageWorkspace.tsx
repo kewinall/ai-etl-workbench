@@ -15,7 +15,7 @@ import {ExecutionDiagnosis} from './ExecutionDiagnosis';
 import {ExecutionReconciliation} from './ExecutionReconciliation';
 import {ComparisonHistory} from './ComparisonHistory';
 import './workflow.css';
-import {WorkflowReadOnly,WorkflowQualifications,WorkflowCanCancel,WorkflowCanPrepare} from './useWorkflowRefresh';
+import {WorkflowReadOnly,WorkflowQualifications,WorkflowCanCancel,WorkflowCanPrepare,WorkflowStatus} from './useWorkflowRefresh';
 import {LegacyTaskRecords} from './LegacyTaskRecords';
 
 const keys=['requirements','review','design','confirm','results','quality','delivery'];
@@ -119,7 +119,7 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
         {!runs.some(r=>r.run_id===selected)&&<option value={selected}>{selected?'指定版本不可用':'尚無版本'}</option>}
         {runs.map((r,i)=><option key={r.run_id} value={r.run_id}>第 {runs.length-i} 版 · {r.run_id}{i?'（歷史）':'（最新）'}</option>)}
       </select></label>
-      <p>{workflow?.category||'狀態待核對'} · 最後更新：{time(workflow?.updated_at)}{workflow?.historical?' · 歷史版本，只讀檢視':''}{workflow?.read_only_source?' · 既有真實案例，來源只讀':''}</p>
+      <p>{workflow?.effective_status||workflow?.category||'狀態待核對'}{workflow?.delivered?' · 只能查看與下載':''} · 最後更新：{time(workflow?.updated_at)}{workflow?.historical?' · 歷史版本，只讀檢視':''}{workflow?.read_only_source?' · 既有真實案例，來源只讀':''}</p>
       <button disabled={loading} onClick={()=>setEpoch(n=>n+1)}>{loading?'讀取中…':'重新核對狀態'}</button>
     </div>
     <div role="tablist" aria-label="ETL 七個階段" className="workflow-stages">{keys.map((key,i)=><button key={key} ref={el=>{refs.current[i]=el}} id={`stage-${key}`} role="tab" aria-selected={stage===key} aria-controls={`stage-panel-${key}`} tabIndex={stage===key?0:-1} onClick={()=>select(key)} onKeyDown={e=>{
@@ -127,17 +127,18 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
       if(index<0)return;e.preventDefault();select(keys[index]);refs.current[index]?.focus();
     }}><span>{i+1} · {labels[i]}</span><small>{({complete:'已有有效證據',current:'目前待處理',blocked:'前置條件待確認'} as any)[workflow?.stages[i]?.status]||'待讀取'}</small></button>)}</div>
     {error&&<p role="alert">資訊過期／無法確認：{error} 依賴新狀態的操作已停用；不會自動重送請求。</p>}
-    {valid&&<section className="panel workflow-next" aria-label="目前狀態與下一步"><h3>第 {keys.indexOf(workflow.current_stage)+1} 階段：{labels[keys.indexOf(workflow.current_stage)]}</h3>
+    {valid&&<section className="panel workflow-next" aria-label="目前狀態與下一步"><h3>整體進度：第 {keys.indexOf(workflow.current_stage)+1} 階段（{labels[keys.indexOf(workflow.current_stage)]}）</h3>
+      <p>目前查看：第 {keys.indexOf(stage)+1} 階段（{labels[keys.indexOf(stage)]}）· 目前有效狀態：{workflow.effective_status||workflow.category}</p>
       <dl><dt>已完成</dt><dd>{workflow.completed.join('、')||'尚無有效核准'}</dd><dt>現在需要誰</dt><dd>{workflow.owner}</dd><dt>下一步</dt><dd>{workflow.next_action.label}</dd></dl>
       {detail.failed_revision_available&&<p>此次結案已保存，原執行結果仍保留。這不是 QA 核准；只有建立修正版後，新版才重新進入需求確認。</p>}
-      <button className="primary" disabled={loading||!!error} onClick={()=>{if(detail.failed_revision_available)setPendingField('target_table');select(workflow.next_action.stage);requestAnimationFrame(()=>document.getElementById(`stage-panel-${workflow.next_action.stage}`)?.scrollIntoView({block:'start'}))}}>{detail.failed_revision_available?'建立修正版（保留此版結果）':'前往'+labels[keys.indexOf(workflow.next_action.stage)]}</button>
+      {(detail.failed_revision_available||stage!==workflow.next_action.stage)&&<button className="primary" disabled={loading||!!error} onClick={()=>{if(detail.failed_revision_available)setPendingField('target_table');select(workflow.next_action.stage);requestAnimationFrame(()=>document.getElementById(`stage-panel-${workflow.next_action.stage}`)?.scrollIntoView({block:'start'}))}}>{detail.failed_revision_available?'建立修正版（保留此版結果）':'前往'+labels[keys.indexOf(workflow.next_action.stage)]}</button>}
       {workflow.service_blocked_reason&&<p role="status">{workflow.service_blocked_reason}</p>}
       {workflow.execution_blocked_reason&&workflow.current_stage==='confirm'&&<p>{workflow.execution_blocked_reason}</p>}
       <details><summary>來源支援與驗收範圍</summary><p>{workflow.source_scope_note}</p></details>
     </section>}
     {stageInfo?.blocked_reason&&<p role="status">{stageInfo.blocked_reason} 此階段可檢視，操作須等前置條件成立。</p>}
     {valid&&!!workflow.issues.length&&<section className="panel workflow-issues" aria-label="問題處理區"><h3>待處理問題</h3><ul>{workflow.issues.map((issue:any,i:number)=><li key={i}><b>{issue.message}</b><p>原因：{issue.issue_type||issue.code||'審查缺口'} · 對應欄位：{issue.field_path||issue.evidence_ids?.join('、')||'需求說明'}</p><button disabled={loading||!!error||workflow.historical} onClick={()=>{if(issue.stage){select(issue.stage);return}const path=issue.field_path||issue.evidence_ids?.[0]||'';setPendingField(/write_mode/.test(path)?'write_mode':/date_scope|date_column|start_date|end_date/.test(path)?'date_scope':/key_columns/.test(path)?'key_columns':/join/.test(path)?'join':/transformation|filter|aggregation/.test(path)?'transformation':/source|csv|excel|json/.test(path)?'source':/schema/.test(path)?'target_schema':/table/.test(path)?'target_table':'requirement_text');select('requirements')}}>{issue.stage==='quality'?'檢視 QA 意見與補證':issue.stage==='design'?'檢視並修正规格':'前往修正'}</button></li>)}</ul></section>}
-    <WorkflowCanPrepare.Provider value={!loading&&!error&&!workflow?.historical&&!workflow?.read_only_source&&!runs.some(r=>['QUEUED','RUNNING','NEEDS_REVIEW'].includes(r.state))}><WorkflowCanCancel.Provider value={valid&&!loading&&!error&&!workflow.historical&&!workflow.read_only_source&&!detail.write_started&&['QUEUED','NEEDS_REVIEW'].includes(detail.state)}><WorkflowQualifications.Provider value={workflow?.operation_qualifications||{}}><WorkflowReadOnly.Provider value={!!readonly}>
+    <WorkflowCanPrepare.Provider value={!loading&&!error&&!workflow?.historical&&!workflow?.read_only_source&&!runs.some(r=>['QUEUED','RUNNING','NEEDS_REVIEW'].includes(r.state))}><WorkflowCanCancel.Provider value={valid&&!loading&&!error&&!workflow.historical&&!workflow.read_only_source&&!detail.write_started&&['QUEUED','NEEDS_REVIEW'].includes(detail.state)}><WorkflowStatus.Provider value={valid?workflow:null}><WorkflowQualifications.Provider value={workflow?.operation_qualifications||{}}><WorkflowReadOnly.Provider value={!!readonly}>
     <section className="panel" hidden={stage!=='requirements'} role="tabpanel" id="stage-panel-requirements" aria-labelledby="stage-requirements">
       {(!runId||valid)&&<fieldset className="workflow-controls" disabled={loading||!!error}><RunVersions taskId={task.id} requestedRunId={selected||undefined} onSelectRun={id=>select('requirements',id)}/></fieldset>}
       <details><summary>Task 保存設定（目前內容；版本輸入以上方不可變快照為準）</summary>{renderSetup(task)}</details>
@@ -145,14 +146,14 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
     {valid&&stage!=='requirements'&&<section className="panel" role="tabpanel" id={`stage-panel-${stage}`} aria-labelledby={`stage-${stage}`}>
       <fieldset className="workflow-controls" disabled={loading||!!error}>
         {stage==='review'&&<><SAInvocation key={selected} taskId={task.id} runId={selected}/><details><summary>需求審查技術證據</summary><SAEvidence taskId={task.id} runId={selected}/></details></>}
-        {stage==='design'&&<><NamingConfirmation taskId={task.id} runId={selected} historical={workflow.historical||!workflow.matches_current||detail.write_started} editable={!readonly&&!detail.write_started} sourceOrder={detail.input_summary.source_order_v1}/><DeveloperInvocation key={selected} taskId={task.id} runId={selected}/><SpecificationHistory key={selected} taskId={task.id} runId={selected}/></>}
+        {stage==='design'&&<><NamingConfirmation taskId={task.id} runId={selected} historical={workflow.historical||!workflow.matches_current||detail.write_started} editable={!readonly&&!detail.write_started&&workflow.operation_qualifications?.naming_confirm?.enabled!==false} sourceOrder={detail.input_summary.source_order_v1}/><DeveloperInvocation key={selected} taskId={task.id} runId={selected}/><SpecificationHistory key={selected} taskId={task.id} runId={selected}/></>}
         {stage==='confirm'&&<><p>本版目標：{detail.input_summary.target_schema}.{detail.input_summary.target_table} · 寫入方式：{detail.input_summary.requirements_v1?.write_mode||'未確認'}</p><OracleHistory taskId={task.id} requestedRunId={selected} stage="confirm"/><HopDispatch key={selected} taskId={task.id} runId={selected}/></>}
         {stage==='results'&&<><RunArtifacts taskId={task.id} requestedRunId={selected}/><ComparisonHistory taskId={task.id} runId={selected}/>{['HOP_EXECUTION_FAILED','HOP_RESULT_UNKNOWN'].includes(detail.outcome_code)&&<><ExecutionDiagnosis base={runBase}/><ExecutionReconciliation base={runBase} onSaved={async()=>setEpoch(n=>n+1)}/></>}<HopDispatch key={selected} taskId={task.id} runId={selected}/></>}
         {stage==='quality'&&<>{workflow.current_stage==='results'&&<p role="alert">{workflow.execution_blocked_reason} <button type="button" onClick={()=>select('results')}>前往執行結果與比對</button></p>}<QAReviewHistory key={selected} taskId={task.id} runId={selected}/>{detail.qa_revision&&<button disabled={readonly} onClick={()=>{setPendingField('target_table');select('requirements')}}>建立修正版（保留原始執行，使用新目標）</button>}</>}
       </fieldset>
       {stage==='delivery'&&<>{detail.failed_revision_available&&<section aria-label="交付阻擋原因"><h3>此版尚無交付文件</h3><p>此版的結果比對未通過，已結案並保留原執行。結案不代表 QA 核准；目前不能產生 QA 關聯 SDM 或正式交付包。</p><p>下一步：按上方「建立修正版」，沿用原需求，使用新目標與正確標準答案重新確認。</p><button type="button" onClick={()=>select('results')}>查看此版流程與執行結果</button></section>}<SdmDelivery key={selected} base={runBase}/></>}
     </section>}
-    </WorkflowReadOnly.Provider></WorkflowQualifications.Provider></WorkflowCanCancel.Provider></WorkflowCanPrepare.Provider>
+    </WorkflowReadOnly.Provider></WorkflowQualifications.Provider></WorkflowStatus.Provider></WorkflowCanCancel.Provider></WorkflowCanPrepare.Provider>
     <details className="panel"><summary>審查／修訂時間軸與技術詳情</summary><button onClick={inspectHistory}>讀取此版本完整紀錄</button>{historyError&&<p role="alert">{historyError}</p>}{history&&<><ol>{history.run.events?.map((event:any)=><li key={event.event_id}>{time(event.created_at)} · {event.event_type}{renderValue(event.event_context)}</li>)}</ol><details><summary>SA／Developer／QA 模型紀錄與用量</summary>{renderValue({sa:history.sa,developer:history.dev,qa:history.qa})}</details></>}</details>
     <LegacyTaskRecords task={task} renderValue={renderValue}/>
   </div>;

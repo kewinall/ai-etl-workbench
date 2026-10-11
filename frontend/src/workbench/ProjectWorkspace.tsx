@@ -4,7 +4,7 @@ import './project-workspace.css';
 import {ProjectDefaults} from './ProjectDefaults';
 import {ProjectSummary} from './ProjectSummary';
 import {ProjectEvaluation} from './ProjectEvaluation';
-import {mergeProjectHistory} from './projectHistory';
+import {mergeProjectHistory,attachWorkflow} from './projectHistory';
 import {historyPage} from './historyPage';
 import {OperationLatch} from './operationLatch';
 import {TaskContinuation} from './TaskContinuation';
@@ -88,8 +88,9 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
     setTasksLoading(false);
     if (projectId && !creating && tab === 'history') {
       setTasksLoading(true);
-      Promise.all([request<any[]>(`/api/projects/${projectId}/tasks`),request(`/api/projects/${projectId}/evaluation`)]).then(([items,evaluation]) => {
-        const rows=mergeProjectHistory(projectId,items,evaluation);
+      const summary=request<any>(`/api/projects/${projectId}/summary`).catch(()=>null);
+      Promise.all([request<any[]>(`/api/projects/${projectId}/tasks`),request(`/api/projects/${projectId}/evaluation`),summary]).then(([items,evaluation,overview]) => {
+        const rows=attachWorkflow(mergeProjectHistory(projectId,items,evaluation),overview,projectId);
         if(active)setTasks(rows);
       })
         .catch(e => active && setTasksError(e.message)).finally(()=>active&&setTasksLoading(false));
@@ -208,9 +209,9 @@ export function ProjectWorkspace({projectId, tab = 'settings', navigate, onError
           <div className="wb-actions"><button type="button" disabled={busy} onClick={() => {restore(selected); if (creating) navigate(projects.length ? `/projects/${projects[0].project_id}/settings` : '/projects')}}>取消變更</button><button className="primary" type="submit" disabled={busy || form.project_name.trim().length < 2}>{busy ? '儲存中…' : creating ? '建立專案' : '儲存設定'}</button></div>
           </fieldset>
         </form> : <section className="panel wb-history" aria-label="專案歷史 Task">
-          <p>以每個 Task 最新 Run 顯示與篩選；NO_RUN 表示尚無準備版本。舊版 Task 狀態另外保留。歷史交付紀錄不代表目前可下載，請進入 Task 核對交付證據。</p>
+          <p>以每個 Task 最新 Run 的工作流程狀態顯示與篩選（與專案摘要相同判定）；無法核對時顯示「待確認」。</p>
           <label>搜尋 Task<input value={query} onChange={e => setQuery(e.target.value)} placeholder="名稱或 Task ID"/></label>
-          <label>篩選最新 Run 狀態<select aria-label="篩選 Task 狀態" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} disabled={tasksLoading||!!tasksError}><option value="">全部狀態</option>{Array.from(new Set(tasks.map(t=>String(t.display_state)))).sort().map(status=><option key={status} value={status}>{status}（{tasks.filter(t=>t.display_state===status).length}）</option>)}</select></label>
+          <label>篩選工作狀態<select aria-label="篩選 Task 狀態" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} disabled={tasksLoading||!!tasksError}><option value="">全部狀態</option>{Array.from(new Set(tasks.map(t=>String(t.display_state)))).sort().map(status=><option key={status} value={status}>{status}（{tasks.filter(t=>t.display_state===status).length}）</option>)}</select></label>
           {tasksLoading?<p role="status">正在讀取歷史 Task…</p>:tasksError?<div role="alert"><p>歷史 Task 讀取失敗：{tasksError}</p><button onClick={()=>setTasksAttempt(attempt=>attempt+1)}>重新讀取歷史 Task</button></div>:<>
             <p role="status">符合 {visibleTasks.length} / {tasks.length} 個 Task；本頁顯示 {pagedTasks.start}–{pagedTasks.end} 筆</p>
             <nav aria-label="歷史 Task 分頁" className="wb-actions">

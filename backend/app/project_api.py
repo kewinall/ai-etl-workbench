@@ -63,11 +63,21 @@ def create_project_router(repo) -> APIRouter:
         from .project_summary import project_summary
         try:
             get_project(project_id)
-            return project_summary(repo,str(project_id))
+            result = project_summary(repo,str(project_id))
         except HTTPException:
             raise
         except Exception:
             raise HTTPException(503,detail={'code':'PROJECT_SUMMARY_UNAVAILABLE','message':'專案摘要暫時無法讀取，請重試；不代表沒有 Task。'}) from None
+        from .project_summary import workflow_overview
+        from .run_queue import RunQueue
+        try:
+            overview = workflow_overview(RunQueue(repo.url), repo, str(project_id))
+        except Exception:
+            overview = {'workflow_basis': 'WORKFLOW_STATUS_LATEST_RUN', 'workflow_counts': None,
+                        'workflow_unverified': None, 'tasks': None}
+        # Legacy `states` keep raw Run states (qa/release_evaluated stay False); workflow fields add QA/Release-aware status.
+        overview['workflow_evaluated'] = overview['workflow_counts'] is not None
+        return {**result, **overview}
 
     @router.get('/{project_id}/evaluation')
     def evaluation(project_id: UUID):

@@ -17,7 +17,7 @@ import {ExcelInputEditor, ExcelInputSummary} from './ExcelInputContract';
 import {JsonInputEditor, JsonInputSummary} from './JsonInputContract';
 import {useDraftGuard} from './useDraftGuard';
 import {OperationLatch} from './operationLatch';
-import {useWorkflowReadOnly,useWorkflowRefresh,useWorkflowCanCancel,useWorkflowCanPrepare} from './useWorkflowRefresh';
+import {useWorkflowReadOnly,useWorkflowRefresh,useWorkflowCanCancel,useWorkflowCanPrepare,useWorkflowStatus,useOperation} from './useWorkflowRefresh';
 import {JoinInputEditor} from './JoinInputEditor';
 
 const states: Record<string, string> = {QUEUED: '待處理（未啟動）', RUNNING: '處理中', NEEDS_REVIEW: '需要人工檢查', SUCCEEDED: '流程已結束', FAILED: '失敗', CANCELLED: '已取消'};
@@ -26,6 +26,8 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
   const readOnly=useWorkflowReadOnly();
   const canCancel=useWorkflowCanCancel();
   const canPrepare=useWorkflowCanPrepare();
+  const workflow=useWorkflowStatus();
+  const prepareOp=useOperation('prepare_run'),confirmOp=useOperation('input_confirm'),cancelOp=useOperation('input_cancel'),revisionOp=useOperation('requirement_revision');
   const [runs, setRuns] = useState<any[]>([]);
   const [detail, setDetail] = useState<any>(null);
   const [busy, setBusy] = useState(false);
@@ -130,7 +132,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
     <h3>執行準備版本</h3>
     <p>先保存需求與設定快照，再確認此版輸入。啟用控制 Worker 後，只進行初步需求檢查；不會啟動 Hop 或產生 Release。</p>
     <div className="run-actions">
-      <button disabled={!canPrepare || busy || active} onClick={prepare}>建立準備版本</button>
+      {!workflow?.delivered&&<button disabled={!canPrepare || !prepareOp.enabled&&prepareOp.known || busy || active} onClick={prepare}>建立準備版本</button>}
       <button disabled={busy} onClick={() => action(async () => {await load(); if (detail) await open(detail.run_id)})}>重新載入版本</button>
     </div>
     {message && <p role="status">{message}</p>}
@@ -140,7 +142,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
     </button>)}</div>}
     {detail && <article aria-label="版本內容" className="run-version-detail">
       <h4>本次輸入與設定</h4>
-      <HopOutcome code={detail.outcome_code}/>
+      <HopOutcome code={detail.outcome_code} milestones={workflow?.run_id===detail.run_id?workflow.milestones:undefined}/>
       {['HOP_EXECUTION_FAILED','HOP_RESULT_UNKNOWN'].includes(detail.outcome_code)&&<ExecutionDiagnosis key={'diagnosis-'+detail.run_id} base={`/api/tasks/${encodeURIComponent(taskId)}/runs/${detail.run_id}`}/>}
       {['HOP_EXECUTION_FAILED','HOP_RESULT_UNKNOWN'].includes(detail.outcome_code)&&<ExecutionReconciliation key={'reconcile-'+detail.run_id} base={`/api/tasks/${encodeURIComponent(taskId)}/runs/${detail.run_id}`} onSaved={async()=>{await load();await open(detail.run_id)}}/>}
       {!onSelectRun&&<><SAEvidence key={detail.run_id} taskId={taskId} runId={detail.run_id}/>
@@ -173,7 +175,7 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
       {((detail.state === 'NEEDS_REVIEW' && detail.gate_result && !detail.write_started) || detail.failed_revision_available || detail.qa_revision) && detail.matches_current && <>
         {detail.qa_revision && <p>QA 尚未通過。保存補正會結束此版本的待審流程，保留原始執行與 QA 意見；必須指定 ai_sample 中不同的新目標，新版重新確認需求與核准，不會自動重跑 Hop。</p>}
         {detail.failed_revision_available && <p>此失敗版本已核對結案。修正後必須指定 ai_sample 中不同的新目標，重新通過需求與執行核准；不沿用舊核准、不重跑舊寫入，舊失敗與證據完整保留。</p>}
-        {!editing && <button data-revision-start disabled={readOnly||busy} onClick={() => {
+        {!editing && <button data-revision-start disabled={readOnly||!revisionOp.enabled||busy} onClick={() => {
           setDraft({requirement_text: detail.input_summary.requirement_text || '', target_schema: detail.input_summary.target_schema || '', target_table: detail.input_summary.target_table || ''});
           setConditions(detail.input_summary.requirements_v1 || {version: 1, write_mode: null, date_scope: null, date_column: '', start_date: '', end_date_exclusive: '', key_columns: []});
           setSourceFields(null);
@@ -255,11 +257,11 @@ export function RunVersions({taskId,requestedRunId,onSelectRun}: {taskId: string
       <dl><dt>AI Profile</dt><dd>{detail.settings_summary.ai_profile_id}</dd><dt>資料連線</dt><dd>{detail.settings_summary.connection_id}</dd><dt>輸入 checksum</dt><dd>{detail.input_checksum}</dd><dt>設定 checksum</dt><dd>{detail.settings_checksum}</dd></dl>
       <p>{detail.matches_current ? '與目前 Task／設定一致。' : '內容已變更，舊版確認不可沿用；請取消未執行版本後建立新版本。'}</p>
       {detail.approval && <p>已記錄輸入決定：{detail.approval.decision === 'APPROVE' ? '確認' : '拒絕'}（不等於執行／交付核准）</p>}
-      {detail.state === 'QUEUED' && !detail.approval && detail.matches_current && !readOnly && <>
+      {detail.state === 'QUEUED' && !detail.approval && detail.matches_current && !readOnly && confirmOp.enabled && <>
         <label><input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)}/>我已核對本次需求及設定版本</label>
         <div className="run-actions"><button disabled={busy || !confirmed} onClick={() => review('APPROVE')}>確認此版輸入</button><button disabled={busy} onClick={() => review('REJECT')}>拒絕此版輸入</button></div>
       </>}
-      {['QUEUED','NEEDS_REVIEW'].includes(detail.state) && !detail.write_started && <button disabled={!canCancel||busy} onClick={cancel}>取消未執行版本</button>}
+      {['QUEUED','NEEDS_REVIEW'].includes(detail.state) && !detail.write_started && <button disabled={!canCancel||!cancelOp.enabled&&cancelOp.known||busy} onClick={cancel}>取消未執行版本</button>}
       {!!detail.events?.length && <><h4>控制流程紀錄</h4><ol>{detail.events.map((event: any) => <li key={event.event_id}>{new Date(event.created_at).toLocaleString()} · {event.event_type} · {event.phase}</li>)}</ol></>}
     </article>}
   </section>;

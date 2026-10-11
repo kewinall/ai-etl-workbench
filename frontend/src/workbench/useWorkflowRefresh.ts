@@ -7,6 +7,18 @@ export const useWorkflowCanPrepare=()=>useContext(WorkflowCanPrepare);
 export const WorkflowQualifications=createContext<Record<string,any>>({});
 export const useServiceBlocker=(operation:string)=>useContext(WorkflowQualifications)[operation]?.blocked_reason||'';
 export const useWorkflowReadOnly=()=>useContext(WorkflowReadOnly);
+// Shared read-only workflow projection (milestones, effective status). Null outside the stage workspace.
+export const WorkflowStatus=createContext<any>(null);
+export const useWorkflowStatus=()=>useContext(WorkflowStatus);
+
+// Per-operation eligibility from the server projection. Enabled here never bypasses backend validation;
+// outside the stage workspace (no projection) only the read-only flag applies.
+export function useOperation(name:string):{enabled:boolean;reason:string;known:boolean}{
+  const readOnly=useContext(WorkflowReadOnly);
+  const item=useContext(WorkflowQualifications)[name];
+  if(!item)return {enabled:!readOnly,reason:'',known:false};
+  return {enabled:!readOnly&&item.enabled!==false,reason:item.enabled===false?item.blocked_reason||'目前不可操作。':'',known:true};
+}
 
 // Only re-read server state. Never invoke a write or reset an open editor.
 export function useWorkflowRefresh(base:string,read:()=>unknown,editing=false) {

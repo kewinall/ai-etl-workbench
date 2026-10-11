@@ -45,3 +45,30 @@ def test_summary_isolates_projects(context):
         with queue.conn() as conn:
             conn.execute('UPDATE platform.task SET project_id=%s WHERE task_id=%s', (original, task_id))
             conn.execute('DELETE FROM platform.project WHERE project_id=%s', (other_project,))
+
+
+def test_workflow_overview_uses_task_workflow_and_marks_unverified(context, monkeypatch):
+    from app.project_summary import workflow_overview
+    from app import workflow_status
+    queue, task_id = context
+    with queue.conn() as conn:
+        project_id = conn.execute('SELECT project_id FROM platform.task WHERE task_id=%s', (task_id,)).fetchone()['project_id']
+    empty = workflow_overview(queue, queue, project_id)
+    assert empty['workflow_counts'] == {'待你確認': 1}
+    assert empty['tasks'][0]['run_id'] is None and not empty['tasks'][0]['stale']
+    run = queue.enqueue(task_id, 'overview-first-0001')
+    seen = []
+    def fake(q, repo, tid, rid):
+        seen.append((tid, str(rid)))
+        return {'category': '可交付', 'current_stage': 'delivery', 'next_action': {'label': '下載正式交付'},
+                'effective_status': '已正式交付', 'delivered': True, 'waiting': False}
+    monkeypatch.setattr(workflow_status, 'read', fake)
+    delivered = workflow_overview(queue, queue, project_id)
+    assert seen == [(task_id, str(run['run_id']))]
+    assert delivered['workflow_counts'] == {'可交付': 1} and delivered['tasks'][0]['delivered']
+    def broken(*args): raise RuntimeError('store offline')
+    monkeypatch.setattr(workflow_status, 'read', broken)
+    unknown = workflow_overview(queue, queue, project_id)
+    assert unknown['workflow_counts'] == {'待確認': 1} and unknown['workflow_unverified'] == 1
+    assert unknown['tasks'][0]['stale'] and unknown['tasks'][0]['current_stage'] is None
+    queue.cancel_unstarted(task_id, run['run_id'])

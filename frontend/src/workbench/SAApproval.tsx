@@ -1,9 +1,10 @@
 import {useEffect,useState} from 'react';
 import {request,jsonBody} from './api';
-import {useWorkflowRefresh,useWorkflowReadOnly} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useWorkflowReadOnly,useOperation} from './useWorkflowRefresh';
 
 export function SAApproval({base}:{base:string}) {
   const readOnly=useWorkflowReadOnly();
+  const op=useOperation('sa_approve');
   const [data,setData]=useState<any>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[confirmed,setConfirmed]=useState(false);
   const load=async()=>{setBusy(true);setError('');setData(null);setConfirmed(false);
     try {setData(await request(base+'/sa-approval'))} catch {setError('無法核對 SA 交接狀態，請重試；目前不可核准。')} finally {setBusy(false)}};
@@ -19,7 +20,7 @@ export function SAApproval({base}:{base:string}) {
     {data?.status==='AWAITING_CONFIRMATION'&&<>
       <details><summary>待確認版本指紋</summary><p style={{overflowWrap:'anywhere'}}>{data.binding.checksum}</p></details>
       <label><input type="checkbox" checked={confirmed} disabled={busy} onChange={e=>setConfirmed(e.target.checked)}/>我已檢視 SA 建議與原需求，確認此版本可交給 Developer</label>
-      <button disabled={readOnly||busy||!confirmed} onClick={async()=>{
+      <button disabled={readOnly||!op.enabled||busy||!confirmed} onClick={async()=>{
         setBusy(true);setError('');
         try {await request(base+'/sa-approval',jsonBody('POST',{confirmed:true,binding_checksum:data.binding.checksum}));setData(await request(base+'/sa-approval'));setConfirmed(false)}
         catch {setData(null);setConfirmed(false);setError('核准未完成或版本已變更，請重新核對；未授權執行 ETL。')}

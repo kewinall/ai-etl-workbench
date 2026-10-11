@@ -3,9 +3,9 @@ import {request} from './api';
 import {QAApproval} from './QAApproval';
 import {QAAuthorization} from './QAAuthorization';
 import {QASourceEvidence} from './QASourceEvidence';
-import {useWorkflowRefresh} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useWorkflowStatus} from './useWorkflowRefresh';
 
-const labels:Record<string,string>={QA_RESERVED:'已保存審查意圖（不代表模型已完成）',QA_OUTCOME_UNKNOWN:'結果不確定，需人工核對',VALIDATED_NOT_APPROVED:'建議已通過格式驗證，尚未核准',STALE_RESULT_NEEDS_REVIEW:'歷史版本建議，需重新核對'};
+const labels:Record<string,string>={QA_RESERVED:'已保存審查意圖（不代表模型已完成）',QA_OUTCOME_UNKNOWN:'結果不確定，需人工核對',VALIDATED_NOT_APPROVED:'模型建議已通過格式驗證（人工核准另列）',STALE_RESULT_NEEDS_REVIEW:'歷史版本建議，需重新核對'};
 const checks:Record<string,string>={specification:'規格與命名',static_validation:'流程靜態檢查',hop_execution:'Hop 執行',result_comparison:'標準答案比對',result_source:'結果來源'};
 export function QAReviewHistory({taskId,runId}:{taskId:string;runId:string}) {
   const [data,setData]=useState<any>(null),[busy,setBusy]=useState(true),[error,setError]=useState(''),[attempt,setAttempt]=useState(0);
@@ -17,9 +17,12 @@ export function QAReviewHistory({taskId,runId}:{taskId:string;runId:string}) {
     return()=>{live=false};
   },[taskId,runId,attempt]);
   useWorkflowRefresh(`/api/tasks/${encodeURIComponent(taskId)}/runs/${runId}`,()=>setAttempt(n=>n+1),busy);
+  const workflow=useWorkflowStatus();
+  const milestones=workflow?.run_id===runId?workflow.milestones:null;
   const item=data?.invocation;
   const history=data?.history??(item?[item]:[]);
   return <section aria-label="QA 審查紀錄" style={{overflowWrap:'anywhere'}}><h3>QA 審查紀錄</h3>
+    {milestones&&<p role="status"><b>目前有效狀態：{milestones.delivered?'人工 QA 已核准，已正式交付':milestones.qa_approved?'人工 QA 已核准':'尚無有效人工 QA 核准'}</b></p>}
     <p>QA 為 AI 角色建議；下列程式證據檢查不等於 AI 審查。模型建議與人工核准分別呈現，Release 仍需獨立驗證。</p>
     <QAAuthorization key={`${taskId}:${runId}`} taskId={taskId} runId={runId}/>
     <button disabled={busy} onClick={()=>setAttempt(n=>n+1)}>重新讀取 QA 審查</button>
@@ -45,7 +48,7 @@ export function QAReviewHistory({taskId,runId}:{taskId:string;runId:string}) {
       </details>}
       {item.provider==='LOCAL_COPILOT' && <p>Copilot 回報：輸出 Token {item.usage?.output_tokens??'不可用'}；AI credits {item.usage?.ai_credits??'不可用'}；Premium requests {item.usage?.premium_requests??'不可用'}。</p>}
       <details><summary>審查版本指紋</summary><dl><dt>審查 ID</dt><dd>{item.invocation_id}</dd><dt>Context checksum</dt><dd>{item.context_checksum}</dd><dt>規格 checksum</dt><dd>{item.context.specification_checksum}</dd></dl></details>
-      <p>此紀錄不是人工 QA 核准，也不能據此下載 Release ZIP。</p>
+      <p>此為模型審查紀錄，不代表人工 QA 核准；人工核准以「人工 QA 核准」區為準。</p>
     </article>)}
     <QAApproval key={`${taskId}:${runId}`} taskId={taskId} runId={runId}/>
   </section>;

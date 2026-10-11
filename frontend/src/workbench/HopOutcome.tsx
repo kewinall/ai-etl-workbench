@@ -21,9 +21,16 @@ const outcomes: Record<string, {title: string; detail: string; next: string}> = 
   },
 };
 
-export function HopOutcome({code}: {code?: string}) {
+export function HopOutcome({code,milestones}: {code?: string;milestones?: any}) {
   const outcome = code ? outcomes[code] : undefined;
   if (!outcome) return null;
+  // Outcome codes are immutable execution records. Later QA/release evidence decides the current status.
+  if (code === 'HOP_EXECUTED_QA_REQUIRED' && (milestones?.qa_approved || milestones?.delivered)) {
+    return <section role="status" aria-label="執行結果與目前狀態">
+      <h4>目前有效狀態：{milestones.delivered ? '已正式交付' : 'QA 已人工核准，待完成交付'}</h4>
+      <p>當時執行紀錄：Hop 執行完成，當時尚待 QA 驗證；後續的結果比對與人工 QA 核准已保存，未重跑原寫入。</p>
+    </section>;
+  }
   return <section role="alert" aria-label="執行結果待核對">
     <h4>{outcome.title}</h4><p>{outcome.detail}</p><p>{outcome.next}</p>
   </section>;

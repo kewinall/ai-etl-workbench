@@ -146,3 +146,85 @@ def test_spec_rejection_is_cleared_by_later_saved_spec():
                 'event_context': {'issues': [{'message': '規格語意不符'}]}}
     assert case(run={'events': [rejected]})['issues'][0]['stage'] == 'design'
     assert not case(run={'events': [rejected, {'event_type': 'SPECIFICATION_SAVED'}]})['issues']
+
+
+WRITE_OPERATIONS = ['prepare_run', 'input_confirm', 'input_cancel', 'requirement_revision', 'sa_authorize',
+                    'sa_approve', 'naming_confirm', 'developer_authorize', 'specification_create',
+                    'specification_approve', 'oracle_save', 'oracle_approve', 'hop_execute', 'execution_close',
+                    'comparison_recovery', 'qa_authorize', 'qa_approve', 'sdm_prepare', 'release_candidate',
+                    'release_approve']
+
+
+def delivered_case(**changes):
+    params = dict(run={'state': 'NEEDS_REVIEW', 'write_started': True, 'outcome_code': 'HOP_EXECUTED_QA_REQUIRED',
+                       'approval': {'decision': 'APPROVE'}, 'gate_result': {'status': 'CHECKED'},
+                       'input_snapshot': {'source_config': {'sources': [{'type': 'CSV'}]}}},
+                  sa={'invocation': {'status': 'VALIDATED_NOT_APPROVED'}},
+                  sa_approval={'status': 'APPROVED_CURRENT'},
+                  developer={'invocation': {'status': 'VALIDATED_NOT_APPROVED'}, 'eligible': False, 'dispatch_enabled': True},
+                  specifications=[{'approval_effective': True}],
+                  hop={'request': {'status': 'COMPLETED'}, 'offer': None, 'dispatch_enabled': True},
+                  qa={'eligible': False, 'dispatch_enabled': True, 'invocation': {'status': 'VALIDATED_NOT_APPROVED'}},
+                  qa_approval={'status': 'APPROVED_CURRENT'},
+                  release={'release_ready': True, 'status': 'RELEASE_READY', 'release': {'release_id': 'r'}},
+                  services={'workers': [{'kind': k, 'can_dispatch': True} for k in
+                                        ('CONTROL', 'SA_COPILOT', 'DEVELOPER_COPILOT', 'QA_COPILOT', 'HOP', 'PORTABILITY')]},
+                  active_run=True)
+    params.update(changes)
+    return case(**params)
+
+
+def test_delivered_run_is_view_and_download_only():
+    status = delivered_case()
+    assert status['delivered'] and status['category'] == '可交付'
+    assert status['effective_status'] == '已正式交付'
+    assert status['milestones']['executed'] and status['milestones']['qa_approved'] and status['milestones']['delivered']
+    assert all(not stage['can_operate'] for stage in status['stages'])
+    assert all(stage['status'] == 'complete' for stage in status['stages'])
+    q = status['operation_qualifications']
+    for name in WRITE_OPERATIONS:
+        assert q[name]['enabled'] is False, name
+        assert '已正式交付' in q[name]['blocked_reason'], name
+        assert set(q[name]) >= {'type', 'enabled', 'blocked_reason'}
+    assert q['release_download'] == {'type': 'DOWNLOAD', 'enabled': True, 'blocked_reason': None}
+    assert q['hop_execute']['service_ready'] is True  # Service state stays visible but never grants writes.
+    assert status['next_action']['type'] == 'DOWNLOAD'
+    assert status['issues'] == []
+
+
+def test_completed_qa_is_not_reported_as_pending_approval():
+    status = delivered_case(release={'release_ready': False, 'status': 'SDM_AND_CANDIDATE_REQUIRED'})
+    assert status['effective_status'] == 'QA 已核准，待完成交付'
+    assert status['current_stage'] == 'delivery'
+    q = status['operation_qualifications']
+    assert not q['qa_approve']['enabled'] and not q['qa_authorize']['enabled']
+    assert q['sdm_prepare']['enabled'] and q['release_candidate']['enabled']
+    assert not q['hop_execute']['enabled'] and not q['specification_create']['enabled']
+
+
+def test_design_stage_qualifications_follow_prerequisite_order():
+    status = case(run={'state': 'NEEDS_REVIEW', 'approval': {'decision': 'APPROVE'}},
+                  sa_approval={'status': 'APPROVED_CURRENT'},
+                  developer={'eligible': False, 'blocked_reason': '請先核對並確認本版命名對照，才能授權 Developer 設計。'})
+    q = status['operation_qualifications']
+    assert q['naming_confirm']['enabled']
+    assert not q['developer_authorize']['enabled'] and '命名' in q['developer_authorize']['blocked_reason']
+    assert q['specification_create']['enabled'] and not q['specification_approve']['enabled']
+    assert not q['hop_execute']['enabled']
+
+
+def test_historical_and_service_blockers_disable_writes_with_reason():
+    historical = case(latest_run_id='other', run={'state': 'QUEUED'})
+    assert not historical['operation_qualifications']['input_confirm']['enabled']
+    assert '歷史' in historical['operation_qualifications']['input_confirm']['blocked_reason']
+    offline = case(run={'approval': {'decision': 'APPROVE'}, 'gate_result': {'status': 'CHECKED'}, 'state': 'NEEDS_REVIEW'},
+                   services={'workers': [{'kind': 'CONTROL', 'can_dispatch': True}]})
+    sa = offline['operation_qualifications']['sa_authorize']
+    assert not sa['enabled'] and sa['service_ready'] is False and '未就緒' in sa['blocked_reason']
+
+
+def test_source_note_follows_actual_sources():
+    csv = case(run={'input_snapshot': {'source_config': {'sources': [{'type': 'CSV'}, {'type': 'CSV'}]}}})
+    assert 'JSON' not in csv['source_scope_note'] and csv['source_types'] == ['CSV']
+    json = case(run={'input_snapshot': {'source_config': {'sources': [{'type': 'JSON'}]}}})
+    assert 'JSON' in json['source_scope_note'] and '尚未完成' in json['source_scope_note']

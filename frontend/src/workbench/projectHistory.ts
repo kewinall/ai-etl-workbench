@@ -13,3 +13,16 @@ export function mergeProjectHistory(projectId:string, items:any[], evaluation:an
     return {...task,latest_run:run,display_state:run.state??'NO_RUN'};
   });
 }
+
+// Attach the server workflow projection (same reader as Task pages). Missing or unverified rows stay 待確認.
+export function attachWorkflow(rows:any[], overview:any, projectId:string) {
+  const valid=overview&&overview.project_id===projectId&&Array.isArray(overview.tasks);
+  const byTask=new Map<string,any>((valid?overview.tasks:[]).map((t:any)=>[t.task_id,t]));
+  return rows.map(row=>{
+    const workflow=byTask.get(row.id);
+    const runId=row.latest_run?.run_id??null;
+    const consistent=workflow&&(workflow.run_id??null)===(runId==null?null:String(runId));
+    return {...row,workflow:consistent&&!workflow.stale?workflow:null,
+      display_state:consistent?workflow.category:'待確認'};
+  });
+}

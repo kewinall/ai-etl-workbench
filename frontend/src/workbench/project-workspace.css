@@ -48,3 +48,4 @@
 .pilot-cohorts select{width:100%;min-width:0;max-width:100%;padding:10px;box-sizing:border-box}
 .pilot-cohorts button{white-space:normal;max-width:100%;margin:6px 0}
 @media(max-width:768px){.wb-project-home-list article{align-items:stretch;flex-direction:column}.wb-project-home{padding:16px}}
+.wb-summary-counts{display:flex;gap:1rem;flex-wrap:wrap;margin:8px 0}.wb-summary-counts div{min-width:96px}.wb-summary-counts dd{margin:0;font-size:20px;font-weight:600}

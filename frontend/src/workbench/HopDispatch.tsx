@@ -2,11 +2,12 @@ import {useEffect,useState} from 'react';
 import {jsonBody,request} from './api';
 import {ExecutionReconciliation} from './ExecutionReconciliation';
 import {ComparisonRecovery} from './ComparisonRecovery';
-import {useWorkflowRefresh,useWorkflowReadOnly,useServiceBlocker} from './useWorkflowRefresh';
+import {useWorkflowRefresh,useWorkflowReadOnly,useServiceBlocker,useOperation} from './useWorkflowRefresh';
 
 export function HopDispatch({taskId,runId,onReconciled}:{taskId:string;runId:string;onReconciled?:()=>Promise<void>}) {
   const readOnly=useWorkflowReadOnly();
   const serviceBlocker=useServiceBlocker('hop');
+  const op=useOperation('hop_execute');
   const base=`/api/tasks/${encodeURIComponent(taskId)}/runs/${runId}/hop-dispatch`;
   const [data,setData]=useState<any>(null),[consent,setConsent]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
   useEffect(()=>{let live=true;request(base).then(value=>{if(live)setData(value)}).catch(e=>{if(live)setError(e.message)});return()=>{live=false}},[base]);
@@ -28,7 +29,7 @@ export function HopDispatch({taskId,runId,onReconciled}:{taskId:string;runId:str
         <details><summary>檢視即將執行的建表 DDL</summary><pre>{data.offer.ddl}</pre></details>
         {!data.dispatch_enabled?<p>部署尚未啟用 Hop 執行，不會寫入資料庫。</p>:<>
           <label><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>我已核對規格、標準答案及 DDL，同意新建此測試表並執行一次 Hop 寫入；失敗不自動重跑</label>
-          <button disabled={readOnly||!!serviceBlocker||busy||!consent} onClick={dispatch}>授權並排入 Hop 執行</button>
+          <button disabled={readOnly||!op.enabled||!!serviceBlocker||busy||!consent} onClick={dispatch}>授權並排入 Hop 執行</button>
         </>}
       </>}
     {data?.request?.status==='NEEDS_REVIEW'&&data.request.outcome_code==='HOP_PREPARATION_OR_COMPARISON_FAILED'&&<ComparisonRecovery key={'comparison-'+base} base={`/api/tasks/${encodeURIComponent(taskId)}/runs/${runId}`}/>}

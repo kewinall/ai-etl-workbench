@@ -7,8 +7,10 @@ import {validateSdmExcel} from './sdmExcel';
 import {ExcelInputSummary} from './ExcelInputContract';
 import {validateSdmJson} from './sdmJson';
 import {JsonInputSummary} from './JsonInputContract';
+import {useWorkflowReadOnly} from './useWorkflowRefresh';
 
 export function SdmPreview({url,specificationChecksum}:{url:string;specificationChecksum:string}) {
+  const readOnly=useWorkflowReadOnly();
   const [attempt,setAttempt]=useState(0),[data,setData]=useState<any>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const [saving,setSaving]=useState(false),[saved,setSaved]=useState<any>(null);
   const createCandidate=async()=>{
@@ -52,7 +54,7 @@ export function SdmPreview({url,specificationChecksum}:{url:string;specification
     <button disabled={busy||saving} onClick={()=>setAttempt(n=>n+1)}>{busy?'讀取 SDM 中…':'預覽 SDM 欄位對照'}</button>
     {error&&<p role="alert">{error}</p>}
     {data&&<><h5>SDM 候選內容（尚不可交付）</h5><p>顯示此規格的轉換規則、輸出欄位及來源關係；{saved?'已取得候選 Excel':'尚未產生 Excel'}，且不代表執行、QA 或 Release 通過。</p>
-      <button disabled={busy||saving} onClick={createCandidate}>{saving?'處理候選文件中…':'產生／取得 SDM 候選 Excel'}</button>
+      <button disabled={readOnly||busy||saving} onClick={createCandidate}>{saving?'處理候選文件中…':'產生／取得 SDM 候選 Excel'}</button>
       {saved&&<><p role="status">候選 Excel 已保存；尚未通過 QA，不可作為正式交付。</p><button disabled={busy||saving} onClick={download}>下載 SDM 候選 Excel（非 Release）</button></>}
       <section aria-label="SDM 轉換規則">
         <h6>來源與目標</h6>
