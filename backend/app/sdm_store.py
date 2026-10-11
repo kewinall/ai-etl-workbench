@@ -74,6 +74,8 @@ def _save_candidate(queue,task_id,run_id,specification_id,expected_checksum,*,ro
     # A failed commit may leave an unregistered file; downloads require DB metadata.
     from contextlib import nullcontext
     with nullcontext(connection) if connection is not None else queue.conn() as conn:
+        from .run_mutability import require_undelivered
+        require_undelivered(queue,conn,task_id,run_id)
         candidate = loader(queue, conn, task_id, run_id, specification_id)
         if candidate['specification_checksum'] != expected_checksum:
             raise ValueError('SDM_SPECIFICATION_CHANGED')

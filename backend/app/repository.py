@@ -89,12 +89,6 @@ class PostgresRepository:
    c.execute("insert into platform.task_event(task_id,level,node_key,message) values(%s,'INFO','router','Task created and persisted in PostgreSQL')",(task_id,))
    if request_key:c.execute('INSERT INTO platform.task_creation_request(project_id,request_key,payload_checksum,task_id) VALUES(%s,%s,%s,%s)',(project_id,request_key,digest,task_id))
   return self.get_task(task_id)
- def reset_task(self,task_id):
-  with self.conn() as c:
-   exists=c.execute("select 1 from platform.task where task_id=%s",(task_id,)).fetchone()
-   if not exists:return False
-   c.execute("update platform.task set status='CREATED',current_step='router',progress=0,rows_written=0,last_error=null,error_test_result=null,updated_at=now() where task_id=%s",(task_id,));c.execute("update platform.task_node_run set status='PENDING',started_at=null,ended_at=null,duration_ms=null,detail='{}' where task_id=%s",(task_id,));c.execute("delete from platform.task_event where task_id=%s",(task_id,));c.execute("insert into platform.task_event(task_id,level,node_key,message) values(%s,'INFO','router','Task reset for rerun')",(task_id,))
-  return True
  def claim_task(self,task_id):
   with self.conn() as c:
    claimed=c.execute("update platform.task set status='RUNNING',updated_at=now() where task_id=%s and status in ('CREATED','MODEL_RETRY_REQUIRED') returning task_id",(task_id,)).fetchone()

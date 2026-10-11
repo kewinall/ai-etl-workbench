@@ -36,3 +36,13 @@
 ## 第一段剩餘
 
 inventory九項只是部分情境通過；有效／失效完整binding、正式交付fixture及合法重複請求尚待補齊。其他入口仍PENDING；不可将2096單元整合測試視為逐API全面驗收。準備失敗已明示不可補正，未新增網站重跑流程。第二／三段尚未開始。
+
+## 第三批：舊寫入退場與正式交付守門
+
+- 沒有現行caller的Task requirements/validate、requirements/revise、sample-source/rebuild也統一410；原Run修訂、Naming及Project範例表API保留。移除已無引用的reset_task、RequirementSupplement、sa_prompt、run_codex_sa、run_copilot_sa及其專用imports。旧Release拒絕文案改為未綁定Run，不再說新版交付未接通。
+- 新增run_mutability.require_undelivered：在原Task鎖／同交易中只讀查詢既有release_delivery及candidate，不新增狀態。規格保存／核准、一般SDM候選、QA連結SDM及正式候選包建立均在寫入／產生檔案前驗證；歷史GET／下載保留。
+- 新增5項隔離PostgreSQL交付guard測試：先建立有效規格與SDM，再於同一回滾交易內保存明示合成的delivery／portability紀錄。各入口重複兩次皆409，Task Run讀回、所有platform資料表計數及產物檔案清單不變。這證明terminal-record守門，不是模型／QA／ZIP全鏈驗收；不繞過immutable trigger或刪除歷史，finally rollback整份fixture。
+- 初次小測試因前輪live留下approved queued Run而拒絕2個fixture（14passed／2errors）；沒有修改前置檢查或重跑該案例，改用獨立ai-etl-followup-backend-20261011資料庫，與瀏覽器驗收DB分開。
+- 完整回歸第一次2105passed／2failed／139skip：兩個舊Mock把新增查詢當成已交付。fixture改成明確existing Run＋no delivery，保留原QA及checksum拒絕業務斷言，沒有放寬產品守門。
+- 最終全套2107passed／139skipped／0failed／1 dependency warning，54.86秒。相關5項交付、SDM、SA及舊入口合併25passed。Diff check PASS。原Join未提交修改SHA256不變。
+- 第一段仍partial，inventory其餘操作需要按適用情況補逐項覆蓋；有效／失效SA規格、Hop單次派發與SDM idempotency既有測試本輪全套通過，不把合成terminal-row測試視為真實交付案例。第二／三段尚未開始。

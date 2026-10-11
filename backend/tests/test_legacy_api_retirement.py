@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from app import main
 
 
-@pytest.mark.parametrize('action', ['run', 'rerun', 'supplement'])
+@pytest.mark.parametrize('action', ['run', 'rerun', 'supplement', 'requirements/validate', 'requirements/revise', 'sample-source/rebuild'])
 @pytest.mark.parametrize('execution_enabled', ['true', 'false'])
 def test_retired_route_has_no_side_effects(monkeypatch, action, execution_enabled):
     class ForbiddenRepository:

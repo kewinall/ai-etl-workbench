@@ -47,8 +47,14 @@ def require_current_sa(queue, conn, task_id, run_id):
     Run and its stored binding must equal the binding recomputed from the current input, settings, SA
     context and review. Read-only previews and history GETs do not call this function.
     """
-    from .sa_approval import load_binding
+    from .run_mutability import require_undelivered
     from .run_queue import RunConflict
+    try:
+        require_undelivered(queue, conn, task_id, run_id)
+    except RunConflict:
+        raise HTTPException(409, detail={'code': 'RUN_ALREADY_DELIVERED_READ_ONLY',
+            'message': '此版本已正式交付，只能查閱與下載；不能保存或核准新規格。'}) from None
+    from .sa_approval import load_binding
     saved = conn.execute('SELECT binding FROM platform.sa_handoff_approval WHERE run_id=%s FOR SHARE', (run_id,)).fetchone()
     if not saved:
         raise HTTPException(409, detail={'code': 'SPEC_SA_APPROVAL_MISSING',

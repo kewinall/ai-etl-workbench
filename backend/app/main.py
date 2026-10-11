@@ -20,9 +20,7 @@ from .naming_input import NamingContractInput
 from .runtime_api import create_runtime_router
 from .run_queue import RunQueue
 from .etl_analyzer import AnalyzerError, analyze_file, discover_files, resolve_source
-from .requirement_engine import copilot_prompt
 from .source_profiler import profile_task
-from .sample_data import ensure_sample_target, materialize_stage_server_sample, rebuild_managed_sample
 from .task_uploads import cleanup_expired, save_and_profile
 from .excel_profile import create_excel_profile_router, verify_excel_source
 from .json_source_profile import create_json_profile_router, verify_json_source
@@ -36,9 +34,6 @@ class TaskCreate(BaseModel):
  project_id:str|None=None
  name:str=Field(min_length=2,max_length=120);requirement:str=Field(min_length=5);operation:str='NEW';category:str='STAGE';source_type:str='CSV';source_config:dict[str,Any]=Field(default_factory=dict);target_type:str='VERTICA';target_schema:str='etl_output';target_table:str='validation_output';target_config:dict[str,Any]=Field(default_factory=dict);model:str='copilot';error_test_config:dict[str,Any]=Field(default_factory=dict)
 class TaskUpdate(TaskCreate):pass
-class RequirementSupplement(BaseModel):
- values:dict[str,Any]=Field(default_factory=dict)
- note:str=''
 class SecretInput(BaseModel):
  secret_value:str=Field(min_length=1,max_length=10000)
 class AnalyzeRequest(BaseModel):
@@ -198,80 +193,6 @@ def validate_vertica_query(query:str,sources:list[dict]):
   cur.execute(f'SELECT * FROM ({query}) generated_preview LIMIT 10');rows=cur.fetchall();columns=[x[0] for x in cur.description]
  return query,columns,[dict(zip(columns,row)) for row in rows],explain[:12000]
 
-def sa_prompt(task:dict,sample:list[dict],columns:list[str]):
- if task.get('model')=='copilot' or task.get('source') in ('EXCEL','VERTICA','MIXED'):
-  return copilot_prompt(task,{'sources':task.get('source_config',{}).get('sources') or [],'columns':columns,'masked_sample':sample[:3]})
- multi=task['source']=='POSTGRESQL_TABLE' and len(task.get('source_config',{}).get('sources') or [])>1
- sql_instruction=f"Generate sql_query as one PostgreSQL read-only SELECT using only the configured sources. Natural-language Join/calculation request: {task['source_config'].get('logic_description','')}" if multi else 'Set sql_query to null.'
- return f'''You are the Requirement and Solution Architecture agent for an Apache Hop POC.
-Return only one valid JSON object, without markdown fences. Do not edit files or run commands.
-Task name: {task['name']}
-Requirement: {task['requirement']}
-Source type: {task['source']}
-Configured PostgreSQL sources: {json.dumps(task.get('source_config',{}).get('sources') or [],ensure_ascii=False,default=str)}
-Source columns: {json.dumps(columns,ensure_ascii=False,default=str)}
-Sample rows: {json.dumps(sample,ensure_ascii=False,default=str)}
-Target: {json.dumps(task['target_config'],ensure_ascii=False)}
-Validation policy: FIRST_10_VALID_ROWS, maximum 10 writes, followed by post-write count.
-{sql_instruction}
-JSON keys required: summary, source_fields, target_fields, transformations, validations, write_policy, acceptance_criteria, warnings, sql_query.'''
-
-def run_codex_sa(task:dict,sample:list[dict],columns:list[str]):
- prompt=sa_prompt(task,sample,columns)
- command,env=codex_command('exec','--json','--skip-git-repo-check','--sandbox','read-only','--ephemeral','-')
- started=time.monotonic()
- result=subprocess.run(command,cwd=ROOT,input=prompt,capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=180,env=env)
- elapsed=round((time.monotonic()-started)*1000)
- stdout=result.stdout.strip();stderr=result.stderr.strip()
- if result.returncode!=0:raise RuntimeError(json.dumps({'return_code':result.returncode,'stdout':stdout[-4000:],'stderr':stderr[-4000:]},ensure_ascii=False))
- events=[]
- for line in stdout.splitlines():
-  try:events.append(json.loads(line))
-  except json.JSONDecodeError:pass
- messages=[e.get('item',{}).get('text') for e in events if e.get('type')=='item.completed' and e.get('item',{}).get('type')=='agent_message' and e.get('item',{}).get('text')]
- usage_events=[e.get('usage',{}) for e in events if e.get('type')=='turn.completed' and e.get('usage')]
- usage=usage_events[-1] if usage_events else {}
- raw=messages[-1] if messages else stdout
- if raw.startswith('```'):
-  raw=raw.split('\n',1)[1].rsplit('```',1)[0].strip()
- try: specification=json.loads(raw)
- except json.JSONDecodeError as e:raise RuntimeError(json.dumps({'code':'MODEL_OUTPUT_INVALID_JSON','error':str(e),'stdout':stdout[-6000:],'stderr':stderr[-2000:]},ensure_ascii=False))
- model_match=re.search(r'(?m)^model:\s*(\S+)',stderr);token_match=re.search(r'tokens used\s*\r?\n\s*([\d,]+)',stderr,re.IGNORECASE)
- configured_model=os.getenv('CODEX_MODEL','').strip()
- if not configured_model:
-  try:
-   config_text=(Path.home()/'.codex'/'config.toml').read_text(encoding='utf-8')
-   config_match=re.search(r'(?m)^model\s*=\s*["\']([^"\']+)["\']',config_text)
-   configured_model=config_match.group(1) if config_match else ''
-  except OSError:pass
- input_tokens=usage.get('input_tokens');cached_tokens=usage.get('cached_input_tokens');output_tokens=usage.get('output_tokens');total_tokens=usage.get('total_tokens')
- if total_tokens is None and input_tokens is not None:total_tokens=int(input_tokens or 0)+int(output_tokens or 0)
- if total_tokens is None and token_match:total_tokens=int(token_match.group(1).replace(',',''))
- return specification,{'provider':'codex_cli','model':model_match.group(1) if model_match else (configured_model or 'Codex CLI default'),'duration_ms':elapsed,'input_tokens':input_tokens,'cached_input_tokens':cached_tokens,'output_tokens':output_tokens,'total_tokens':total_tokens,'usage_type':'EXACT' if total_tokens is not None else 'UNAVAILABLE','usage_source':'codex_json_events' if usage else 'codex_cli_stderr','stdout':raw[-6000:],'stderr':stderr[-6000:]}
-
-def run_copilot_sa(task:dict,sample:list[dict],columns:list[str]):
- prompt=' '.join(sa_prompt(task,sample,columns).splitlines())
- command,env=copilot_command('--no-custom-instructions','--no-remote','--no-remote-export','--allow-all-tools','--no-ask-user','--output-format','json','-p',prompt)
- started=time.monotonic();result=subprocess.run(command,cwd=ROOT,capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=180,env=env)
- elapsed=round((time.monotonic()-started)*1000);stdout=result.stdout.strip();stderr=result.stderr.strip()
- if result.returncode!=0:raise RuntimeError(json.dumps({'return_code':result.returncode,'stdout':stdout[-4000:],'stderr':stderr[-4000:]},ensure_ascii=False))
- events=[]
- for line in stdout.splitlines():
-  try:events.append(json.loads(line))
-  except json.JSONDecodeError:pass
- messages=[e.get('data',{}) for e in events if e.get('type')=='assistant.message' and e.get('data',{}).get('content')]
- results=[e for e in events if e.get('type')=='result']
- if not messages:raise RuntimeError(json.dumps({'code':'MODEL_OUTPUT_MISSING','stdout':stdout[-6000:]},ensure_ascii=False))
- message=messages[-1];raw=message['content'].strip()
- if raw.startswith('```'):raw=raw.split('\n',1)[1].rsplit('```',1)[0].strip()
- try:specification=json.loads(raw)
- except json.JSONDecodeError as e:raise RuntimeError(json.dumps({'code':'MODEL_OUTPUT_INVALID_JSON','error':str(e),'output':raw[-6000:]},ensure_ascii=False))
- usage=(results[-1].get('usage') or {}) if results else {};output_tokens=message.get('outputTokens')
- checkpoints=[e.get('data',{}) for e in events if e.get('type')=='session.usage_checkpoint' and e.get('data')]
- nano_aiu=checkpoints[-1].get('totalNanoAiu') if checkpoints else None
- ai_credits=(nano_aiu/1_000_000_000) if nano_aiu is not None else None
- return specification,{'provider':'copilot','model':message.get('model'),'duration_ms':elapsed,'input_tokens':None,'cached_input_tokens':None,'output_tokens':output_tokens,'total_tokens':None,'usage_type':'PARTIAL','usage_source':'copilot_json_events','premium_requests':usage.get('premiumRequests'),'nano_aiu':nano_aiu,'ai_credits':ai_credits,'api_duration_ms':usage.get('totalApiDurationMs'),'session_duration_ms':usage.get('sessionDurationMs'),'stdout':raw[-6000:],'stderr':stderr[-6000:]}
-
 @app.get('/api/health')
 def health():
  try: ms=repo.migration_status();return {'status':'ok','mode':'postgres','database':'configured','migration':ms,'time':datetime.now(timezone.utc).isoformat()}
@@ -412,20 +333,13 @@ def create(data:TaskCreate):
  try:return repo.create_task(payload)
  except TaskCreationConflict:raise HTTPException(409,'建立請求內容已變更，請使用新的請求識別碼') from None
 @app.post('/api/tasks/{task_id}/requirements/validate')
-def validate_requirements(task_id:str):
- task=repo.get_task(task_id)
- if not task:raise HTTPException(404,'Task not found')
- issues=requirement_issues(task);revision=repo.save_requirement_issues(task_id,issues)
- if issues:repo.pause_task(task_id,'NEEDS_INPUT','router',{'code':'REQUIREMENT_ISSUES','issues':issues,'revision':revision},'需求缺漏、矛盾或不安全；請補正後重跑')
- return {'task_id':task_id,'valid':not issues,'revision':revision,'issues':issues}
+def validate_requirements(task_id: str):
+ return legacy_execution_retired(task_id)
+
 @app.post('/api/tasks/{task_id}/requirements/revise')
-def revise_requirements(task_id:str,data:RequirementSupplement):
- current=repo.get_task(task_id)
- if not current:raise HTTPException(404,'Task not found')
- if RunQueue(DB).list_runs(task_id):raise HTTPException(409,'此 Task 已使用版本控制，請由執行準備版本的補正表單建立新版，避免覆寫歷史')
- config=dict(current.get('source_config') or {});config['requirement_supplement']={'values':data.values,'note':data.note,'submitted_at':datetime.now(timezone.utc).isoformat()}
- repo.update_source_config(task_id,config);repo.resolve_requirement_issues(task_id);repo.reset_task(task_id)
- return {'status':'CREATED','task_id':task_id,'resume_from':'REQUIREMENT_GATE'}
+def revise_requirements(task_id: str):
+ return legacy_execution_retired(task_id)
+
 @app.post('/api/tasks/{task_id}/naming-contract/suggest')
 @app.get('/api/tasks/{task_id}/naming-contract/suggestion')
 def suggest_naming_contract(task_id:str):
@@ -451,23 +365,9 @@ def confirm_naming_contract(task_id:str,data:NamingContractInput):
  try:return repo.confirm_naming_contract(task_id,contract)
  except TaskNamingConflict:raise HTTPException(409,detail={'code':'NAMING_EXECUTED_VERSION_READ_ONLY','message':'目前版本已開始寫入，命名契約只能查閱；請依修正版流程重新確認，不能改寫已執行版本。'}) from None
 @app.post('/api/tasks/{task_id}/sample-source/rebuild')
-def rebuild_sample_source(task_id:str):
- if os.getenv('WORKBENCH_EXECUTION_ENABLED','true').lower()!='true':raise HTTPException(503,detail={'code':'EXECUTION_DISABLED','message':'容器執行整合尚未驗收，範例表重建暫停'})
- task=repo.get_task(task_id)
- if not task:raise HTTPException(404,'Task not found')
- source=((task.get('source_config') or {}).get('sources') or [task.get('source_config') or {}])[0]
- if source.get('type')!='VERTICA' or source.get('has_actual_data',True) is not False:raise HTTPException(422,'僅無既有資料的 Vertica 範例來源可重建')
- schema=str(source.get('schema') or 'ai_sample');table=str(source.get('object') or source.get('table') or f"sample_{task_id.lower().replace('-','_')}")
- if schema!='ai_sample':raise HTTPException(403,'範例表只能建立於 ai_sample')
- owner=repo.managed_sample_table(task['project_id'],schema,table)
- if owner and owner['project_id']!=task['project_id']:raise HTTPException(403,'此表不屬於目前 Project')
- try:
-  from .target_ownership import target_rebuild_guard
-  with target_rebuild_guard(repo,schema,table):
-   result=rebuild_managed_sample(schema,table,source.get('fields') or [],source.get('sample_rows') or None,allow_replace=bool(owner));result=repo.register_sample_table(task['project_id'],task_id,result)
-  config=dict(task['source_config']);config['sources']=[{**source,'schema':schema,'object':table,'has_actual_data':True}];repo.update_source_config(task_id,config)
-  return result
- except Exception as exc:raise HTTPException(422,str(exc)) from exc
+def rebuild_sample_source(task_id: str):
+ return legacy_execution_retired(task_id)
+
 @app.post('/api/task-sources/upload')
 async def upload_task_source(file:UploadFile=File(...)):
  policy=repo.setting('upload_policy',{}) or {};cleanup_expired(int(policy.get('retention_days',7)))
@@ -617,7 +517,7 @@ def task_trace(task_id:str):
 def build_release(task_id:str):
  # Legacy SUCCEEDED and Naming confirmation are not version-bound release approval.
  # Keep historical files intact; do not publish them as validated Pilot deliverables.
- raise HTTPException(409,detail={'code':'RELEASE_PIPELINE_NOT_READY','message':'版本綁定的 QA、人工交付核准與 ZIP 完整驗證尚未接通，暫不產生 Release ZIP；既有歷史產物保留。'})
+ raise HTTPException(409,detail={'code':'RELEASE_PIPELINE_NOT_READY','message':'此舊入口沒有綁定 Run、QA 與正式交付核准，不能產生交付 ZIP；請由七階段工作區的成果交付操作。既有歷史產物保留。'})
 @app.get('/api/tasks/{task_id}/release/{release_id}/download')
 def download_release(task_id:str,release_id:str):
  raise HTTPException(409,detail={'code':'RELEASE_PIPELINE_NOT_READY','message':'既有 Release 尚未通過版本綁定核准與 ZIP 完整驗證，暫停 ZIP 下載；原檔未刪除，Task 歷史產物仍可檢視。'})

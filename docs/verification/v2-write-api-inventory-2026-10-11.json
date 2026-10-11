@@ -60,7 +60,12 @@
         "valid_binding",
         "stale_binding",
         "duplicate_valid_submission"
-      ]
+      ],
+      "delivered_guard": {
+        "evidence": "backend/tests/test_delivered_write_guards.py",
+        "verified": "SYNTHETIC_DATABASE_DELIVERY_RECORD_AND_REPEATED_REFUSAL",
+        "not_proven": "REAL_MODEL_QA_PORTABILITY_ZIP_CHAIN"
+      }
     },
     {
       "file": "backend/app/formal_release_api.py",
@@ -147,154 +152,160 @@
     },
     {
       "file": "backend/app/main.py",
-      "line": 309,
+      "line": 230,
       "method": "POST",
       "path": "/api/analyzer/analyze-batch-async",
       "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
     },
     {
       "file": "backend/app/main.py",
-      "line": 316,
+      "line": 237,
       "method": "POST",
       "path": "/api/analyzer/upload",
       "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
     },
     {
       "file": "backend/app/main.py",
-      "line": 340,
+      "line": 261,
       "method": "POST",
       "path": "/api/analyzer/analyze",
       "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
     },
     {
       "file": "backend/app/main.py",
-      "line": 348,
+      "line": 269,
       "method": "POST",
       "path": "/api/analyzer/analyze-batch",
       "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
     },
     {
       "file": "backend/app/main.py",
-      "line": 378,
+      "line": 299,
       "method": "POST",
       "path": "/api/projects/{project_id}/tasks",
       "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
     },
     {
       "file": "backend/app/main.py",
-      "line": 385,
+      "line": 306,
       "method": "POST",
       "path": "/api/tasks",
       "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
     },
     {
       "file": "backend/app/main.py",
-      "line": 414,
+      "line": 335,
       "method": "POST",
       "path": "/api/tasks/{task_id}/requirements/validate",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "RETIRED_HTTP410_NO_REPOSITORY_ACCESS_PASS",
+      "evidence": "backend/tests/test_legacy_api_retirement.py"
     },
     {
       "file": "backend/app/main.py",
-      "line": 421,
+      "line": 339,
       "method": "POST",
       "path": "/api/tasks/{task_id}/requirements/revise",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "RETIRED_HTTP410_NO_REPOSITORY_ACCESS_PASS",
+      "evidence": "backend/tests/test_legacy_api_retirement.py"
     },
     {
       "file": "backend/app/main.py",
-      "line": 429,
+      "line": 343,
       "method": "POST",
       "path": "/api/tasks/{task_id}/naming-contract/suggest",
       "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
     },
     {
       "file": "backend/app/main.py",
-      "line": 442,
+      "line": 356,
       "method": "POST",
       "path": "/api/tasks/{task_id}/naming-contract/confirm",
       "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
     },
     {
       "file": "backend/app/main.py",
-      "line": 452,
+      "line": 367,
       "method": "POST",
       "path": "/api/tasks/{task_id}/sample-source/rebuild",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "RETIRED_HTTP410_NO_REPOSITORY_ACCESS_PASS",
+      "evidence": "backend/tests/test_legacy_api_retirement.py"
     },
     {
       "file": "backend/app/main.py",
-      "line": 470,
+      "line": 371,
       "method": "POST",
       "path": "/api/task-sources/upload",
       "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
     },
     {
       "file": "backend/app/main.py",
-      "line": 533,
+      "line": 434,
       "method": "PUT",
       "path": "/api/tasks/{task_id}",
       "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
     },
     {
       "file": "backend/app/main.py",
-      "line": 543,
+      "line": 444,
       "method": "POST",
       "path": "/api/tasks/{task_id}/rerun",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "RETIRED_HTTP410_NO_REPOSITORY_ACCESS_PASS",
+      "evidence": "backend/tests/test_legacy_api_retirement.py"
     },
     {
       "file": "backend/app/main.py",
-      "line": 547,
+      "line": 448,
       "method": "POST",
       "path": "/api/tasks/{task_id}/supplement",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "RETIRED_HTTP410_NO_REPOSITORY_ACCESS_PASS",
+      "evidence": "backend/tests/test_legacy_api_retirement.py"
     },
     {
       "file": "backend/app/main.py",
-      "line": 551,
+      "line": 452,
       "method": "POST",
       "path": "/api/tasks/{task_id}/run",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "RETIRED_HTTP410_NO_REPOSITORY_ACCESS_PASS",
+      "evidence": "backend/tests/test_legacy_api_retirement.py"
     },
     {
       "file": "backend/app/main.py",
-      "line": 557,
+      "line": 458,
       "method": "POST",
       "path": "/api/models/{provider}/health",
       "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
     },
     {
       "file": "backend/app/main.py",
-      "line": 574,
+      "line": 475,
       "method": "POST",
       "path": "/api/database/test",
       "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
     },
     {
       "file": "backend/app/main.py",
-      "line": 589,
+      "line": 490,
       "method": "PUT",
       "path": "/api/settings/groups/{group_key}",
       "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
     },
     {
       "file": "backend/app/main.py",
-      "line": 603,
+      "line": 504,
       "method": "POST",
       "path": "/api/settings/connections/{connection_id}/secret",
       "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
     },
     {
       "file": "backend/app/main.py",
-      "line": 615,
+      "line": 516,
       "method": "POST",
       "path": "/api/tasks/{task_id}/release",
       "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
     },
     {
       "file": "backend/app/main.py",
-      "line": 623,
+      "line": 524,
       "method": "PUT",
       "path": "/api/settings/{key}",
       "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
@@ -443,7 +454,12 @@
         "valid_binding",
         "stale_binding",
         "duplicate_valid_submission"
-      ]
+      ],
+      "delivered_guard": {
+        "evidence": "backend/tests/test_delivered_write_guards.py",
+        "verified": "SYNTHETIC_DATABASE_DELIVERY_RECORD_AND_REPEATED_REFUSAL",
+        "not_proven": "REAL_MODEL_QA_PORTABILITY_ZIP_CHAIN"
+      }
     },
     {
       "file": "backend/app/run_api.py",
@@ -492,21 +508,36 @@
       "line": 55,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/specifications",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "delivered_guard": {
+        "evidence": "backend/tests/test_delivered_write_guards.py",
+        "verified": "SYNTHETIC_DATABASE_DELIVERY_RECORD_AND_REPEATED_REFUSAL",
+        "not_proven": "REAL_MODEL_QA_PORTABILITY_ZIP_CHAIN"
+      }
     },
     {
       "file": "backend/app/specification_api.py",
       "line": 59,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/specifications/{specification_id}/approve",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "delivered_guard": {
+        "evidence": "backend/tests/test_delivered_write_guards.py",
+        "verified": "SYNTHETIC_DATABASE_DELIVERY_RECORD_AND_REPEATED_REFUSAL",
+        "not_proven": "REAL_MODEL_QA_PORTABILITY_ZIP_CHAIN"
+      }
     },
     {
       "file": "backend/app/specification_api.py",
       "line": 123,
       "method": "POST",
       "path": "/{task_id}/runs/{run_id}/specifications/{specification_id}/sdm-candidate",
-      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW"
+      "verification": "PENDING_INDIVIDUAL_GUARD_REVIEW",
+      "delivered_guard": {
+        "evidence": "backend/tests/test_delivered_write_guards.py",
+        "verified": "SYNTHETIC_DATABASE_DELIVERY_RECORD_AND_REPEATED_REFUSAL",
+        "not_proven": "REAL_MODEL_QA_PORTABILITY_ZIP_CHAIN"
+      }
     }
   ]
 }

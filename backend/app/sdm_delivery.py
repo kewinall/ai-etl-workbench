@@ -6,6 +6,8 @@ from .sdm_qa_binding import bind_sdm_qa
 
 def prepare_sdm_delivery(queue,task_id,run_id,qa_checksum,*,root=None):
     with queue.conn() as conn:
+        from .run_mutability import require_undelivered
+        require_undelivered(queue,conn,task_id,run_id)
         delivery=load_delivery_context(queue,task_id,run_id,connection=conn)
         if delivery['qa_binding_checksum']!=qa_checksum:raise ValueError('SDM_QA_VERSION_CONFLICT')
         document=save_delivery_candidate(queue,task_id,run_id,delivery['specification_id'],

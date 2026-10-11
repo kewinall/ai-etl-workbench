@@ -44,7 +44,9 @@ def require_lineage(conn,run_id,specification_checksum):
 
 def prepare(queue,repo,task_id,run_id,qa_checksum,*,root=None):
     root=storage_root(root)
-    with queue.conn() as conn:
+    with queue.conn() as conn:        from .run_mutability import require_undelivered
+        require_undelivered(queue,conn,task_id,run_id)
+
         delivery=load_delivery_context(queue,task_id,run_id,connection=conn)
         if delivery['qa_binding_checksum']!=qa_checksum:raise ValueError('RELEASE_QA_VERSION_CONFLICT')
         require_lineage(conn,run_id,delivery['specification_checksum'])
