@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-11",
+  "status": "PASS",
+  "frontend_source": "9860a5c",
+  "api_source": "7029156",
+  "bundle": "index-H2kR65yM.js",
+  "deploy_scope": "5197 web only",
+  "protected_containers_unchanged": 9,
+  "preserved_releases": 8,
+  "release_records_unchanged": true,
+  "new_writes": 0,
+  "model_calls": 0,
+  "hop_calls": 0,
+  "focus_browser": {
+    "passed": 8,
+    "failed": 0
+  },
+  "fresh_release_browser": {
+    "passed": 10,
+    "failed": 0
+  },
+  "previous_release_browser": {
+    "passed": 10,
+    "failed": 0
+  },
+  "default_browser": {
+    "passed": 152,
+    "skipped": 28,
+    "failed": 0
+  },
+  "backend": {
+    "passed": 2134,
+    "skipped": 139,
+    "failed": 0
+  },
+  "limitations": [
+    "Real release browser checks are read-only, not new executions.",
+    "New real QA reassessment, failure revision, and partial-write closure remain pending.",
+    "500 KB frontend chunk warning remains."
+  ],
+  "rollback": "Private previous-web-image.txt retains old image ID; retag it as ai-etl-workbench-web:stage-guidance, then compose up --no-deps -d web without --build; verify bundle and eight immutable releases.",
+  "evidence_directory": "runtime-temp/v2-field-focus-deploy (not version controlled)",
+  "verification_notes": [
+    "Initial check used the wrong relative path and did not run.",
+    "JSON timestamps were auto-converted by PowerShell; comparison was corrected to UTC ticks. Actual nine containers unchanged."
+  ]
+}

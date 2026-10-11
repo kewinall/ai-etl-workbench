@@ -11,6 +11,8 @@
 
 ## 最新狀態（2026-10-11）
 
+- 欄位定位修正已部署5197前端 `9860a5c`：跳過空白或停用來源區，直接聚焦CSV、來源欄位、Excel、轉換或Join的可操作入口。定位回歸8PASS，新三案及前一批三案各10PASS；完整預設瀏覽器152PASS／28skip／0FAIL。八Release與九個受保護服務不變。不可修改的實體來源契約仍依原規則限制；見 [要求對照](verification/v2-requirements-audit-2026-10-11.md)。
+
 - AI Profile 保存後離開保護的時序問題已修正並部署5197 web（d3a2e4d/index-CQpDjssy.js），保存成功立即解除本表單保護，其他草稿與保存失敗仍保留提醒；build及隔離回歸已驗證，compiled合成4PASS、新三案與原三案各10PASS。八Release與九保護服務不變；見 verification/v2-profile-deployment-2026-10-11.json。執行／部分提交live測試已移除舊入口與固定5197，改用專用URL守門；未執行新的真實故障寫入。保留真實部分提交紀錄已完成新版唯讀回歸，67張表指紋不變，沒有重啟Vertica或重跑ETL；見 verification/v2-partial-readonly-2026-10-11.json。
 - 唯讀來源資格一致性修正已部署5197 API（7029156）：所有非DOWNLOAD資格與next_action操作資格明確停用，真正保存的下載資格保留。新增測試重現current QUEUED原來源仍宣告可寫；修正後proxy/workflow39PASS，完整隔離backend2134PASS/139skip，0migration。實際原CSV/Excel七階段／資格／ZIP／POST405回歸2PASS，新三案與原三案各10PASS；八Release及九其他服務不變，未擴大來源allowlist。見 verification/v2-evidence-api-deployment-2026-10-11.json。
 - 原真實QA補證與native-pilot失聯的目前compiled UI唯讀驗收已通過：2個實際案例＋1個manifest守門，共3PASS。QA前次NEEDS_REVIEW/後次PASS及reassesses關聯保留，失聯保存1筆且無file/重試入口，390/768/1440及鍵盤/reload通過，完整Run/record不變；臨時固定GET-only入口已停止。這不是新版另作模型複核或Hop中斷，相關新操作仍未驗收。見 verification/v2-retained-history-ui-2026-10-11.json。
@@ -21,7 +23,7 @@
 
 
 - 前端多代元件與 runtime 覆寫已完成引用稽核並移除；目前入口只保留明確引用的有效元件。見 [UI 收斂紀錄](verification/ui-simplification-2026-10-11.md)。
-- 狀態判定統一由 workflow-status 彙整（逐操作資格、已交付只讀）；專案摘要／篩選／卡片共用同一結果。5197 API 為 `7029156`，前端為 `d3a2e4d`（`index-CQpDjssy.js`），包含舊入口退場、交付守門、空白歷史隱藏、草稿與錯誤保留、失敗診斷去重，以及 Hop／QA／比對恢復／QA核准／SDM回應不明時先GET核對、禁止自動重送。九個其他受保護服務及八個新舊正式成果不變，見 [最新API部署讀回](verification/v2-evidence-api-deployment-2026-10-11.json)。
+- 狀態判定統一由 workflow-status 彙整（逐操作資格、已交付只讀）；專案摘要／篩選／卡片共用同一結果。5197 API 為 `7029156`，前端為 `9860a5c`（`index-H2kR65yM.js`），包含舊入口退場、交付守門、空白歷史隱藏、草稿與錯誤保留、失敗診斷去重，以及 Hop／QA／比對恢復／QA核准／SDM回應不明時先GET核對、禁止自動重送。九個其他受保護服務及八個新舊正式成果不變，見 [最新API部署讀回](verification/v2-evidence-api-deployment-2026-10-11.json)。
 - 受管理工作區在操作資格缺漏或回應版本不符時一律停用寫入（「操作資格尚未確認」）；規格保存／核准 API 在同交易內驗證同 Run 有效 SA 核准；本輪覆蓋 21 項已交付拒絕及 9 種 API × 3 種前置條件拒絕。這是 Task/Run 工作流範圍，不是整個平台全部 API 的安全認證；不以唯讀彙整取代後端檢查。
 - 已交付版本目前不能建立修正版或新準備版本，畫面明示限制；REPLACE／UPSERT 不可選為新版執行方式（僅保留歷史意圖）。
 - 寫入型 live 瀏覽器測試為明確 opt-in（`WORKBENCH_ALLOW_SYNTHETIC_UI=1`、`WORKBENCH_TEST_CONTROL_WORKER=1`），只可在隔離 DB 執行。

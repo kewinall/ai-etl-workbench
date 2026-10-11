@@ -1,10 +1,14 @@
 # 七階段完成與上版追蹤
 
-## 最新部署驗收（2026-10-11）
+## 最新進度（2026-10-11）
+
+5197 API source `7029156`、前端 source `9860a5c`（`index-H2kR65yM.js`）。新 CSV／Excel／LEFT JOIN 三案真實七階段及正式交付已有證據；最新定位部署 8 PASS、三案三寬度唯讀回歸 10 PASS，八個正式成果與九個受保護服務不變。隔離後端 2134 PASS／139 skip，預設瀏覽器 152 PASS／28 skip／0 FAIL。原規劃、證據與尚未完成的新操作列於 [要求對照](verification/v2-requirements-audit-2026-10-11.md)，整體 v2／WS-0007 維持部分完成。
+
+## 先前部署驗收（2026-10-11）
 
 [新版 5197 部署驗收](verification/5197-deployment-acceptance-2026-10-11.md)通過：基準 3f1a312，只重建 api/web；三真實交付案例 63 個階段頁、9 次鍵盤 ZIP 下載、手機與歷史回歸 PASS，五個正式 ZIP／Run／寫入次數不變，5183 及八個受保護容器不變。剩餘 opt-in、其他寫入 API 與整體 v2 仍未完成。
 
-## 最新工程（2026-10-11）
+## 先前工程（2026-10-11）
 
 [七階段介面收斂的階段性工程驗收](verification/v2-ui-stage-acceptance-2026-10-11.md)通過：`7d88985` 獨立後端 2056 passed、預設瀏覽器 97 passed，SA 守門與三 ZIP 唯讀回歸通過；本輪授權階段性上版。5197 已部署基準 `3f1a312` 並完成上述唯讀部署驗收；剩餘 opt-in／API 覆蓋及整體 v2 尚未完成。詳見 [各輪工程紀錄](verification/ui-simplification-2026-10-11.md) 與 [Codex 獨立驗證](verification/codex-round3-review-2026-10-11.md)。
 

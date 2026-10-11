@@ -8,11 +8,11 @@
       "failed": 0
     },
     "browser": {
-      "passed": 147,
-      "skipped": 27,
+      "passed": 152,
+      "skipped": 28,
       "failed": 0
     },
-    "scope": "Latest full results remain backend 2134/139 and browser 147/27; this round added only an opt-in test, separately checked as 1 skip by default. No full-suite rerun claimed."
+    "scope": "Latest full isolated backend 2134/139; latest full browser 152/28, zero failures. Skips remain unverified, not PASS."
   },
   "rules": [
     "Skip is not PASS.",
