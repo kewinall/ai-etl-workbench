@@ -152,3 +152,11 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - 新增QA／Hop服務未就緒原因與禁用操作、QA NEEDS_REVIEW補證複核只帶前次invocation另預約新審查、無Hop操作。後者是合成API互動驗證，不宣稱新真實QA複核完成；原三案已交付只讀。
 - 最終focused **14PASS（24.0秒）**，build PASS（原bundle-size warning保留）。全部使用当前source5199＋純合成瀏覽器API，未呼叫模型、Hop、Vertica或交付；5197尚未部署本批，5183未更動。原Join未提交hash不變。backend沒有修改，2132PASS/139skip沿用前批。
 - 完整預設瀏覽器最終 **117PASS／32skip／0FAIL（3.4分鐘）**，證據 `runtime-temp/v2-followup-abnormal-default-browser`；減少4個skip是比對恢復合成測試常態化，新增8項合成分支，不等同新真實故障驗收。執行失聯／準備核對的合成測試仍依賴舊有導航環境，下一批繼續常態化並保留原確認/結案/禁止重跑斷言；真實故障案例仍需獨立隔離DB，不在已交付Task注入故障。
+
+## 異常分支第二批：失聯結案與 QA 核准
+
+- 執行結案、準備失聯核對、QA核准及QA歷史四份合成測試移除舊Task導航與5183參考來源，全部改用 `authorizationWorkspace` 在現行結果／品質階段；所有API攔截，不讀寫production或以合成資格冒稱後端有效核准。
+- 執行结案成功／409／已保存但POST回應遺失：原1筆輸入保留、確認後雙擊仍只1次POST、明確GET確認才恢復；準備核對保留目標不存在(null)與存在零筆(0)區分、一次確認、不需證據檔案、reload以及禁止重跑原断言。這5個原功能分支實跑通過，不修改原結案邏輯。
+- QA核准成功／409／已保存但回應遺失第一次共8項為6PASS2FAIL（26.0秒）；兩個失敗重現QAApproval在背景useEffect清掉error、重新開放核准。取消背景清error，錯誤時隱藏核准表單，只有明確GET重讀才清除警示；同意勾選中不被背景更新重設。修正後8PASS（16.8秒），一次POST、原binding、reload、390px與非預期寫入攔截均保留。
+- QA歷史未知模型結果、讀取503、失效建議与390px顯示轉用共用更新，讀取失敗才提供局部重試；原摘要、token未提供、不自动重送、旧資料清除與上游異動斷言保留，1PASS（2.0秒）。这些是合成互動證據，不宣稱真實故障或新模型審查。
+- Build PASS（原bundle-size warning保留）；backend沒有變更，2132PASS/139skip沿用。本批完整瀏覽器 **126PASS／27skip／0FAIL（3.6分鐘）**，五個原合成skip改為必跑并新增四個合成分支；不冒稱真實故障處理完成。5197 web-only受控部署驗證完成後補記；部署前先保存八個新舊正式Release與九個保護容器metadata，GET指紋檢查已通過。原未提交Join SHA不變，不納入提交。
