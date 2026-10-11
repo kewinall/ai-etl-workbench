@@ -9,7 +9,11 @@ const roleFields = [
   ['file_understanding', '檔案理解模型（選用）'],
 ];
 
-function ProfileEditor({profile, onSaved, onDirty, onBusy}: {profile: any; onSaved: () => Promise<void>; onDirty: (id: string, dirty: boolean) => void; onBusy: (id: string, busy: boolean) => void}) {
+function editableProfile(value:any) {
+  return JSON.stringify([value.display_name||'',value.provider_type,value.endpoint||'',value.region||'',!!value.enabled,Object.entries(value.model_routes||{}).sort(([a],[b])=>a.localeCompare(b))]);
+}
+
+function ProfileEditor({profile, onSaved, onDirty, onBusy}: {profile: any; onSaved: () => Promise<any>; onDirty: (id: string, dirty: boolean) => void; onBusy: (id: string, busy: boolean) => void}) {
   const [draft, setDraft] = useState(profile);
   const [secret, setSecret] = useState('');
   const [busy, setBusy] = useState(false);
@@ -34,7 +38,7 @@ function ProfileEditor({profile, onSaved, onDirty, onBusy}: {profile: any; onSav
   const discardAndReload=async()=>{
     if(!operation.current.acquire())return;
     setBusy(true);onBusy(profile.profile_id,true);
-    try{await onSaved();setSecret('');setLatest(null);setAllowTest(false);setMessage('已捨棄此 Profile 草稿及未儲存機密，重新讀取最新設定。')}
+    try{const saved=await onSaved();setDraft(saved);setSecret('');onDirty(profile.profile_id,false);setLatest(null);setAllowTest(false);setMessage('已捨棄此 Profile 草稿及未儲存機密，重新讀取最新設定。')}
     catch(e:any){setMessage('重新讀取未完成，草稿保留：'+e.message)}
     finally{setBusy(false);onBusy(profile.profile_id,false);operation.current.release()}
   };
@@ -55,7 +59,9 @@ function ProfileEditor({profile, onSaved, onDirty, onBusy}: {profile: any; onSav
         await request(`/api/settings/ai-profiles/${profile.profile_id}/secret`, {...secretOptions,headers:{...secretOptions.headers,'X-Settings-Version':updated.updated_at}});
         setSecret('');
       }
-      await onSaved();
+      const saved=await onSaved();
+      setDraft(saved);
+      onDirty(profile.profile_id,false);
       setAllowTest(false);
       setMessage('AI Profile 已儲存；尚未測試真實連線。');
       setLatest(null);
@@ -72,7 +78,7 @@ function ProfileEditor({profile, onSaved, onDirty, onBusy}: {profile: any; onSav
     } catch (error: any) {setMessage(`模型測試未通過：${error.message}`)}
     finally {setBusy(false); setAllowTest(false);onBusy(profile.profile_id,false);operation.current.release()}
   };
-  const dirty = JSON.stringify(draft) !== JSON.stringify(profile) || !!secret;
+  const dirty = editableProfile(draft) !== editableProfile(profile) || !!secret;
   useEffect(() => {onDirty(profile.profile_id,dirty); return () => onDirty(profile.profile_id,false)},[dirty,profile.profile_id,onDirty]);
   return <section className="panel setting-card ai-profile-card" aria-label={`AI Profile ${profile.profile_id}`}>
     <h3>{profile.display_name}</h3>
@@ -95,7 +101,7 @@ function ProfileEditor({profile, onSaved, onDirty, onBusy}: {profile: any; onSav
       <label><input type="checkbox" checked={!!draft.enabled} onChange={e => change('enabled', e.target.checked)}/>啟用此 Profile</label>
     </fieldset>
     <div style={{display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 16}}>
-      <button disabled={busy} onClick={() => {setDraft(profile); setSecret(''); setMessage(''); setAllowTest(false)}}>取消 AI 變更</button>
+      <button disabled={busy} onClick={() => {setDraft(profile); setSecret(''); onDirty(profile.profile_id,false);setMessage(''); setAllowTest(false)}}>取消 AI 變更</button>
       <button className="primary" disabled={busy || !draft.display_name?.trim()} onClick={save}>儲存 AI Profile</button>
       <button disabled={busy} onClick={compareLatest}>比較草稿與最新設定</button>
     </div>
@@ -130,20 +136,21 @@ export function AIProfiles() {
   const [error, setError] = useState('');
   const [leaveMessage,setLeaveMessage] = useState('');
   const [dirtyIds,setDirtyIds] = useState<Set<string>>(new Set());
+  const dirtyIdsRef=useRef(new Set<string>());
   const busyIds=useRef(new Set<string>());
   const [busyCount,setBusyCount]=useState(0);
   const onBusy=useCallback((id:string,busy:boolean)=>{
     if(busy)busyIds.current.add(id);else busyIds.current.delete(id);
     setBusyCount(busyIds.current.size);
   },[]);
-  const onDirty = useCallback((id: string, dirty: boolean) => setDirtyIds(old => {const next=new Set(old); if(dirty)next.add(id);else next.delete(id);return next}),[]);
+  const onDirty = useCallback((id: string, dirty: boolean) => {const next=new Set(dirtyIdsRef.current);if(dirty)next.add(id);else next.delete(id);dirtyIdsRef.current=next;setDirtyIds(next)},[]);
   useEffect(() => {
-    const beforeNavigate=(event: Event)=>{if(event.defaultPrevented||(!dirtyIds.size&&!busyIds.current.size))return;event.preventDefault();setLeaveMessage(busyIds.current.size?'AI Profile 正在儲存或測試，請等待結果後再離開。':'尚未離開：AI Profile 草稿已保留。請先儲存或取消 AI 變更（包含搜尋隱藏的表單），再選擇目的頁面。')};
-    const beforeUnload=(event: BeforeUnloadEvent)=>{if(!dirtyIds.size&&!busyIds.current.size)return;event.preventDefault();event.returnValue=''};
+    const beforeNavigate=(event: Event)=>{if(event.defaultPrevented||(!dirtyIdsRef.current.size&&!busyIds.current.size))return;event.preventDefault();setLeaveMessage(busyIds.current.size?'AI Profile 正在儲存或測試，請等待結果後再離開。':'尚未離開：AI Profile 草稿已保留。請先儲存或取消 AI 變更（包含搜尋隱藏的表單），再選擇目的頁面。')};
+    const beforeUnload=(event: BeforeUnloadEvent)=>{if(!dirtyIdsRef.current.size&&!busyIds.current.size)return;event.preventDefault();event.returnValue=''};
     window.addEventListener('workbench:before-navigate',beforeNavigate);
     window.addEventListener('beforeunload',beforeUnload);
     return ()=>{window.removeEventListener('workbench:before-navigate',beforeNavigate);window.removeEventListener('beforeunload',beforeUnload)};
-  },[dirtyIds.size]);
+  },[]);
   const load = async (savedId?: string) => {
     const items = await request<any[]>('/api/settings/ai-profiles');
     if (!savedId) {setProfiles(items); return}
@@ -151,6 +158,7 @@ export function AIProfiles() {
     if (!saved) throw new Error('已儲存的 Profile 無法重新讀取，請確認設定狀態。');
     // Preserve object identities of unrelated editors so their drafts survive.
     setProfiles(old => old.map(item => item.profile_id === savedId ? saved : item));
+    return saved;
   };
   useEffect(() => {load().catch(error => setError(error.message))}, []);
   const matches=(profile:any)=>`${profile.display_name} ${profile.profile_id} ${profile.provider_type}`.toLowerCase().includes(query.trim().toLowerCase());

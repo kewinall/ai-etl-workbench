@@ -1,9 +1,10 @@
 import {test,expect} from '@playwright/test';
 import {readFileSync} from 'node:fs';
+import {requireDedicatedReconciliationURL} from './fixtures/dedicatedReconciliation';
 
 test('真實部分提交失聯 Run：網站人工結案、重載及證據一致，不重跑',async({page,request,baseURL})=>{
  test.skip(process.env.WORKBENCH_PARTIAL_REVIEW_TEST!=='retained-real-partial-write','Explicit retained isolated case required');
- expect(baseURL).toBe('http://127.0.0.1:5197');
+ requireDedicatedReconciliationURL(baseURL,process.env.WORKBENCH_RECONCILIATION_URL);
  const path=process.env.WORKBENCH_PARTIAL_EVIDENCE_PATH;
  expect(path).toBeTruthy();
  const proof=readFileSync(path!),evidence=JSON.parse(proof.toString());
@@ -14,8 +15,10 @@ test('真實部分提交失聯 Run：網站人工結案、重載及證據一致�
  expect((await (await request.get('/api/ready')).json()).execution_enabled).toBe(false);
  const tasks=await (await request.get('/api/tasks')).json();expect(tasks).toHaveLength(1);
  const task=tasks[0];expect(task.id).toMatch(/^partial-worker-[a-f0-9]{32}$/);
+ expect(process.env.WORKBENCH_PARTIAL_TASK).toBeTruthy();expect(task.id).toBe(process.env.WORKBENCH_PARTIAL_TASK);
  const runs=(await (await request.get(`/api/tasks/${task.id}/runs`)).json()).runs;
  expect(runs).toHaveLength(1);const run=runs[0];
+ expect(process.env.WORKBENCH_PARTIAL_RUN).toBeTruthy();expect(run.run_id).toBe(process.env.WORKBENCH_PARTIAL_RUN);
  expect(run.run_id).toBe(evidence.run_id);
  const base=`/api/tasks/${task.id}/runs/${run.run_id}`;
  const before=await (await request.get(base)).json();
@@ -24,7 +27,12 @@ test('真實部分提交失聯 Run：網站人工結案、重載及證據一致�
  const mutations:string[]=[],errors:string[]=[];
  page.on('request',r=>{if(!['GET','HEAD','OPTIONS'].includes(r.method()))mutations.push(new URL(r.url()).pathname)});
  page.on('pageerror',e=>errors.push(e.message));
- await page.goto(`/#/projects/${task.project_id}/tasks/${task.id}/requirements`);
+ await page.route('**/api/**',route=>{
+  const req=route.request();
+  if(!['GET','HEAD','OPTIONS'].includes(req.method())&&(req.method()!=='POST'||new URL(req.url()).pathname!==base+'/reconciliation'))return route.abort();
+  return route.continue();
+ });
+ await page.goto(`/#/projects/${task.project_id}/tasks/${task.id}/results/${run.run_id}`);
  const panel=page.getByRole('region',{name:'執行結果人工核對',exact:true});
  const save=panel.getByRole('button',{name:'確認結案，保留結果'});
  await expect(save).toBeDisabled();

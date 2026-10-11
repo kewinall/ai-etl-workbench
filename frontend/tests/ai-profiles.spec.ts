@@ -14,8 +14,8 @@ test('AI Profile 欄位編輯、取消、保存重載，不觸發付費呼叫', 
     const editor = page.getByRole('region', {name: 'AI Profile nova-default', exact: true});
     await editor.getByLabel('AWS Region', {exact: true}).fill('unsaved-region');
     await expect(page.getByText('有 1 個 AI Profile 尚未儲存')).toBeVisible();
-    page.once('dialog',dialog=>dialog.dismiss());
     await page.locator('.shell > aside nav').getByRole('button',{name:'專案工作區',exact:true}).click();
+    await expect(page.getByRole('alert').filter({hasText:'AI Profile 草稿已保留'})).toBeVisible();
     await expect(editor.getByLabel('AWS Region',{exact:true})).toHaveValue('unsaved-region');
     await editor.getByRole('button', {name: '取消 AI 變更'}).click();
     await expect(editor.getByLabel('AWS Region', {exact: true})).toHaveValue(region || '');

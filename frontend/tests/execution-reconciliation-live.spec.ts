@@ -1,8 +1,10 @@
 import {test,expect} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
+import {requireDedicatedReconciliationURL} from './fixtures/dedicatedReconciliation';
 
-test('真實中斷 Run：網站核對結案、API 保存重載及重複提交',async({page,request})=>{
+test('真實中斷 Run：網站核對結案、API 保存重載及重複提交',async({page,request,baseURL},testInfo)=>{
  test.skip(process.env.WORKBENCH_REAL_RECONCILIATION!=='1','Explicit approval for the dedicated crashed test run required');
+ requireDedicatedReconciliationURL(baseURL,process.env.WORKBENCH_RECONCILIATION_URL);
  const task=process.env.WORKBENCH_CRASH_TASK!,run=process.env.WORKBENCH_CRASH_RUN!,project=process.env.WORKBENCH_CRASH_PROJECT!;
  expect(task).toMatch(/^native-pilot-[a-f0-9]{32}$/);
  const bytes=await readFile(process.env.WORKBENCH_CRASH_EVIDENCE!);
@@ -15,7 +17,13 @@ test('真實中斷 Run：網站核對結案、API 保存重載及重複提交',a
  expect(original.state).toBe('NEEDS_REVIEW');expect(original.outcome_code).toBe('HOP_RESULT_UNKNOWN');expect(original.write_started).toBe(true);
  expect((await (await request.get(base+'/reconciliation')).json()).status).toBe('AWAITING_RECONCILIATION');
  expect((await (await request.get('/api/ready')).json()).execution_enabled).toBe(false);
- await page.goto(`/#/projects/${project}/tasks/${task}/requirements`);
+ const identity=await(await request.get(`/api/tasks/${task}`)).json();expect(identity.project_id).toBe(project);
+ await page.route('**/api/**',route=>{
+  const req=route.request();
+  if(!['GET','HEAD','OPTIONS'].includes(req.method())&&(req.method()!=='POST'||new URL(req.url()).pathname!==base+'/reconciliation'))return route.abort();
+  return route.continue();
+ });
+ await page.goto(`/#/projects/${project}/tasks/${task}/results/${run}`);
  const panel=page.getByRole('region',{name:'執行結果人工核對',exact:true});
  const save=panel.getByRole('button',{name:'確認結案，保留結果'});
  await expect(save).toBeDisabled();
@@ -38,5 +46,5 @@ test('真實中斷 Run：網站核對結案、API 保存重載及重複提交',a
  expect(after.events.filter((e:any)=>e.event_type==='OPERATOR_RECONCILED_WITHOUT_RETRY')).toHaveLength(1);
  await page.setViewportSize({width:390,height:900});
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2)).toBe(true);
- await panel.screenshot({path:'test-results/crash-reconciliation-live.png'});
+ await panel.screenshot({path:testInfo.outputPath('crash-reconciliation-live.png')});
 });
