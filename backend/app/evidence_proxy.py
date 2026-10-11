@@ -57,6 +57,13 @@ def workflow(task_id,run_id):
                   source_scope_note='既有真實 CSV／Excel 執行證據；只讀來源，不能替代 5197 新版操作驗收。')
     for stage in result['stages']:
         stage.update(can_operate=False,blocked_reason='既有真實證據只讀檢視；所有核准、模型及執行入口停用。')
+    # Source eligibility describes its original environment, not this GET-only view.
+    # Keep genuine downloads available, but never advertise writable operations.
+    for operation in result['operation_qualifications'].values():
+        if operation['type'] != 'DOWNLOAD':
+            operation.update(enabled=False,blocked_reason='既有真實證據只讀檢視；所有核准、模型及執行入口停用。')
+    if result['next_action']['type'] != 'DOWNLOAD':
+        result['next_action']['operation_enabled']=False
     return result
 
 def create_evidence_router():

@@ -26,3 +26,32 @@ def test_download_url_rewrite_does_not_modify_checksums_or_artifact_content():
     assert value['download_url'].startswith(proxy.PREFIX+'/tasks/')
     assert value['checksum']==original['checksum']
     assert value['content']==original['content']
+
+def test_readonly_workflow_disables_each_write_even_for_current_queued_source(monkeypatch):
+    run={'task_id':'TASK-20260928-0001','run_id':'retained-run','state':'QUEUED','phase':'REQUIREMENT_GATE','matches_current':True}
+    def document(path):
+        if path.endswith('/runs'):return {'runs':[run]}
+        if path.endswith('/specifications'):return {'items':[]}
+        if path.endswith('/runs/retained-run'):return run
+        return {}
+    monkeypatch.setattr(proxy,'document',document)
+    result=proxy.workflow('TASK-20260928-0001',run['run_id'])
+    assert result['read_only_source'] and not result['matches_current']
+    assert not result['next_action']['operation_enabled']
+    assert not any(stage['can_operate'] for stage in result['stages'])
+    for operation in result['operation_qualifications'].values():
+        assert not operation['enabled']
+        assert operation['blocked_reason']
+
+def test_readonly_workflow_preserves_actual_download_qualification(monkeypatch):
+    run={'task_id':'TASK-20260928-0001','run_id':'released-run','state':'SUCCEEDED','matches_current':True}
+    def document(path):
+        if path.endswith('/runs'):return {'runs':[run]}
+        if path.endswith('/specifications'):return {'items':[]}
+        if path.endswith('/release'):return {'status':'RELEASE_READY','release_ready':True}
+        if path.endswith('/runs/released-run'):return run
+        return {}
+    monkeypatch.setattr(proxy,'document',document)
+    result=proxy.workflow('TASK-20260928-0001',run['run_id'])
+    assert result['operation_qualifications']['release_download']['enabled']
+    assert not any(op['enabled'] for key,op in result['operation_qualifications'].items() if key!='release_download')
