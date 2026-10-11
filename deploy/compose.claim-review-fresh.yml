@@ -1,0 +1,83 @@
+# Fresh control-plane owner-death acceptance only. No external DB, model or Hop.
+# Never attach the historical claim-death / partial-worker volumes or networks.
+# The tests service refuses a populated database; retain it after one completion.
+name: ai-etl-claim-review-20261011
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: workbench
+      POSTGRES_DB: workbench
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes: [test-database:/var/lib/postgresql/data]
+    networks: [test-only]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U workbench -d workbench']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  tests:
+    image: ai-etl-workbench-regression:local
+    entrypoint: [python, -c]
+    command:
+      - >-
+        import os,sys; from pathlib import Path;
+        from app.migrations import migrate;
+        print('Applied migrations:',len(migrate(os.environ['DATABASE_URL'],Path('/app/database/migrations'))));
+        import pytest;
+        sys.exit(pytest.main(['/app/backend/tests/test_hop_claim_process_loss.py','-q','-ra','--tb=short','-p','no:cacheprovider','--basetemp=/tmp/claim-fixture/pytest']))
+    environment: &environment
+      DATABASE_URL: postgresql://workbench@postgres:5432/workbench
+      DATABASE_HOST: postgres
+      DATABASE_NAME: workbench
+      PYTHONPATH: /app/backend
+      PYTHONDONTWRITEBYTECODE: '1'
+      WORKBENCH_ALLOW_DATABASE_TESTS: '1'
+      WORKBENCH_HOP_CLAIM_DEATH_TEST: dedicated-disposable-database
+      WORKBENCH_EXECUTION_ENABLED: 'false'
+      WORKBENCH_SA_DISPATCH_ENABLED: 'false'
+      WORKBENCH_DEVELOPER_DISPATCH_ENABLED: 'false'
+      WORKBENCH_QA_DISPATCH_ENABLED: 'false'
+      # Public fixture key; never use this environment with real credentials.
+      PLATFORM_SETTINGS_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    volumes:
+      - ../backend:/app/backend:ro
+      - ../database/migrations:/app/database/migrations:ro
+      - ../config:/app/config:ro
+      - test-runtime:/tmp/claim-fixture
+    networks: [test-only]
+    depends_on:
+      postgres: {condition: service_healthy}
+  api:
+    image: ai-etl-workbench-api:claim-review-20261011
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+      target: api
+    environment: *environment
+    # This isolated fixture shares test-owned paths, never production files.
+    user: '0:0'
+    volumes: [test-runtime:/tmp/claim-fixture:ro]
+    networks: [test-only]
+    depends_on:
+      tests: {condition: service_completed_successfully}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/api/ready', timeout=3)"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+  web:
+    image: ai-etl-workbench-web:claim-review-20261011
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    ports: ['127.0.0.1:5196:8080']
+    networks: [test-only, browser-only]
+    depends_on:
+      api: {condition: service_healthy}
+networks:
+  test-only: {internal: true}
+  browser-only: {}
+volumes:
+  test-database: {}
+  test-runtime: {}

@@ -8,8 +8,10 @@ from urllib.request import urlopen
 ROOT = Path(__file__).resolve().parents[1]
 phase = sys.argv[1]
 assert phase in ('before', 'after')
-folder = ROOT / 'runtime-temp/v2-followup-closure-deploy'
-folder.mkdir(exist_ok=True)
+assert len(sys.argv) in (2, 3)
+folder = (ROOT / (sys.argv[2] if len(sys.argv) == 3 else 'runtime-temp/v2-followup-closure-deploy')).resolve()
+assert folder.is_relative_to((ROOT / 'runtime-temp').resolve()), 'Proof directory must remain in runtime-temp'
+folder.mkdir(parents=True, exist_ok=True)
 cases = []
 for filename in ('ui-accept-auto-delivery-2026-10-10.json', 'v2-followup-delivery-2026-10-11.json'):
     proof = json.loads((ROOT / 'docs/verification' / filename).read_text(encoding='utf-8-sig'))
