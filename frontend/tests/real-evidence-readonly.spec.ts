@@ -9,6 +9,11 @@ for(const item of cases)test(`既有真實 ${item.name} 七階段只讀，原 ZI
  test.skip(process.env.WORKBENCH_EVIDENCE_TEST!=='1','Explicit fixed original GET-only regression required');
  const base=`/api/evidence/pilot/tasks/${item.task}/runs/${item.run}`;
  const before=await (await request.get(base)).json();
+ const workflow=await(await request.get(base+'/workflow-status')).json();
+ expect(workflow.read_only_source).toBe(true);expect(workflow.matches_current).toBe(false);
+ expect(workflow.stages.every((stage:any)=>stage.can_operate===false)).toBe(true);
+ expect(Object.values(workflow.operation_qualifications).filter((op:any)=>op.type!=='DOWNLOAD').every((op:any)=>op.enabled===false&&!!op.blocked_reason)).toBe(true);
+ expect(workflow.operation_qualifications.release_download.enabled).toBe(true);
  const beforeWrites=before.events.filter((e:any)=>e.event_type==='WRITE_STARTED').length;
  let writes=0;
  await page.route('**/api/**',async route=>{if(route.request().method()!=='GET'){writes++;return route.abort()}return route.continue()});
@@ -19,10 +24,12 @@ for(const item of cases)test(`既有真實 ${item.name} 七階段只讀，原 ZI
   await page.getByRole('tab',{name:new RegExp(({requirements:'需求與資料規格',review:'需求審查',design:'流程設計審查',confirm:'執行確認',results:'執行與結果',quality:'品質審查',delivery:'成果交付'} as any)[key])}).click();
   await expect(page.getByLabel('共用 Run 版本')).toHaveValue(item.run);
   await expect(page).toHaveURL(new RegExp('evidence=pilot.*'+key+'/'+item.run));
+  await expect(page.locator('input[type="checkbox"]:visible:enabled')).toHaveCount(0);
  }
  const zip=await request.get(`${base}/release/${item.release}/download`);expect(zip.ok()).toBeTruthy();
  const bytes=await zip.body();expect(bytes.length).toBe(item.bytes);expect(createHash('sha256').update(bytes).digest('hex')).toBe(item.sha);
  const after=await (await request.get(base)).json();
+ expect(after).toEqual(before);
  expect(after.updated_at).toBe(before.updated_at);
  expect(after.events.filter((e:any)=>e.event_type==='WRITE_STARTED').length).toBe(beforeWrites);
  expect(writes).toBe(0);

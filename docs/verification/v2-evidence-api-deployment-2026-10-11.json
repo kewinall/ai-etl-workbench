@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-11",
+  "api_source_commit": "7029156",
+  "build_tree_head": "43535fb",
+  "scope": "5197 API only; seven added lines in evidence_proxy relative to a7a666f, no migrations or worker/DB/5183 changes",
+  "deployed_evidence_proxy_sha256": "ae7e8c11a2e71bcb716ef2a605a6e79a8f2ffe7433ea57dc82471ef9a0c5ece5",
+  "frontend_source_unchanged": "d3a2e4d",
+  "bundle_unchanged": "index-CQpDjssy.js",
+  "protected_other_containers_unchanged": 9,
+  "formal_release_fingerprints_unchanged": 8,
+  "tests": {
+    "fresh": {
+      "passed": 10,
+      "seconds": 28.3
+    },
+    "previous": {
+      "passed": 10,
+      "seconds": 25.9
+    },
+    "original-evidence": {
+      "passed": 2,
+      "seconds": 5.4
+    }
+  },
+  "actual_readonly_qualifications": [
+    {
+      "case": "original_csv",
+      "blocked_non_download_operations": 23,
+      "download_enabled": true
+    },
+    {
+      "case": "original_excel",
+      "blocked_non_download_operations": 23,
+      "download_enabled": true
+    }
+  ],
+  "new_model_hop_vertica_approval_dispatches": 0,
+  "original_write_started_per_release": 1,
+  "application_repo_pushed": false,
+  "rollback_image_file": "runtime-temp/v2-evidence-api-deploy/previous-api-image.txt"
+}

@@ -222,3 +222,11 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - 臨時reader已停止exit0、私有原始GET/source/trace保留runtime-temp/v2-retained-history-ui；九保護容器不變，原Join未提交hash仍cc1f19bd4e2da5bf311ed3d3f89802f65e497d5fa40e7cc954d32b6a553e9777。metadata首次pipe分隔被WSL解析為shell管線而失敗，未取得有效inspect；改comma並強制檢查exitcode，真正核對9服務全不變，未將前次錯誤輸出當PASS。
 - 證據v2-retained-history-ui-2026-10-11.json保存去識別before/after完整紀錄hash、reader source hash與限制。原真實保存案例不是新版另作QA補證或新Hop中斷；沒有模型/引擎/Vertica/核准/交付呼叫，也沒有重跑舊目標。本輪production source未修改；backend2134/139及full browser147/27沿用上輪，不重複算重跑或把新增條件測試當成default PASS。
 - 下一步仍須為已完成全回歸的唯讀資格後端7029156安排5197 API受控部署及原證據GET-only回歸；当前API仍a7a666f。新版真實補證／新故障寫入如需驗收，先準備新的独立案例/目標与具体核准，不重放已交付或已結案資料。WS0007保持active，JSON/資料表、REPLACE/UPSERT、已交付修正版、維運/乾淨機器等獨立未完成項目不因本批歷史查閱通過而完成。
+
+## 唯讀資格後端5197受控部署
+
+- 核對a7a666f至目前HEAD43535fb：backend/app只有evidence_proxy.py增加7行，Dockerfile/DB migrations/Worker没有改動。只up --no-deps --build -d api，不啟動migration/dependencies；API healthy，從實際容器讀出的evidence_proxy.py SHA與本機完全一致（見v2-evidence-api-deployment-2026-10-11.json）。5197 API source現為7029156，前端仍d3a2e4d/index-CQpDjssy.js。
+- 部署前保存8正式Release及9其他容器（前批8個原服務加5197web，API是本次唯一替換對象）。部署後、全部瀏覽器後，8Release hash/bytes/updated/write1不變，9其他容器ID/image/StartedAt不變；原image保留runtime-temp/v2-evidence-api-deploy/previous-api-image.txt。未重啟DB/Worker/web/5183，沒有新模型/Hop/Vertica/QA/交付意圖。
+- 實際原CSV/Excel GET workflow-status全部非DOWNLOAD操作與七stage停用、下載enabled保留；強化real-evidence-readonly原測試的逐操作資格、各stage無enabled checkbox及完整Run前後相等。兩原案例7階段/ZIP hash/原接口POST405 **2PASS5.4s**；新三正式案三寬度/鍵盤/ZIP GET-only **10PASS28.3s**，原三 **10PASS25.9s**。每組三案測試包含9個實際寬度案例＋1個opt-in marker，沒有冒稱10個新ETL。
+- 本批後端全回歸2134/139已在7029156修正時完成，未因部署重複宣稱再跑；full browser147/27亦沿用先前明確scope。新增條件歷史測試default單獨1skip，未以skip當PASS。真實原QA歷史UI、原source下載回歸與當前新版新模型/故障驗收的證據層次仍分開。
+- API回復：讀取本批previous-api-image.txt的舊ID，tag至ai-etl-workbench-api:stage-guidance，再以原stage-guidance＋ui-acceptance Compose/原UI_ACCEPT_PROJECT_ID執行up --no-deps -d api（不build），確認ready、原source指紋及8Release；不run migration/init/Worker或重跑目標。舊指紋/source與本批private基準保留，不在repo保存機密。
