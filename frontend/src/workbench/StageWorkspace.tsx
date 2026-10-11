@@ -11,7 +11,6 @@ import {HopDispatch} from './HopDispatch';
 import {RunArtifacts} from './RunArtifacts';
 import {QAReviewHistory} from './QAReviewHistory';
 import {SdmDelivery} from './SdmDelivery';
-import {ExecutionDiagnosis} from './ExecutionDiagnosis';
 import {ExecutionReconciliation} from './ExecutionReconciliation';
 import {ComparisonHistory} from './ComparisonHistory';
 import './workflow.css';
@@ -182,7 +181,7 @@ export function TaskWorkspace({task,tab,runId,navigate,renderSetup,renderValue}:
         {stage==='review'&&fold('review',<><SAInvocation key={selected} taskId={task.id} runId={selected}/><details><summary>需求審查技術證據</summary><SAEvidence taskId={task.id} runId={selected}/></details></>)}
         {stage==='design'&&fold('design',<><NamingConfirmation taskId={task.id} runId={selected} historical={workflow.historical||!workflow.matches_current||detail.write_started} editable={!readonly&&!detail.write_started&&workflow.operation_qualifications?.naming_confirm?.enabled===true} sourceOrder={detail.input_summary.source_order_v1}/><DeveloperInvocation key={selected} taskId={task.id} runId={selected}/><SpecificationHistory key={selected} taskId={task.id} runId={selected}/></>)}
         {stage==='confirm'&&fold('confirm',<><OracleHistory taskId={task.id} requestedRunId={selected} stage="confirm"/><HopDispatch key={selected} taskId={task.id} runId={selected}/></>)}
-        {stage==='results'&&fold('results',<><RunArtifacts taskId={task.id} requestedRunId={selected}/><ComparisonHistory taskId={task.id} runId={selected}/>{['HOP_EXECUTION_FAILED','HOP_RESULT_UNKNOWN'].includes(detail.outcome_code)&&<><ExecutionDiagnosis base={runBase}/><ExecutionReconciliation base={runBase} onSaved={async()=>setEpoch(n=>n+1)}/></>}<HopDispatch key={selected} taskId={task.id} runId={selected}/></>)}
+        {stage==='results'&&fold('results',<><RunArtifacts taskId={task.id} requestedRunId={selected}/><ComparisonHistory taskId={task.id} runId={selected}/>{['HOP_EXECUTION_FAILED','HOP_RESULT_UNKNOWN'].includes(detail.outcome_code)&&<ExecutionReconciliation base={runBase} onSaved={async()=>setEpoch(n=>n+1)}/>}<HopDispatch key={selected} taskId={task.id} runId={selected}/></>)}
         {stage==='quality'&&<>{workflow.current_stage==='results'&&<p role="alert">{workflow.execution_blocked_reason} <button type="button" onClick={()=>select('results')}>前往執行結果與比對</button></p>}{fold('quality',<QAReviewHistory key={selected} taskId={task.id} runId={selected}/>,'查看歷次 QA 模型紀錄與核准詳情')}{detail.qa_revision&&<button disabled={readonly} onClick={()=>{setPendingField('target_table');select('requirements')}}>建立修正版（保留原始執行，使用新目標）</button>}</>}
       </fieldset>
       {stage==='delivery'&&<>{detail.failed_revision_available&&<section aria-label="交付阻擋原因"><h3>此版尚無交付文件</h3><p>此版的結果比對未通過，已結案並保留原執行。結案不代表 QA 核准；目前不能產生 QA 關聯 SDM 或正式交付包。</p><p>下一步：按上方「建立修正版」，沿用原需求，使用新目標與正確標準答案重新確認。</p><button type="button" onClick={()=>select('results')}>查看此版流程與執行結果</button></section>}{workflow.delivered?<details className="wb-stage-details"><summary>候選文件、可攜驗證與交付歷史</summary><SdmDelivery key={selected} base={runBase}/></details>:<SdmDelivery key={selected} base={runBase}/>}</>}

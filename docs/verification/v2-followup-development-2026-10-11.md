@@ -102,3 +102,13 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - 首次實跑 1 passed / 1 failed：Developer 409 訊息被 changed 事件引發的背景 GET 清除，重新顯示授權。修正背景 GET 保留錯誤，錯誤存在時不显示新授權；明確「重試讀取 Developer 狀態」讀回後才清除錯誤。新測試確認共用刷新仍保留衝突、checkbox 不出現、POST 仍只有成功與衝突兩次；明確 GET 恢復不送模型請求。
 - 最終 focused 2 passed（3.2 秒），build PASS（原 bundle-size warning）。Developer 保存文案改為檢視下方規格，資料未更新使用共用刷新，不再要求已移除的局部刷新入口。
 - 本批不變更後端，後端有效結果沿用第二批 2132 passed / 139 skipped；完整預設瀏覽器最終 104 passed / 37 skipped / 0 failed（2.8 分鐘），證據 runtime-temp/v2-followup-authorization-default-browser。減少的兩項 skip 是現在每輪必跑的合成授權測試，並非真實 provider 驗收。Copilot 真實模型與 recovery-history 真實失敗歷史舊入口仍待修訂／實測；新三案完整執行未完成。
+
+## 第三段第四批：真實失敗歷史與重複畫面
+
+- recovery-history-readonly 改用共用版本、結果／需求階段、完成輸入收合區及瀏覽器返回，保留 COLUMN_NOT_FOUND、行號、日誌指紋、0 筆結案、parent_run_id、三種寬度與零寫入斷言；before/after 父及子 Run 完整相等，每個 WRITE_STARTED 仍為 1。
+- 原 5183 沒有 workflow-status API；5197 固定證據代理僅允許原已驗收 CSV／Excel，不擴大其 production allowlist。另啟動僅本機 8766 的臨時 GET-only harness，固定 TASK-20260927-0076，使用目前 summarize() 彙整原始 5183 GET 證據；不接資料庫、不提供任何寫入 route、不保存合成 Run、不部署 5183。現在前端 Vite 5201 讀取該 harness，不等於 5197 部署驗收。
+- 真實父 Run a91856ca-bc20-4af1-8e18-fb038b12c4bc；修正子 Run d8fe2f6f-8305-4d58-88ee-affb1a85a547。原父明確 HOP_EXECUTION_FAILED/CLOSED_WITHOUT_RETRY，子保留 HOP_EXECUTED_QA_REQUIRED 與正式交付紀錄。首次測試揭露結果頁在 RunArtifacts 與 StageWorkspace 各顯示一次診斷；移除 StageWorkspace 重複實例，保留 RunArtifacts 原診斷及結果結案元件。
+- 第二次因完成階段 lazy details 尚未讀回就檢查 count 失敗；測試改等真實可见 summary 再展開，沒有固定延遲或放寬業務斷言。最終唯讀 1 passed 5.9 秒；加完整父子不變與兩次寫入數量確認後再 1 passed 7.8 秒。原證據未修改，沒有發送模型、ETL 或結案 POST。證據 runtime-temp/v2-followup-recovery-readonly/browser-immutable。
+- failed-revision 原為 mock 測試但被既有導航環境 skip 隱藏，且仍走過期需求頁診斷／直接提交。改独立合成 fixture，真正結果頁只一份診斷、上方明確修正版入口、預覽差異與確認、新目標、原 checksum、父資料保留及子核准清空；1 passed 2.5 秒。此項現在預設必跑，不代表真實故障再執行。
+- Copilot standalone 測試更新需求審查與共用刷新；啟動前要求 execution_enabled=false、明確隔離容器與 CONTROL 相同、明確已連線檢查的模型，拒絕 5183／5197 容器；不再使用預設生產容器或硬編碼模型。CONTROL 只消費新測試 Project 唯一 Run。測試語法與探索確認，尚未執行真實模型，不在三新案例之外新增實際模型用量。
+- 本批 source build PASS；完整預設瀏覽器最終 105 passed / 36 skipped / 0 failed（2.9 分鐘），runtime-temp/v2-followup-recovery-default-browser；新增必跑失敗修訂為合成 API 工程檢查，skip 減少不代表多一次真實執行。後端未變更，2132 passed / 139 skipped 沿用前批。三新真實案例仍待 5197 受控部署與逐階段完整驗收；WS-0007 不標完成。

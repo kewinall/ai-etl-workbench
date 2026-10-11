@@ -2,12 +2,22 @@ import {test, expect} from '@playwright/test';
 import {execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import path from 'node:path';
+import {isolatedControlRun} from './fixtures/control';
 
 // Explicit operator consent is required before enabling this test.
 // One CLI session; no model mocks, no automatic retry and no ETL execution.
 test('單次真實 Copilot：網站授權 → Windows Worker → 結構驗證 → PostgreSQL → 網站', async ({page, request}) => {
   test.skip(process.env.WORKBENCH_REAL_COPILOT_SINGLE_CALL !== '1', 'Requires explicit operator authorization for one real Copilot session');
   test.setTimeout(240000);
+  // This standalone SA test rewrites synthetic settings; it must not target 5197/5183.
+  expect((await (await request.get('/api/ready')).json()).execution_enabled).toBe(false);
+  const container=process.env.WORKBENCH_LOCAL_API_CONTAINER;
+  const model=process.env.WORKBENCH_REAL_COPILOT_MODEL;
+  expect(container,'Specify the isolated model-enabled API container').toBeTruthy();
+  expect(container).not.toBe('ai-etl-workbench-api-1');
+  expect(container).not.toBe('ai-etl-stage-guidance-ui-api-1');
+  expect(process.env.WORKBENCH_CONTROL_CONTAINER).toBe(container);
+  expect(model,'Specify a connection-checked model; no implicit model substitution').toBeTruthy();
   const original = (await (await request.get('/api/settings/groups')).json()).values.data_connections_targets;
   const suffix = Date.now();
   const profileId = 'copilot-pilot-'+suffix;
@@ -17,7 +27,7 @@ test('單次真實 Copilot：網站授權 → Windows Worker → 結構驗證 �
   try {
     expect((await request.put('/api/settings/ai-profiles/'+profileId, {data: {
       display_name: '本機 Copilot 單次 Pilot 驗收', provider_type: 'LOCAL_COPILOT',
-      model_routes: {requirement_gate: 'gpt-5.4', etl_specification: 'gpt-5.4', qa_review: 'gpt-5.4'}, enabled: true,
+      model_routes: {requirement_gate: model!, etl_specification: model!, qa_review: model!}, enabled: true,
     }})).status()).toBe(200);
     // Synthetic metadata only: this test must never connect to or claim to validate Vertica.
     expect((await request.put('/api/settings/groups/data_connections_targets', {data: {...original, etl_qa: {
@@ -42,10 +52,11 @@ test('單次真實 Copilot：網站授權 → Windows Worker → 結構驗證 �
     await panel.getByLabel('我已核對本次需求及設定版本').check();
     await panel.getByRole('button', {name: '確認此版輸入', exact: true}).click();
     runId = (await (await request.get(`/api/tasks/${taskId}/runs`)).json()).runs[0].run_id;
+    expect(isolatedControlRun(runId!).status).toBe('CHECKED');
     await expect.poll(async () => (await (await request.get(`/api/tasks/${taskId}/runs/${runId}`)).json()).gate_result?.status, {timeout: 20000}).toBe('CHECKED');
-    await panel.getByRole('button', {name: '重新載入版本', exact: true}).click();
-    const sa = panel.getByRole('region', {name: 'SA 呼叫狀態'});
-    await sa.getByRole('button', {name: '重新載入 SA 狀態'}).click();
+    await page.getByRole('tab',{name:/2 · 需求審查/}).click();
+    await page.getByRole('button',{name:'重新核對狀態',exact:true}).click();
+    const sa = page.getByRole('region', {name: 'SA 呼叫狀態'});
     await expect(sa).toContainText('只啟動 1 次 CLI');
     const authorize = sa.getByRole('button', {name: '授權並排入 SA 工作'});
     await expect(authorize).toBeDisabled();
@@ -59,11 +70,11 @@ test('單次真實 Copilot：網站授權 → Windows Worker → 結構驗證 �
     const outcome = JSON.parse(worker.stdout.trim());
     await test.info().attach('worker-result', {body: JSON.stringify(outcome, null, 2), contentType: 'application/json'});
     expect(outcome.status).toBe('VALIDATED_NOT_APPROVED');
-    await sa.getByRole('button', {name: '重新載入 SA 狀態'}).click();
+    await page.getByRole('button',{name:'重新核對狀態',exact:true}).click();
     await expect(sa).toContainText('結構驗證通過，尚未人工核准');
     const record = await (await request.get(`/api/tasks/${taskId}/runs/${runId}/sa-invocation`)).json();
     expect(record.invocation.provider).toBe('LOCAL_COPILOT');
-    expect(record.invocation.model).toBe('copilot/gpt-5.4');
+    expect(record.invocation.model).toBe('copilot/'+model);
     expect(record.invocation.usage.cli_sessions).toBe(1);
     expect(record.invocation.usage.automatic_retries).toBe(0);
     expect(record.invocation.usage.tool_execution_count).toBe(0);

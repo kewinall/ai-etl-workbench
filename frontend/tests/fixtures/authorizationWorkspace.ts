@@ -35,6 +35,6 @@ export async function authorizationWorkspace(page:Page,initialStage:string){
     else if(path.endsWith('/workers'))json={workers:[]};
     return route.fulfill({json});
   });
-  return {project,task,run,base:`/#/projects/${project}/tasks/${task}`,setStage:(next:string)=>{stage=next},
+  return {project,task,run,record,base:`/#/projects/${project}/tasks/${task}`,setStage:(next:string)=>{stage=next},
     assertNoUnexpectedWrites:()=>expect(unexpectedWrites).toEqual([])};
 }

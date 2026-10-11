@@ -7,8 +7,8 @@
       "skipped": 139
     },
     "browser": {
-      "passed": 104,
-      "skipped": 37
+      "passed": 105,
+      "skipped": 36
     },
     "scope": "Isolated deterministic engineering including oracle draft regression; real execution cases are separate."
   },
@@ -79,10 +79,13 @@
         }
       ],
       "environment_keys": [
+        "WORKBENCH_CONTROL_CONTAINER",
+        "WORKBENCH_LOCAL_API_CONTAINER",
+        "WORKBENCH_REAL_COPILOT_MODEL",
         "WORKBENCH_REAL_COPILOT_SINGLE_CALL"
       ],
-      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
-      "legacy_selectors_present": true
+      "this_followup_execution": "UI selectors migrated; real call NOT RUN this follow-up. Standalone test requires isolated execution-disabled API/container and explicit checked model; must not rewrite 5197/5183 settings.",
+      "legacy_selectors_present": false
     },
     {
       "file": "frontend/tests/developer-invocation.spec.ts",
@@ -173,19 +176,16 @@
     {
       "file": "frontend/tests/failed-revision.spec.ts",
       "kind": "browser",
-      "gates": [
+      "gates": [],
+      "environment_keys": [],
+      "this_followup_execution": "PASS: standalone mocked API; 1 passed 2.5s, no provider or ETL. Newly unconditional.",
+      "legacy_selectors_present": false,
+      "previous_gates": [
         {
           "line": 5,
           "condition": "test.skip(!task||!run||!project,'Requires existing navigation');"
         }
-      ],
-      "environment_keys": [
-        "WORKBENCH_BOUND_RESULT_TASK",
-        "WORKBENCH_BOUND_RESULT_RUN",
-        "WORKBENCH_BOUND_RESULT_PROJECT"
-      ],
-      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
-      "legacy_selectors_present": false
+      ]
     },
     {
       "file": "frontend/tests/hop-preparation-reconciliation-live.spec.ts",
@@ -466,8 +466,9 @@
         "WORKBENCH_RECOVERY_FAILED_RUN",
         "WORKBENCH_RECOVERY_CORRECTED_RUN"
       ],
-      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
-      "legacy_selectors_present": true
+      "this_followup_execution": "PASS: current frontend and current backend summarize() via ephemeral GET-only harness over original persisted 5183 failure/child. 1 passed 7.8s; no deployed 5183 upgrade or new ETL.",
+      "legacy_selectors_present": false,
+      "obsolete_selector_review": "Shared Run, results/requirements stages, completed-input details, Back; complete before/after failure and child unchanged."
     },
     {
       "file": "frontend/tests/sdm-delivery.spec.ts",

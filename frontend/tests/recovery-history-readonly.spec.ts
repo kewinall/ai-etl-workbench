@@ -12,6 +12,7 @@ test('真實失敗與修正歷史、診斷、窄版面及返回（唯讀）', as
   const reconciliation = await (await request.get(base + failed + '/reconciliation')).json();
   expect(before.outcome_code).toBe('HOP_EXECUTION_FAILED');
   expect(child.parent_run_id).toBe(failed);
+  expect(child.events.filter((e:any) => e.event_type === 'WRITE_STARTED')).toHaveLength(1);
   expect(reconciliation.status).toBe('CLOSED_WITHOUT_RETRY');
   expect(before.events.filter((e:any) => e.event_type === 'WRITE_STARTED')).toHaveLength(1);
   expect(diagnosis.findings.some((f:any) => f.code === 'COLUMN_NOT_FOUND')).toBe(true);
@@ -19,10 +20,12 @@ test('真實失敗與修正歷史、診斷、窄版面及返回（唯讀）', as
   const errors:string[] = [], mutations:string[] = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('request', r => {if (!['GET','HEAD','OPTIONS'].includes(r.method())) mutations.push(r.method() + ' ' + new URL(r.url()).pathname)});
-  await page.goto(`/#/projects/${project}/tasks/${task}/requirements`);
-  const versions = page.getByRole('region', {name:'執行準備版本'});
-  await versions.getByRole('button').filter({hasText:failed!}).first().click();
+  await page.route('**/api/**',route=>['GET','HEAD','OPTIONS'].includes(route.request().method())?route.continue():route.abort());
+  await page.goto(`/#/projects/${project}/tasks/${task}/results/${failed}`);
+  const versions = page.getByLabel('共用 Run 版本');
+  await expect(versions).toHaveValue(failed!);
   const panel = page.getByRole('region', {name:'失敗診斷證據'});
+  await expect(panel).toHaveCount(1);
   await expect(panel).toContainText('程式規則，非 AI');
   for (const finding of diagnosis.findings) await expect(panel).toContainText(finding.line_numbers.join('、'));
   await panel.getByText('日誌證據指紋', {exact:true}).click();
@@ -33,14 +36,27 @@ test('真實失敗與修正歷史、診斷、窄版面及返回（唯讀）', as
     await expect(panel).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), `${width}px`).toBe(true);
   }
-  await versions.getByRole('button').filter({hasText:corrected!}).first().click();
+  await versions.selectOption(corrected!);
+  await expect(versions).toHaveValue(corrected!);
+  // Version switching preserves the selected stage; inspect the immutable input separately.
+  const inputTab=page.getByRole('tab', {name:/1 · 需求與資料規格/});
+  if(!await inputTab.isVisible())await page.getByRole('button',{name:/目前查看：/}).click();
+  await inputTab.click();
+  const fullInput=page.getByText('查看完整輸入、版本操作與控制紀錄',{exact:true});
+  await expect(fullInput).toBeVisible();
+  await fullInput.click();
   await expect(page.getByRole('article', {name:'版本內容'})).toContainText('補正自版本');
-  await page.getByRole('tab', {name:'執行與 QA',exact:true}).click();
-  await page.getByLabel('標準答案準備版本').selectOption(failed!);
+  const resultTab=page.getByRole('tab', {name:/5 · 執行與結果/});
+  if(!await resultTab.isVisible())await page.getByRole('button',{name:/目前查看：/}).click();
+  await resultTab.click();
+  await versions.selectOption(failed!);
+  await expect(versions).toHaveValue(failed!);
   await expect(panel).toContainText('程式規則，非 AI');
   await page.goBack();
-  await expect(page.getByRole('tab', {name:'執行與 QA',exact:true})).toHaveAttribute('aria-selected','true');
-  expect((await (await request.get(base + failed)).json()).events).toEqual(before.events);
+  await expect(versions).toHaveValue(corrected!);
+  await expect(page).toHaveURL(new RegExp('/results/'+corrected));
+  expect(await (await request.get(base + failed)).json()).toEqual(before);
+  expect(await (await request.get(base + corrected)).json()).toEqual(child);
   expect(mutations).toEqual([]);
   expect(errors).toEqual([]);
 });
