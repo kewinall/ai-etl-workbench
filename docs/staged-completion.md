@@ -2,7 +2,7 @@
 
 ## 最新工程（2026-10-11）
 
-[v2 功能收斂、狀態修正與操作精簡](verification/ui-simplification-2026-10-11.md)：第一輪三段 commit 已部署 5197（`146e963`）；第二輪 Codex 核查補正（`188dfe7`…`5745ba0`）隔離環境驗證，未部署、未推送，不代表 v2 全部完成。
+[七階段介面收斂的階段性工程驗收](verification/v2-ui-stage-acceptance-2026-10-11.md)通過：`7d88985` 獨立後端 2056 passed、預設瀏覽器 97 passed，SA 守門與三 ZIP 唯讀回歸通過；本輪授權階段性上版。5197 仍為先前部署 `146e963`，新版部署驗收、剩餘 opt-in／API 覆蓋及整體 v2 尚未完成。詳見 [各輪工程紀錄](verification/ui-simplification-2026-10-11.md) 與 [Codex 獨立驗證](verification/codex-round3-review-2026-10-11.md)。
 
 ## 目前判定（2026-09-28，依已保存驗收證據）
 
