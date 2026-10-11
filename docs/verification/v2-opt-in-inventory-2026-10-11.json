@@ -7,8 +7,8 @@
       "skipped": 139
     },
     "browser": {
-      "passed": 126,
-      "skipped": 27
+      "passed": 129,
+      "skipped": 26
     },
     "scope": "Isolated deterministic engineering including oracle draft regression; real execution cases are separate."
   },
@@ -484,8 +484,10 @@
         "WORKBENCH_BOUND_RESULT_RUN",
         "WORKBENCH_BOUND_RESULT_PROJECT"
       ],
-      "this_followup_execution": "NOT_INDIVIDUALLY_OPTED_IN",
-      "legacy_selectors_present": false
+      "this_followup_execution": "UNCONDITIONAL PASS: 3 synthetic UI branches, all API intercepted; old component with identical complete fixture 3 FAIL; revised 3 PASS and repeat-each=3 9 PASS. No real SDM/QA/Release writes.",
+      "legacy_selectors_present": false,
+      "current_gates": [],
+      "current_environment_keys": []
     },
     {
       "file": "frontend/tests/semantic-evidence-readonly.spec.ts",

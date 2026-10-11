@@ -169,3 +169,13 @@ inventory九項只是部分情境通過；有效／失效完整binding、正式�
 - 2026-10-11三新正式案七階段／390/768/1440／鍵盤／ZIP／SDM歷史GET-only **10PASS（26.8秒）**；2026-10-10三原正式案同範圍 **10PASS（25.6秒）**。兩原5183CSV/Excel由固定GET證據入口檢查，未擴大allowlist；全部八個fingerprint regression最終PASS。
 - 證據 `v2-followup-closure-deployment-2026-10-11.json`；私有baseline、原web image ID與browser artifacts位於`runtime-temp/v2-followup-closure-deploy`。本批app沒有GitHub推送，原Join未提交修改仍保留。
 - 下一批：SDM交付純合成測試仍有舊導航依賴；真實失聯／準備中斷／部分提交結案的opt-in案例需先檢查独立DB與Worker環境，不以合成測試代替真實回讀證據。WS-0007維持active，不把27個browser skip／139個backend skip當成PASS。
+
+## 異常分支第三批：SDM 提交結果與背景讀回
+
+- 工程 commit d5e7de8：SDM 背景讀取不再清除成功或失敗訊息；送出結果未確認時停用產生按鈕，必須明確 GET 重讀交付條件並查看文件歷史。不自動核准、不自動重送、不新增工作流狀態，QA binding 與後端既有檢查保留。
+- 原 sdm-delivery 合成測試移除舊 Task 導航及環境 gate，改用 authorizationWorkspace 現行交付階段。所有 API 完整攔截；原資格停用、成功、409、候選／正式歷史與390px斷言保留，新增已保存但回應遺失、背景 GET 保留提示、明確 GET 不再 POST、候選文件已保存可查與單次 POST 檢查。
+- 首次 fixture 不完整造成歷史區額外錯誤，補齊 GET 格式後，使用相同完整 fixture 對照 HEAD8561f31 的原元件：3 FAIL（成功提示被清除、409及回應遺失後重新開放操作）。新版3 PASS；QA交叉回歸6 PASS（10.6秒），再加候選歷史斷言3案重複三次9 PASS（14.9秒）。對照與失敗trace如實保留於私有 runtime-temp/v2-sdm-*。
+- Build PASS，產物 index-DYmf-6uq.js；原500KB bundle警示仍保留。本輪未改backend，2132 PASS/139skip沿用上批，不冒算重跑。
+- 真實失聯 opt-in 稽核發現 hop-preparation-reconciliation-live.spec.ts 殘留未使用proof及未定義hash，另有舊需求頁入口；partial-write-reconciliation-live.spec.ts 的固定5197指向目前驗收環境，不能直接執行。歷史claim-review／partial-review Compose為舊image、外部保留DB／volume，不能直接up或重置既有已結案案例。這些尚待專用新隔離DB修正及實跑，不計入本批PASS；不恢復使用者已移除的證據檔案核對功能。
+- 5197仍為前端2530203／API a7a666f，本輪未部署、未呼叫模型/Hop/Vertica/QA/Release、未操作5183或已交付目標；app未推送。原Join未提交內容SHA仍為cc1f19bd4e2da5bf311ed3d3f89802f65e497d5fa40e7cc954d32b6a553e9777。
+- 完整預設回歸第一次128 PASS／26skip／1 FAIL（4.0分鐘），唯一失敗為ai-profiles頁面reload等load逾10秒；原斷言/timeout不改，單獨連同SDM重驗4 PASS（8.3秒）。固定source第二次完整回歸129 PASS／26skip／0 FAIL（3.8分鐘）；首輪失敗trace保留，不能宣稱首次全通過。最後JSON報告 runtime-temp/v2-sdm-default-confirmation.json。本批少一個skip為原SDM合成測試常態化，多兩個PASS為新增合成分支，不當成真實模型/ETL案例。
