@@ -281,7 +281,7 @@ def operation_qualifications(run, *, current, historical, delivered, approved_in
                                     and recovery.get('status') not in ('QUEUED', 'CLAIMED'),
                                     '結果比對已存在或正在處理。', 'hop'),
         'qa_authorize': item('AUTHORIZE_MODEL', qa.get('eligible') is True and qa.get('dispatch_enabled') is True and not qa_ok,
-                             '需完成 Hop 與結果比對；已有 QA 呼叫且不符合複核條件時不重送。', 'qa'),
+                             qa.get('blocked_reason') or '需完成 Hop 與結果比對；已有 QA 呼叫且不符合複核條件時不重送。', 'qa'),
         'qa_approve': item('APPROVE', qa_approval.get('status') == 'AWAITING_CONFIRMATION', '目前沒有待核准的 QA PASS 審查。'),
         'sdm_prepare': item('SAVE', qa_ok and release_status in ('SDM_AND_CANDIDATE_REQUIRED',),
                             '需先有有效人工 QA 核准；候選包建立後不再重新產生 SDM。'),

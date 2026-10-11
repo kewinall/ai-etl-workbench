@@ -24,8 +24,8 @@ export function QAAuthorization({taskId,runId}:{taskId:string;runId:string}) {
     {(!managed||error)&&<button disabled={busy} onClick={()=>refresh()}>{managed?'重試讀取 QA 派發條件':'重新核對 QA 派發條件'}</button>}
     {serviceBlocker&&<p role="status">{serviceBlocker}</p>}
     {error&&<p role="alert">{error}。未重送模型請求，請重新核對。</p>}
-    {data?.invocation&&!data.reassess_invocation_id?<p>已有 QA 呼叫紀錄（{data.invocation.status}），不會重送。請重新讀取下方審查結果。</p>
-      :data&&!data.eligible?<p>尚不符合派發條件：需完成 Hop、保存受控來源比對證據，並使用有效的 Copilot 路由。</p>
+    {data?.invocation&&!data.reassess_invocation_id?<><p role="status">{data.blocked_reason||'已有 QA 呼叫紀錄，不會重送。請查看下方審查結果。'}</p><details><summary>技術狀態</summary><p>{data.invocation.status}</p></details></>
+      :data&&!data.eligible?<p role="status">{data.blocked_reason||'尚不符合派發條件：需完成 Hop、保存受控來源比對證據，並使用有效的 Copilot 路由。'}</p>
       :data&&!data.dispatch_enabled?<p>部署尚未啟用 QA 派發，目前不會呼叫模型。</p>
       :data&&!error&&<>
         {data.reassess_invocation_id&&<p>前次 NEEDS_REVIEW 將永久保留。審查指引已更新，可另行同意一次複核；不重跑 Hop、不沿用 QA 核准、不保證 PASS。</p>}

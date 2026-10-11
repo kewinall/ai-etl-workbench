@@ -2,6 +2,21 @@ import {test,expect} from '@playwright/test';
 import {authorizationWorkspace} from './fixtures/authorizationWorkspace';
 import {workflowStatus} from './fixtures/workflow';
 
+test('QA補證未具資格時顯示具體原因，不提供重送或檔案核對',async({page})=>{
+  const fixture=await authorizationWorkspace(page,'quality');
+  const reason='QA 要求補正，目前不符合同次執行複核條件。請查看 QA 意見；若需修改流程，使用新目標建立修正版。';
+  await page.route(`**/api/tasks/${fixture.task}/runs/${fixture.run}/qa-authorization`,route=>route.fulfill({json:{
+    eligible:false,dispatch_enabled:true,blocked_reason:reason,invocation:{status:'VALIDATED_NOT_APPROVED'},reassess_invocation_id:null
+  }}));
+  await page.goto(`${fixture.base}/quality/${fixture.run}`);
+  const panel=page.getByRole('region',{name:'QA 模型呼叫授權',exact:true});
+  await expect(panel.getByRole('status')).toHaveText(reason);
+  await expect(panel.getByRole('checkbox')).toHaveCount(0);
+  await expect(panel.getByRole('button',{name:/授權/})).toHaveCount(0);
+  await expect(panel.locator('input[type="file"]')).toHaveCount(0);
+  fixture.assertNoUnexpectedWrites();
+});
+
 test('QA 與 Hop 授權需確認、保存後禁止重送（合成 API）',async({page})=>{
   const fixture=await authorizationWorkspace(page,'quality');
   const {task,run}=fixture;

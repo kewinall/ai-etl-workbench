@@ -21,6 +21,25 @@ class AuthorizeQA(BaseModel):
     reassess_invocation_id: UUID | None=None
 
 
+def blocked_reason(captured, native, existing, reassessment):
+    if existing and not reassessment:
+        status=existing.get('status')
+        if status=='QA_RESERVED':
+            return 'QA 審查已排程，請等待結果；不會重送模型請求。'
+        if status=='QA_OUTCOME_UNKNOWN':
+            return 'QA 呼叫結果待核對，請先核對服務與保存紀錄；不可重新呼叫。'
+        if status=='STALE_RESULT_NEEDS_REVIEW':
+            return '前次 QA 的版本或證據已失效，請查看審查結果與版本差異；不可沿用或重送。'
+        if (existing.get('output_json') or {}).get('review',{}).get('status')=='NEEDS_REVIEW':
+            return 'QA 要求補正，目前不符合同次執行複核條件。請查看 QA 意見；若需修改流程，使用新目標建立修正版。'
+        return '已有 QA 審查紀錄，請查看結果與人工核准狀態；不會再次呼叫模型。'
+    if not captured:
+        return '需先完成 Hop 與有效結果比對，才能授權 QA 審查。'
+    if not native:
+        return '此版本未使用有效的本機 Copilot QA 路由；請核對版本設定。'
+    return None
+
+
 def offer(queue,task_id,run_id):
     with queue.conn() as conn:
         queue.locked_task(conn,task_id)
@@ -39,6 +58,7 @@ def offer(queue,task_id,run_id):
     model=run['settings_snapshot'].get('model_routes',{}).get('qa_review')
     native=run['settings_snapshot']['ai']['provider_type']=='LOCAL_COPILOT' and bool(model and model.startswith('copilot/'))
     return {'eligible':bool(captured and native and (not existing or reassessment)),
+        'blocked_reason':blocked_reason(captured,native,existing,reassessment),
         'reassess_invocation_id':str(existing['invocation_id']) if reassessment else None,
         'dispatch_enabled':os.getenv('WORKBENCH_QA_DISPATCH_ENABLED')=='true',
         'comparison_id':str(comparison['comparison_id']) if comparison else None,

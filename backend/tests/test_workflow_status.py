@@ -90,6 +90,15 @@ def test_qa_evidence_reassessment_is_not_hop_execution():
     assert '不重跑 Hop' in status['next_action']['label']
 
 
+def test_qa_operation_preserves_specific_reassessment_blocker():
+    reason='QA 要求補正，目前不符合同次執行複核條件。'
+    status=case(run={'write_started':True,'outcome_code':'HOP_EXECUTED_QA_REQUIRED'},
+                qa={'eligible':False,'dispatch_enabled':True,'blocked_reason':reason})
+    operation=status['operation_qualifications']['qa_authorize']
+    assert not operation['enabled']
+    assert operation['blocked_reason']==reason
+
+
 @pytest.mark.parametrize('recovery_status', ['QUEUED', 'CLAIMED', 'FAILED'])
 def test_finished_hop_without_comparison_stays_at_results(recovery_status):
     status=case(run={'write_started':True,'outcome_code':'HOP_EXECUTED_QA_REQUIRED'},
