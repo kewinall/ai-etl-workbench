@@ -13,7 +13,7 @@ from test_specification_api_integration import prepared,pytestmark
 
 
 def test_sa_handoff_requires_review_and_binds_developer_context(context):
-    base,task,run,spec,naming,_=prepared(context)
+    base,task,run,spec,naming,_=prepared(context,sa_approved=False)
     with base.conn() as conn:
         class Queue(RunQueue):
             def conn(self):return nullcontext(conn)

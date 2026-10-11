@@ -284,3 +284,18 @@ def test_cancelled_stale_latest_still_offers_new_preparation():
     status = case(run={'state': 'CANCELLED', 'matches_current': False})
     assert status['next_action']['label'] == '此版已取消；可建立新準備版本'
     assert status['operation_qualifications']['prepare_run']['enabled']
+
+
+@pytest.mark.parametrize('sa_status', ['NOT_ELIGIBLE', 'AWAITING_CONFIRMATION', 'STALE_APPROVAL'])
+def test_specification_writes_require_current_sa_approval(sa_status):
+    # A pending (unapproved) specification without a current SA approval must not be approvable or creatable.
+    status = case(run={'state': 'NEEDS_REVIEW', 'approval': {'decision': 'APPROVE'}},
+                  sa_approval={'status': sa_status},
+                  specifications=[{'specification_id': 's1', 'approval_effective': False}])
+    q = status['operation_qualifications']
+    assert not q['specification_create']['enabled'] and 'SA' in q['specification_create']['blocked_reason']
+    assert not q['specification_approve']['enabled'] and 'SA' in q['specification_approve']['blocked_reason']
+    status = case(run={'state': 'NEEDS_REVIEW', 'approval': {'decision': 'APPROVE'}},
+                  sa_approval={'status': 'APPROVED_CURRENT'},
+                  specifications=[{'specification_id': 's1', 'approval_effective': False}])
+    assert status['operation_qualifications']['specification_approve']['enabled']

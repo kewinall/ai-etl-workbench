@@ -38,6 +38,13 @@ def context():
             conn.execute('DELETE FROM platform.task_run_execution_authorization WHERE run_id IN (SELECT run_id FROM platform.task_run WHERE task_id=%s)', (task_id,))
             conn.execute('DELETE FROM platform.specification_approval WHERE specification_id IN (SELECT specification_id FROM platform.specification WHERE task_id=%s)', (task_id,))
             conn.execute('DELETE FROM platform.specification WHERE task_id=%s', (task_id,))
+            # Synthetic SA handoff approvals are immutable (UPDATE/DELETE trigger). Test-only cleanup of this
+            # fixture's own rows bypasses the trigger for the statement, then restores normal enforcement.
+            conn.execute("SET session_replication_role = replica")
+            try:
+                conn.execute('DELETE FROM platform.sa_handoff_approval WHERE run_id IN (SELECT run_id FROM platform.task_run WHERE task_id=%s)', (task_id,))
+            finally:
+                conn.execute("SET session_replication_role = origin")
             conn.execute('DELETE FROM platform.agent_invocation WHERE task_id=%s', (task_id,))
             conn.execute('DELETE FROM platform.task_run_approval WHERE run_id IN (SELECT run_id FROM platform.task_run WHERE task_id=%s)', (task_id,))
             conn.execute('DELETE FROM platform.task_run_event WHERE run_id IN (SELECT run_id FROM platform.task_run WHERE task_id=%s)', (task_id,))

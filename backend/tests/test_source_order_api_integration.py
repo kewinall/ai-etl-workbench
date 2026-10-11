@@ -44,5 +44,6 @@ def test_ordered_public_preview_save_approval_and_no_dispatch(context):
     after=queue.detail(task,run['run_id'])
     assert {**after,'events':before['events']}==before
     with queue.conn() as conn:
-        for table in ('hop_artifact','agent_invocation'):
-            assert conn.execute(f'SELECT count(*) AS n FROM platform.{table} WHERE task_id=%s',(task,)).fetchone()['n']==0
+        assert conn.execute('SELECT count(*) AS n FROM platform.hop_artifact WHERE task_id=%s',(task,)).fetchone()['n']==0
+        # Only the fixture's synthetic SA review (prerequisite for saving); no Developer/QA/Hop invocation.
+        assert conn.execute("SELECT count(*) AS n FROM platform.agent_invocation WHERE task_id=%s AND role<>'pilot_sa'",(task,)).fetchone()['n']==0

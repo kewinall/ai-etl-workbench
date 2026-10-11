@@ -23,6 +23,10 @@ def create_specification_router(queue):
         try:
             with queue.conn() as conn:
                 run, naming = specification_store.context(queue, conn, task_id, run_id)
+                if persist:
+                    # Saving needs a current same-Run SA approval, checked under the Task lock in this
+                    # transaction before any write (including rejected-attempt evidence).
+                    specification_store.require_current_sa(queue, conn, task_id, run_id)
                 # Require the latest contract, including a newer unconfirmed draft.
                 # Never silently fall back to a previous confirmed version.
                 if not naming:

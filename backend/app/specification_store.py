@@ -40,6 +40,29 @@ def context(queue, conn, task_id, run_id):
     return {**run, 'approval': approval, 'matches_current': queue.matches_current(conn, task, run)}, naming
 
 
+def require_current_sa(queue, conn, task_id, run_id):
+    """Same-transaction SA prerequisite for specification writes.
+
+    Reuses the existing human SA handoff approval; no new workflow state. The approval must belong to this
+    Run and its stored binding must equal the binding recomputed from the current input, settings, SA
+    context and review. Read-only previews and history GETs do not call this function.
+    """
+    from .sa_approval import load_binding
+    from .run_queue import RunConflict
+    saved = conn.execute('SELECT binding FROM platform.sa_handoff_approval WHERE run_id=%s FOR SHARE', (run_id,)).fetchone()
+    if not saved:
+        raise HTTPException(409, detail={'code': 'SPEC_SA_APPROVAL_MISSING',
+            'message': '此版本尚未人工確認 SA 審查結果；未保存或核准規格。請先在「需求審查」確認同一版本的 SA。'})
+    try:
+        binding = load_binding(queue, conn, task_id, run_id, require_pending=False)
+    except (RunConflict, ValueError):
+        binding = None
+    if not binding or saved['binding'] != binding:
+        raise HTTPException(409, detail={'code': 'SPEC_SA_APPROVAL_STALE',
+            'message': '此版本的 SA 核准已失效（輸入、設定或 SA 審查內容已變更）；未保存或核准規格。'})
+    return binding
+
+
 def history(queue, conn, task_id, run_id):
     run, naming = context(queue, conn, task_id, run_id)
     rows = conn.execute('SELECT s.specification_id,s.version,s.spec_json,s.content_checksum,s.is_current,s.created_at,a.approval_id,a.created_at AS approved_at FROM platform.specification s LEFT JOIN platform.specification_approval a USING(specification_id) WHERE s.task_id=%s AND s.run_id=%s ORDER BY s.version DESC', (task_id, run_id)).fetchall()
@@ -72,6 +95,7 @@ def save(queue, conn, task_id, run_id, result):
 
 def approve(queue, conn, task_id, run_id, specification_id, checksum):
     run, naming = context(queue, conn, task_id, run_id)
+    require_current_sa(queue, conn, task_id, run_id)
     row = conn.execute('SELECT * FROM platform.specification WHERE specification_id=%s AND task_id=%s AND run_id=%s FOR UPDATE', (specification_id, task_id, run_id)).fetchone()
     if not row:
         raise HTTPException(404, detail='找不到指定規格版本')

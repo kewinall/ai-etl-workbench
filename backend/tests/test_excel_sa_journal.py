@@ -11,7 +11,7 @@ from test_excel_preparation_integration import prepared_excel
 
 @pytest.mark.parametrize('stale_prompt',[False,True])
 def test_excel_sa_durable_material_claim_and_no_repeat(context,tmp_path,monkeypatch,stale_prompt):
-    queue,task_id,run,*_=prepared_excel(context,tmp_path,monkeypatch)
+    queue,task_id,run,*_=prepared_excel(context,tmp_path,monkeypatch,sa_approved=False)
     run=queue.detail(task_id,run['run_id'])
     material=sa_material(build_sa_context(run))
     work=SAWorkQueue(queue)

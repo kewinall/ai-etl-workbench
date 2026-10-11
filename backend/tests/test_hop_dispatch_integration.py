@@ -25,7 +25,7 @@ def test_website_hop_request_requires_lineage_and_is_single_consumption(context,
     monkeypatch.setattr(task_uploads,'UPLOAD_ROOT',tmp_path)
     upload=task_uploads.save_and_profile('input.csv','類別,金額\nA,101.25\n'.encode())
     source={**upload,'type':'CSV','has_actual_data':True,'fields':[{'name':'類別','type':'VARCHAR(32)'},{'name':'金額','type':'NUMERIC(12,2)'}]}
-    base,task,run,spec,_,_=prepared(context,source)
+    base,task,run,spec,_,_=prepared(context,source,sa_approved=False)
     with base.conn() as conn:
         class Queue(RunQueue):
             def conn(self):return nullcontext(conn)

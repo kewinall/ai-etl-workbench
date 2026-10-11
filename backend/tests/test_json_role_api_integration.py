@@ -22,7 +22,7 @@ from test_specification_api_integration import prepared
 from test_json_specification import json_design, CONTENT
 
 
-def prepared_json(context, tmp_path, monkeypatch, content=CONTENT):
+def prepared_json(context, tmp_path, monkeypatch, content=CONTENT, sa_approved=True):
     monkeypatch.setattr(task_uploads, 'ROOT', tmp_path)
     monkeypatch.setattr(task_uploads, 'UPLOAD_ROOT', tmp_path / 'uploads')
     spec, template, naming = json_design(content)
@@ -36,7 +36,7 @@ def prepared_json(context, tmp_path, monkeypatch, content=CONTENT):
     queue, task_id = context
     with queue.conn() as conn:
         conn.execute("UPDATE platform.task SET source_type='JSON' WHERE task_id=%s", (task_id,))
-    return prepared(context, design_factory=lambda: deepcopy((spec, template, naming)))
+    return prepared(context, design_factory=lambda: deepcopy((spec, template, naming)), sa_approved=sa_approved)
 
 
 def test_json_api_preview_save_approval_history_and_runtime_block(context, tmp_path, monkeypatch):
@@ -83,7 +83,7 @@ def test_json_api_preview_save_approval_history_and_runtime_block(context, tmp_p
 
 @pytest.mark.parametrize('stale', [False, True])
 def test_json_sa_claim_material_is_exact_and_not_repeated(context, tmp_path, monkeypatch, stale):
-    queue, task, run, *_ = prepared_json(context, tmp_path, monkeypatch)
+    queue, task, run, *_ = prepared_json(context, tmp_path, monkeypatch, sa_approved=False)
     run = queue.detail(task, run['run_id'])
     material = sa_material(build_sa_context(run))
     work = SAWorkQueue(queue)
@@ -104,7 +104,7 @@ def test_json_sa_claim_material_is_exact_and_not_repeated(context, tmp_path, mon
 
 @pytest.mark.parametrize('stale', [False, True])
 def test_json_developer_atomic_handoff_has_no_automatic_approval(context, tmp_path, monkeypatch, stale):
-    base, task, run, spec, naming, _ = prepared_json(context, tmp_path, monkeypatch)
+    base, task, run, spec, naming, _ = prepared_json(context, tmp_path, monkeypatch, sa_approved=False)
     with base.conn() as conn:
         class Queue(RunQueue):
             def conn(self): return nullcontext(conn)

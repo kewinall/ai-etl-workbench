@@ -14,7 +14,27 @@ from app.specification_api import create_specification_router
 pytestmark = pytest.mark.skipif(os.getenv('WORKBENCH_ALLOW_DATABASE_TESTS') != '1', reason='Isolated Compose DB required')
 
 
-def prepared(context, source_override=None, design_factory=design):
+def approve_sa(queue, task_id, run):
+    """Synthetic SA review plus the existing human SA handoff approval (no model call).
+
+    Specification save/approve now require a current same-Run SA approval; downstream fixtures use this
+    instead of bypassing the rule.
+    """
+    from app.sa_journal import SAJournal
+    from app.sa_approval import read as sa_read, approve as sa_approve
+    journal = SAJournal(queue)
+    reserved = journal.reserve(task_id, run['run_id'])
+    review = dict(version=1, run_id=str(run['run_id']), input_checksum=run['input_checksum'],
+                  context_checksum=reserved['context']['context_checksum'], status='READY_FOR_REVIEW',
+                  summary='Synthetic SA review for isolated specification tests, not a model call',
+                  evidence_ids=[item['id'] for item in reserved['context']['evidence']], issues=[])
+    journal.finish(task_id, reserved['invocation_id'], review)
+    offer = sa_read(queue, task_id, run['run_id'])
+    assert offer['status'] == 'AWAITING_CONFIRMATION', offer
+    return sa_approve(queue, task_id, run['run_id'], offer['binding']['checksum'], confirmed=True)
+
+
+def prepared(context, source_override=None, design_factory=design, sa_approved=True):
     queue, task_id = context
     spec, template, naming = design_factory()
     snapshot = template['input_snapshot']
@@ -26,6 +46,8 @@ def prepared(context, source_override=None, design_factory=design):
     run = queue.enqueue(task_id, 'spec-preview-0001')
     queue.review(task_id, run['run_id'], run['input_checksum'], run['settings_snapshot']['checksum'], 'APPROVE')
     assert run_once(queue)['status'] == 'CHECKED'
+    if sa_approved:
+        approve_sa(queue, task_id, run)
     spec.update(run_id=str(run['run_id']), input_checksum=run['input_checksum'], settings_checksum=run['settings_snapshot']['checksum'])
     app = FastAPI(); app.include_router(create_specification_router(queue))
     return queue, task_id, run, spec, naming, TestClient(app)
@@ -33,7 +55,8 @@ def prepared(context, source_override=None, design_factory=design):
 
 @pytest.mark.parametrize('action', ['validate', 'compile-preview'])
 def test_preview_uses_saved_contract_and_never_persists_or_dispatches(context, action):
-    queue, task_id, run, spec, naming, api = prepared(context)
+    # Read-only previews keep their behaviour without any SA invocation or approval.
+    queue, task_id, run, spec, naming, api = prepared(context, sa_approved=False)
     before = queue.detail(task_id, run['run_id'])
     url = f'/api/tasks/{task_id}/runs/{run["run_id"]}/specification/{action}'
     response = api.post(url, json=spec)
@@ -133,7 +156,9 @@ def test_upstream_change_invalidates_saved_approval_without_erasing_it(context):
     row = api.get(url).json()['items'][0]
     assert row['approval_id'] and not row['approval_effective']
     assert row['reviewable'] is False
-    assert api.post(url, json=spec).json()['status'] == 'INVALID'
+    # The upstream change also invalidates the SA approval, so the save is refused before validation.
+    rejected = api.post(url, json=spec)
+    assert rejected.status_code == 409 and rejected.json()['detail']['code'] == 'SPEC_SA_APPROVAL_STALE'
     assert len(api.get(url).json()['items']) == 1
 
 

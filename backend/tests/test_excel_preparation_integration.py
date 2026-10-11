@@ -41,7 +41,7 @@ def test_excel_completed_execution_can_load_pinned_oracle_without_replay(context
     assert not pin['qa_passed'] and not pin['release_ready']
 
 
-def prepared_excel(context, tmp_path, monkeypatch):
+def prepared_excel(context, tmp_path, monkeypatch, sa_approved=True):
     monkeypatch.setattr(task_uploads, 'ROOT', tmp_path)
     monkeypatch.setattr(task_uploads, 'UPLOAD_ROOT', tmp_path / 'uploads')
     captured = []
@@ -54,7 +54,7 @@ def prepared_excel(context, tmp_path, monkeypatch):
     queue, task_id = context
     with queue.conn() as conn:
         conn.execute("UPDATE platform.task SET source_type='EXCEL' WHERE task_id=%s", (task_id,))
-    result = prepared(context, design_factory=lambda: deepcopy((spec, template, naming)))
+    result = prepared(context, design_factory=lambda: deepcopy((spec, template, naming)), sa_approved=sa_approved)
     queue, task_id, run, spec, naming, api = result
     base = f'/api/tasks/{task_id}/runs/{run["run_id"]}/specifications'
     prefix = f'/api/tasks/{task_id}/runs/{run["run_id"]}/specification/'
@@ -68,6 +68,12 @@ def prepared_excel(context, tmp_path, monkeypatch):
         assert preview.status_code == 200 and preview.json()['status'] == 'VALIDATED_NOT_APPROVED', preview.text
         assert preview.json()['execution_authorized'] is False
     response = api.post(base, json=spec)
+    if not sa_approved:
+        # Without a same-Run SA approval the save is refused before any write; callers testing SA itself
+        # only need the confirmed Excel Run.
+        assert response.status_code == 409 and response.json()['detail']['code'] == 'SPEC_SA_APPROVAL_MISSING', response.text
+        assert api.get(base).json()['items'] == []
+        return queue, task_id, run, None, upload, captured[0]
     assert response.status_code == 200, response.text
     saved = response.json()
     assert 'specification_id' in saved, saved

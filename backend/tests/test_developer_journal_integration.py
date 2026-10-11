@@ -27,8 +27,8 @@ def test_developer_single_consumption_atomic_save(context, outcome, monkeypatch,
             model_routes='{"requirement_gate":"test-model","etl_specification":"test-model","qa_review":"test-model"}'::jsonb
             WHERE profile_id=(SELECT default_ai_profile FROM platform.project p JOIN platform.task t USING(project_id) WHERE t.task_id=%s)""", (task,))
     from test_join_semantics import join_design
-    base, task, run, spec, naming, _ = (prepared(context, design_factory=join_design)
-                                      if version == 2 else prepared(context))
+    base, task, run, spec, naming, _ = (prepared(context, design_factory=join_design, sa_approved=False)
+                                      if version == 2 else prepared(context, sa_approved=False))
     with base.conn() as conn:
         class Queue(RunQueue):
             def conn(self): return nullcontext(conn)
