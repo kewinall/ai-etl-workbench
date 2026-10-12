@@ -1,0 +1,19 @@
+# Separate test database; Fedora bind mounts get dedicated SELinux labels.
+name: ais-etl-regression
+services:
+  postgres:
+    extends: {file: compose.p0-tests.yml, service: postgres}
+  tests:
+    extends: {file: compose.p0-tests.yml, service: tests}
+    image: ais-etl-regression:dev
+    environment:
+      WORKBENCH_DEVELOPER_DISPATCH_ENABLED: 'false'
+    volumes:
+      - ../backend:/app/backend:ro,Z
+      - ../database/migrations:/app/database/migrations:ro,Z
+      - ../config:/app/config:ro,Z
+      - ../deploy:/app/deploy:ro,Z
+networks:
+  test-only: {internal: true}
+volumes:
+  test-database:
