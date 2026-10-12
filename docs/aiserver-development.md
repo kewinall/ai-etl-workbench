@@ -4,7 +4,7 @@
 
 已用既有專用SSH金鑰成功登入 `homeadmin@192.168.88.150`；`kewin`不是可用登入帳號。主機22邏輯CPU、31432MiB RAM（盤點時23980MiB available）、RTX4070 Laptop 8188MiB、NVMe剩約913GB。Docker29.9.0／Compose5.6.0、Node24.18.0、Python3.14.8、Git2.56.0可用；GitHub身分kewinall及本repo遠端SHA讀回成功。這些是本次SSH實測，不以先前Workspace紀錄代替。
 
-homeadmin直接Docker會permission denied；既有 `sudo -n docker` 唯讀查詢成功。沿用sudo，不為方便開放socket或加入docker群組。Docker已啟用SELinux。原postgres-rag占localhost5432、主機Agent占8765、Paperclip占3100；本方案不碰它們。主機已有Codex及Claude CLI，但本輪未呼叫模型，不能以工具存在宣稱訂閱與模型流程可用。
+初次盤點homeadmin直接Docker被拒絕，`sudo -n docker`成功；工作期間另一項已授權主機工作新增docker群組。再次SSH登入已實測groups含docker(GID964)，直接docker ps成功、postgres-rag健康。因此目前可直接執行下列docker命令（sudo亦可）；本專案沒有修改群組或socket權限。Docker已啟用SELinux。原postgres-rag占localhost5432、主機Agent占8765、Paperclip占3100；本方案不碰它們。主機已有Codex及Claude CLI，但本輪未呼叫模型，不能以工具存在宣稱訂閱與模型流程可用。
 
 本輪沒有在aiserver clone、啟動ETL環境、搬資料或秘密；以下配置已在本機Compose解析及結構檢查，**尚未在aiserver build／runtime驗收**。本機5197各容器已停止，今日正式Release GET重驗因connection refused未完成；2026-10-11保存的交付證據仍保留，不當作今日即時PASS。不因GET失敗自動啟動Worker或重送意圖。
 

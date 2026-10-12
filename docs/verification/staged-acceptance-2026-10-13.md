@@ -14,6 +14,8 @@
 
 ## 範圍與下一步
 
+同步Workspace時CURRENT已被另一主機工作更新，第一次CAS寫入未成功且讀回不符；沒有宣稱已同步。重讀後發現使用者授權的WS0036已新增homeadmin docker群組，再次SSH實際id含GID964、直接docker ps與postgres-rag健康PASS。此最新狀態取代上方初次直接拒絕結果；本專案沒有修改主機群組。交接重新以最新內容計算，只改WS0007並保留其他Task。
+
 1. aiserver以GitHub階段源碼clone到/home/homeadmin/projects/ai-etl-workbench，NVMe開發、Docker Python3.12、獨立DB、SSH5198隧道；先做source/config/API/backend/browser驗收。主機Python3.14不直接當後端鎖定環境；原Win32/WSL local_acceptance_worker不直接搬到Linux。GPU不自動取代模型Profile。
 2. 移轉源碼與正式資料是兩回事；秘密/資料/舊產物仍留原環境，後續需獨立一致備份／加密／restore／指紋與明確範圍。沒有複製本機runtime-temp或vault。
 3. R21仍待完整受控Worker／監督器與新故障寫入授權；R19合法QA同次補證、390真實寫入、JSON/table、REPLACE/UPSERT、已交付修訂、維運與人工基準保持未完成。WS0007 active。
